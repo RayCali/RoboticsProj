@@ -1,0 +1,12 @@
+[submodule "robp_msgs"]
+	path = robp_msgs
+	url = https://github.com/KTH-CAS-UAV/robp_msgs.git
+[submodule "robp_arm"]
+	path = robp_arm
+	url = https://github.com/KTH-CAS-UAV/robp_arm.git
+[submodule "robp_phidgets"]
+	path = robp_phidgets
+	url = https://github.com/KTH-CAS-UAV/robp_phidgets.git
+[submodule "robp_description"]
+	path = robp_description
+	url = https://github.com/KTH-CAS-UAV/robp_description.git
