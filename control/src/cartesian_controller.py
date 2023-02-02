@@ -21,7 +21,7 @@ def callbackTwist(data):
 
 def callbackEncoder(data):
     global Efeedback
-    #rospy.loginfo("nu")
+    rospy.loginfo("nu")
     Efeedback=data
 
 def listener():
@@ -41,8 +41,9 @@ def PI():
     pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=1)
     rate = rospy.Rate(10) # 10hz
     mesg = DutyCycles()
-    rospy.sleep(8)
+    rospy.sleep(5)
     int_max=14000
+   
     while not rospy.is_shutdown():
         #rospy.loginfo("im in the mainframe")
         rospy.loginfo("lesgo")
