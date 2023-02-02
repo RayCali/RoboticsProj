@@ -13,3 +13,6 @@ alias cb="cd ~/dd2419_ws;catkin build;cd -;source ~/dd2419_ws/devel/setup.bash"
 roslaunch realsense2_camera rs_camera.launch filters:=pointcloud
 # launch odometry and cartesian controller
 roslaunch robp_phidgets phidgets.launch
+# usb_cam name 
+for some reason it changes name for the usb_cam between /dev/video6 (when launching it seperatly) 
+and /dev/video0 (when launching it together with everything using phidgets.launch)
