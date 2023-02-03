@@ -28,8 +28,4 @@ roslaunch robp_phidgets phidgetsrosplayer.launch
 #play a rosbag 
  rosbag play (name.bag)
 def func(a,b):
-<<<<<<< HEAD
-    return(a-b)
-=======
 	return a+b
->>>>>>> e109a02d0d6e96cdda892004a682f4bd80959fcc
