@@ -1,5 +1,4 @@
 # NOTES
-#### Staffans Junk
 # token for pushing and pulling
 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
  rostopic pub /motor/duty_cycles robp_msgs/DutyCycles
