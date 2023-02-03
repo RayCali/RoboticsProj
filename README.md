@@ -1,7 +1,7 @@
 # NOTES
 # token for pushing and pulling
 #### The username
-grumpyrobot
+robotgrumpy
 #### The token
 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
 
