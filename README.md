@@ -23,3 +23,5 @@ and /dev/video0 (when launching it together with everything using phidgets.launc
 /camera/color/image_raw
 # record a rosbag 
 rosbag record /motor/duty_cycles /camera/color/image_raw /usb_cam/image_raw /camera/depth/color/points (name.bag)
+
+BIG EDIT
