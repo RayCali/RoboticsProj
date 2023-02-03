@@ -1,6 +1,10 @@
 # NOTES
 # token for pushing and pulling
+#### The username
+grumpyrobot
+#### The token
 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
+
  rostopic pub /motor/duty_cycles robp_msgs/DutyCycles
  ~/dd2419_ws/src/robp_robot/robp_phidgets/launch
  # phidgetslaunch directory
