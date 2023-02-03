@@ -22,6 +22,8 @@ and /dev/video0 (when launching it together with everything using phidgets.launc
 #topic for rgbd camera
 /camera/color/image_raw
 # record a rosbag 
-rosbag record /motor/duty_cycles /camera/color/image_raw /usb_cam/image_raw /camera/depth/color/points (name.bag)
+rosbag record /motor/duty_cycles /usb_cam/image_raw /camera/color/camera_info /camera/color/image_raw /camera/depth/camera_info /camera/depth/color/points /camera/depth/image_rect_raw /camera/extrinsics/depth_to_color /tf /tf_static (name.bag)
 
-BIG EDIT
+#play a rosbag 
+ rosbag play (name.bag)
+
