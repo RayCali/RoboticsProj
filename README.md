@@ -26,4 +26,5 @@ rosbag record /motor/duty_cycles /usb_cam/image_raw /camera/color/camera_info /c
 
 #play a rosbag 
  rosbag play (name.bag)
-
+def func(a,b):
+    return(a-b)
