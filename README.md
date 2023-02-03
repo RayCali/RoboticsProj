@@ -19,3 +19,7 @@ roslaunch robp_phidgets phidgets.launch
 # usb_cam name 
 for some reason it changes name for the usb_cam between /dev/video6 (when launching it seperatly) 
 and /dev/video0 (when launching it together with everything using phidgets.launch)
+#topic for rgbd camera
+/camera/color/image_raw
+# record a rosbag 
+rosbag record /motor/duty_cycles /camera/color/image_raw /usb_cam/image_raw /camera/depth/color/points (name.bag)

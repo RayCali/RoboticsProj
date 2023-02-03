@@ -47,6 +47,8 @@ def PI():
     while not rospy.is_shutdown():
         #rospy.loginfo("im in the mainframe")
         rospy.loginfo("lesgo")
+        if(Efeedback is None or desiredTwist is None):
+            break
         r=0.04921
         b=0.3
         dt=Efeedback.delta_time_left
