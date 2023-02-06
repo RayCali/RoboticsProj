@@ -23,9 +23,41 @@ and /dev/video0 (when launching it together with everything using phidgets.launc
 /camera/color/image_raw
 # record a rosbag 
 rosbag record /motor/duty_cycles /usb_cam/image_raw /camera/color/camera_info /camera/color/image_raw /camera/depth/camera_info /camera/depth/color/points /camera/depth/image_rect_raw /camera/extrinsics/depth_to_color /tf /tf_static (name.bag)
+
+
 # launch for playing rosbags
 roslaunch robp_phidgets phidgetsrosplayer.launch
 #play a rosbag 
  rosbag play (name.bag)
-def func(a,b):
-	return a+b+b
+
+# How to launch Grumpy
+1. Roscore
+2. Check what the robot camera is called
+    1. ls -ltrh /dev/video*
+    2. By trial and error, check topic the camera publishes to and then add the correct /dev/camera# into 
+         ~/dd2419_ws/src/usb_cam/launch/usb_cam-test.launch
+    3. It should be either *video0* or *video6
+3. Realsense
+   1. roslaunch realsense2_camera rs_camera.launch filters:=pointcloud
+4. Phidgets
+      1. roslaunch robp_phidgets phidgets.launch
+ 
+5. If you wish to record, then launch
+    rosbag record /motor/duty_cycles /usb_cam/image_raw /camera/color/camera_info /camera/color/image_raw /camera/depth/camera_info /camera/depth/color/points /camera/depth/image_rect_raw /camera/extrinsics/depth_to_color /tf /tf_static (name.bag)
+
+6. If you wish to play back
+   roslaunch robp_phidgets phidgetsrosplayer.launch 
+
+# How to use RVIZ on another computer
+## On the robot
+1. find the *robot inet address* by using the ifconfig command. You know it is the right command if you are able to ssh into the robot with this address.
+
+2. in the .bashrc file of the robot
+
+    a. set "export ROS_HOSTNAME= *robot inet address*"
+    b. set "export ROS_MASTER_URI=http://*robot inet address*:11311"
+
+## On the SSD
+1. set "export ROS_MASTER_URI=http://*robot inet address*:11311"
+2. find the *ssd inet address*
+3. set "export ROS_IP=*ssd inet address*"
