@@ -61,3 +61,5 @@ roslaunch robp_phidgets phidgetsrosplayer.launch
 1. set "export ROS_MASTER_URI=http://*robot inet address*:11311"
 2. find the *ssd inet address*
 3. set "export ROS_IP=*ssd inet address*"
+4. launch rviz on the SSD with a config file using 
+"rosrun rviz rviz -d /home/robot/dd2419_ws/src/robp_boot_camp_launc/config/boot_camp_part2.rviz"
