@@ -1,0 +1,10 @@
+<launch>
+<!-- TODO: check if we can delete rows 3,4,5 -->
+  <arg name="motor_left_port" default="4"/>
+  <arg name="motor_right_port" default="2"/>
+  <arg name="imu_port" default="0"/>
+
+  <arg name="manager" default="robp_phidgets_manager" doc="Nodelet manager for this nodelet" />
+  <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
+  <include file="$(find odometry)/launch/odometry.launch"></include>  
+</launch>

@@ -1,0 +1,3 @@
+<launch>
+<include file="$(find robp_phidgets)/launch/software.launch"></include>
+</launch>
