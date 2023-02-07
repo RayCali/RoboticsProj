@@ -63,3 +63,7 @@ roslaunch robp_phidgets phidgetsrosplayer.launch
 3. set "export ROS_IP=*ssd inet address*"
 4. launch rviz on the SSD with a config file using 
 "rosrun rviz rviz -d /home/robot/dd2419_ws/src/robp_boot_camp_launc/config/boot_camp_part2.rviz"
+
+## How to fix Rosbag
+1. rosbag fix (bag_name) (new_bagname) if it asks for it
+2. rosbag reindex (bag_name)
