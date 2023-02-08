@@ -7,7 +7,7 @@
 
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
 
-  <include file="$(find robp_phidgets)/launch/logging.launch">
+  <!-- <include file="$(find robp_phidgets)/launch/logging.launch">
     <arg name="manager" value="$(arg manager)"/>
   </include>
 
@@ -31,7 +31,7 @@
   <include file="$(find robp_phidgets)/launch/temperature.launch">
     <arg name="manager" value="$(arg manager)"/>
     <arg name="port" default="$(arg imu_port)"/>
-  </include>
+  </include> -->
   <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
   
   
