@@ -7,7 +7,7 @@
 
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
 
-  <include file="$(find robp_phidgets)/launch/logging.launch">
+  <!-- <include file="$(find robp_phidgets)/launch/logging.launch">
     <arg name="manager" value="$(arg manager)"/>
   </include>
 
