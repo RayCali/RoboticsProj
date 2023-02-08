@@ -4,7 +4,7 @@
   <arg name="imu_port" default="0"/>
 
   <arg name="manager" default="robp_phidgets_manager" doc="Nodelet manager for this nodelet" />
-
+  
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
 
   <include file="$(find robp_phidgets)/launch/logging.launch">
@@ -32,4 +32,7 @@
     <arg name="manager" value="$(arg manager)"/>
     <arg name="port" default="$(arg imu_port)"/>
   </include>
+  <include file="$(find usb_cam)/launch/usb_cam-test.launch"></include>
+  <include file="$(find teleop_twist_joy)/launch/teleop.launch"></include>
+
 </launch>
