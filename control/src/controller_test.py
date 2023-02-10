@@ -6,148 +6,105 @@ from robp_msgs.msg import Encoders
 from robp_msgs.msg import DutyCycles
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from math import pi
 import math
-from std_msgs.msg import Float64
-# desiredTwist=None
-# int_error1 = 0
-# int_error2 = 0 
-# alpha1=0.02
-# alpha2=0.02
-# beta1=0.000002
-# beta2=0.000002
-x = 0.0
-y = 0.0
-theta = 0.0
+from aruco_msgs.msg import MarkerArray
+from geometry_msgs.msg import TransformStamped, PoseStamped
+import tf2_geometry_msgs
+import tf_conversions
+from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
+import tf2_ros
 
-def newOdom(msg: Odometry):
-    global x
-    global y
-    global theta
-    x = msg.pose.pose.position.x
-    y = msg.pose.pose.position.y
-    print(x)
-    rot_q = msg.pose.pose.orientation
-    (roll, pitch, theta) = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
-
-rospy.init_node('speed_controller')
-
-sub = rospy.Subscriber('/odom', Odometry, newOdom)
-pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=1)
-
-speed = DutyCycles()
-
-r = rospy.Rate(4)
-
-goal = Point()
-goal.x = 2
-goal.y = 2
-
-while not rospy.is_shutdown():
-    inc_x = goal.x - x
-    inc_y = goal.y - y
-    angle_to_goal = math.atan2(inc_y, inc_x)
-    print(angle_to_goal)
-
-    if abs(angle_to_goal - theta) > 0.1:
-        speed.duty_cycle_left = 0.0
-        speed.duty_cycle_right = 0.3
-        # print("turning")
-    else:
-        speed.duty_cycle_left = 0.5
-        speed.duty_cycle_right = 0.0
-        print("moving forward")
-
-    pub.publish(speed)
-    r.sleep()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def callbackTwist(data):
-#     global desiredTwist
-#     rospy.loginfo("got twist")
-#     desiredTwist=data
-
-# def callbackEncoder(data):
-#     global Efeedback
-#     rospy.loginfo("nu")
-#     Efeedback=data
-
-# def listener():
-#     rospy.Subscriber('/cmd_vel',Twist, callbackTwist)
-#     rospy.Subscriber('/motor/encoders',Encoders, callbackEncoder)
+#Listen to the aruco marker and publish the position of the marker in the map frame
+def marker_callback(msg: MarkerArray):
     
 
-# def PI():
-#     global desiredTwist
-#     global Efeedback
-#     global int_error2
-#     global int_error1
-#     global alpha1
-#     global alpha2
-#     global beta1
-#     global beta2
-#     pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=1)
-#     rate = rospy.Rate(10) # 10hz
-#     mesg = DutyCycles()
-#     rospy.sleep(5)
-#     int_max=14000
-   
-#     while not rospy.is_shutdown():
-#         #rospy.loginfo("im in the mainframe")
-#         rospy.loginfo("lesgo")
-#         if(Efeedback is None or desiredTwist is None):
-#             break
-#         r=0.04921
-#         b=0.3
-#         dt=Efeedback.delta_time_left
-#         w_w1=2*pi*Efeedback.delta_encoder_left/3072
-#         w_w2=2*pi*Efeedback.delta_encoder_right/3072
-#         #rospy.loginfo("Wheel 1= %f" % w_w1)
-#         #rospy.loginfo("Wheel 2= %f" % w_w2)
-#         #v_w2d=(2*desiredTwist.linear.x-v_w1d)
-#         #w*2*b = (2*desiredTwist.linear.x-v_w1d)-v_w1d
-#         v_w1d=(2*b*desiredTwist.angular.z-2*desiredTwist.linear.x)/(-2)
-#         v_w2d=(2*desiredTwist.linear.x-v_w1d)
-#         w_w1d = v_w1d/r
-#         w_w2d = v_w2d/r
-#         error1 = w_w1d-w_w1
-#         int_error1 = int_error1 + error1 * dt #10000
-#         #rospy.loginfo("int_error 1= %f" % int_error1)
-#         if int_error1>int_max:
-#             int_error1=0
-#         if int_error2>int_max:
-#             int_error2=0
-#         pwm1 = alpha1 * error1 + beta1 * int_error1
-#         error2 = w_w2d - w_w2
-#         int_error2 = int_error2 + error2 * dt
-#         #rospy.loginfo("int_error 2= %f" % int_error2)
-#         pwm2 = alpha2 * error2 + beta2 * int_error2
-#         mesg.duty_cycle_left=pwm1
-#         mesg.duty_cycle_right=pwm2
-#         pub.publish(mesg)
-#         rate.sleep()
-        
+# x = 0.0
+# y = 0.0
+# theta = 0.0
+
+# def newOdom(msg: Odometry):
+#     global x
+#     global y
+#     global theta
+
+#     br = tf2_ros.TransformBroadcaster()
+#     t = TransformStamped()
+
+#     stamper = msg.header.stamp
+#     timeout = rospy.Duration(0.5)
+#     try:
+#         trans = tfBuffer.lookup_transform('map','base_link', stamper)
+#     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+#         return
+
+#     pose_stamp = PoseStamped()
+#     pose_stamp.pose.position.x = 2
+#     pose_stamp.pose.position.y = 2
+#     pose_stamp.pose.position.z = 0
+
+#     pose_stamp.pose.orientation.x = 0
+#     pose_stamp.pose.orientation.y = 0
+#     pose_stamp.pose.orientation.z = 0
+#     pose_stamp.pose.orientation.w = 0
+
+#     t.header.stamp = msg.header.stamp
+#     t.header.frame_id = "map"
+#     t.child_frame_id = "destination"
+
+#     transformed = tf2_geometry_msgs.do_transform_pose(pose_stamp,trans)
+#     t.transform.translation.x = transformed.pose.position.x
+#     t.transform.translation.y = transformed.pose.position.y
+#     t.transform.translation.z = transformed.pose.position.z
+
+#     t.transform.rotation.x = 0
+#     t.transform.rotation.y = 0
+#     t.transform.rotation.z = 0
+#     t.transform.rotation.w = 0
+#     br.sendTransform(t)
+
+#     x = msg.pose.pose.position.x
+#     y = msg.pose.pose.position.y
+
+# sub = rospy.Subscriber('/odom', Odometry, newOdom)
+# pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=1)
+# rospy.init_node('speed_controller')
+
+# speed = DutyCycles()
+
+# r = rospy.Rate(4)
+
+# goal = Point()
+# goal.x = 2
+# goal.y = 2
+
+
+
+# while not rospy.is_shutdown():
+#     inc_x = goal.x - x
+#     inc_y = goal.y - y
+#     angle_to_goal = math.atan2(inc_y, inc_x)
+#     print(angle_to_goal)
+
+#     if abs(angle_to_goal - theta) > 0.1:
+#         speed.duty_cycle_left = 0.0
+#         speed.duty_cycle_right = 0.3
+#         # print("turning")
+#     else:
+#         speed.duty_cycle_left = 0.5
+#         speed.duty_cycle_right = 0.0
+#         print("moving forward")
+
+#     pub.publish(speed)
+#     r.sleep()
+
+
+
+# #sub_goal = rospy.Subscriber('/aruco/markers', MarkerArray, marker)
+
 
 # if __name__ == '__main__':
-#     rospy.init_node('cartesian_controller', anonymous=True)
-#     try:
-#         listener()
-#     except rospy.ROSInterruptException:
-#         pass
-#     try:
-#         PI()
-#     except rospy.ROSInterruptException:
-#         pass
+#     tfBuffer = tf2_ros.Buffer()
+#     listener = tf2_ros.TransformListener(tfBuffer)
+    
 #     rospy.spin()

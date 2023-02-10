@@ -33,7 +33,7 @@
     <arg name="port" default="$(arg imu_port)"/>
   </include>
   <!-- <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/> -->
-  <node pkg="control" type="controller_test.py" name="speed_controller" output="screen"/>
+  <!-- <node pkg="control" type="controller_test.py" name="marker_basic_node" output="screen"/> -->
 
   
   <!-- <node pkg ="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/> -->
