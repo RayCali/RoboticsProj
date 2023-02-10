@@ -26,7 +26,7 @@ def newOdom(msg: Odometry):
     global theta
     x = msg.pose.pose.position.x
     y = msg.pose.pose.position.y
-    
+    print(x)
     rot_q = msg.pose.pose.orientation
     (roll, pitch, theta) = euler_from_quaternion([rot_q.x, rot_q.y, rot_q.z, rot_q.w])
 
@@ -46,16 +46,16 @@ goal.y = 2
 while not rospy.is_shutdown():
     inc_x = goal.x - x
     inc_y = goal.y - y
-
     angle_to_goal = math.atan2(inc_y, inc_x)
+    print(angle_to_goal)
 
     if abs(angle_to_goal - theta) > 0.1:
         speed.duty_cycle_left = 0.0
         speed.duty_cycle_right = 0.3
-        print("turning")
+        # print("turning")
     else:
-        speed.duty_cycle_right = 0.5
         speed.duty_cycle_left = 0.5
+        speed.duty_cycle_right = 0.0
         print("moving forward")
 
     pub.publish(speed)
