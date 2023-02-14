@@ -3,7 +3,7 @@
   <arg name="motor_right_port" default="2"/>
   <arg name="imu_port" default="0"/>
 
-  <arg name="manager" default="robp_phidgets_manager" doc="Nodelet manager for this nodelet" />
+  <!-- <arg name="manager" default="robp_phidgets_manager" doc="Nodelet manager for this nodelet" />
 
   <node pkg="nodelet" type="nodelet" name="$(arg manager)" args="manager" output="screen"/>
 
@@ -31,9 +31,9 @@
   <include file="$(find robp_phidgets)/launch/temperature.launch">
     <arg name="manager" value="$(arg manager)"/>
     <arg name="port" default="$(arg imu_port)"/>
-  </include>
-  <!-- <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/> -->
-  <!-- <node pkg="control" type="controller_test.py" name="marker_basic_node" output="screen"/> -->
+  </include> -->
+  <node pkg="control" type="path_tracker.py" name="path_tracker" output="screen"/>
+  <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
 
   
   <!-- <node pkg ="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/> -->
