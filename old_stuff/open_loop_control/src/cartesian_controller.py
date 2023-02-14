@@ -12,7 +12,7 @@ class Listener(object):
 
         self.encoder_sub = rospy.Subscriber("/motor/encoders", Encoders, self.callback1)
         self.theta_sub = rospy.Subscriber("/odom", Odometry, self.callback2)
-        self.velocity_sub = rospy.Subscriber("/motor_controller/twist", Twist, self.callback3)
+        self.velocity_sub = rospy.Subscriber("/cmd_vel", Twist, self.callback3)
 
         print("Initializing the instance!")
 
