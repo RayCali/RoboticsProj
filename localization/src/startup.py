@@ -50,7 +50,7 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     global marker_pub
     rospy.loginfo(os.getcwd())
     points = []
-    with open("/home/robot/dd2419_ws/src/localiztion/src/exampleworkspace.tsv", "r") as f:
+    with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace.tsv", "r") as f:
         for line in f:
             l = line.split("\t")
             points.append(l)
@@ -93,7 +93,7 @@ def aruco_callback(mesg):
     
     for mark in markers:
         
-        if mark.id == 500:
+        if mark.id == 2:
             arucopose = PoseStamped()
             arucopose.header.frame_id="/camera_link"
             arucopose.header.stamp=mesg.header.stamp

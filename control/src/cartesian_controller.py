@@ -23,7 +23,7 @@ def callbackTwist(data):
 
 def callbackEncoder(data):
     global Efeedback
-    rospy.loginfo("nu")
+    # rospy.loginfo("nu")
     Efeedback=data
 
 def listener():
@@ -48,7 +48,7 @@ def PI():
    
     while not rospy.is_shutdown():
         #rospy.loginfo("im in the mainframe")
-        rospy.loginfo("lesgo")
+        # rospy.loginfo("lesgo")
         if(Efeedback is None or desiredTwist is None):
             break
         r=0.04921
