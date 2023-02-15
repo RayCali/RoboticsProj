@@ -9,9 +9,9 @@ Efeedback=None
 desiredTwist=None
 int_error1 = 0
 int_error2 = 0 
-alpha1=0.02
+alpha1=0.02078
 alpha2=0.02
-beta1=0.000002
+beta1=0.0000022
 beta2=0.000002
 
 def callbackTwist(data):
@@ -38,17 +38,17 @@ def PI():
     global alpha2
     global beta1
     global beta2
-    pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=1)
+    pub = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=10)
     rate = rospy.Rate(10) # 10hz
     mesg = DutyCycles()
     rospy.sleep(5)
-    int_max=14000
+    int_max=10000
    
     while not rospy.is_shutdown():
         #rospy.loginfo("im in the mainframe")
-        # rospy.loginfo("lesgo")
+        rospy.loginfo("lesgo")
         if(Efeedback is None or desiredTwist is None):
-            break
+            continue
         r=0.04921
         b=0.3
         dt=Efeedback.delta_time_left
@@ -76,18 +76,30 @@ def PI():
         pwm2 = alpha2 * error2 + beta2 * int_error2
         mesg.duty_cycle_left=pwm1
         mesg.duty_cycle_right=pwm2
+        rospy.loginfo("waiting for data")
+
         pub.publish(mesg)
         rate.sleep()
-        
+        if desiredTwist.linear.x==0 and desiredTwist.angular.z==0:
+            mesg.duty_cycle_left=0.0
+            mesg.duty_cycle_right=0.0
+            int_error1=0
+            int_error2=0
+
+            pub.publish(mesg)
+            rate.sleep()
 
 if __name__ == '__main__':
     rospy.init_node('cartesian_controller', anonymous=True)
     try:
         listener()
-    except rospy.ROSInterruptException:
+    except rospy.ROSInterruptException as e:
+        rospy.loginfo(e)
         pass
     try:
         PI()
     except rospy.ROSInterruptException:
+        rospy.loginfo(e)
         pass
+    rospy.loginfo("spinning")
     rospy.spin()

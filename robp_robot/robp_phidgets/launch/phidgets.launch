@@ -37,9 +37,9 @@
   
   <!-- <node pkg ="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/> -->
   
-  <include file="$(find teleop_twist_joy)/launch/teleop.launch">
+  <!-- <include file="$(find teleop_twist_joy)/launch/teleop.launch"> -->
     
-  </include>
+  <!-- </include> -->
   <include file="$(find odometry)/launch/odometry.launch">
     
   </include>
