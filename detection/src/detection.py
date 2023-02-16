@@ -139,6 +139,6 @@ if __name__=="__main__":
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
 
     # Load model
-    detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-20-07-496421.pt", device="gpu")
+    detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-30-19-206874.pt", device="gpu")
 
     detectionModel.eval()
