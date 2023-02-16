@@ -2,14 +2,16 @@
 
 import numpy as np
 import rospy
+import tf2_ros
+import tf2_geometry_msgs
 import ros_numpy as rnp
 import torch
 from scipy.ndimage import binary_erosion, binary_dilation
 from sensor_msgs.msg import Image, PointCloud2
 from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
-from geometry_msgs.msg import PoseStamped
-from .....RoboticsProj_VisionModel import utils, detector
+from geometry_msgs.msg import PoseStamped, TransformStamped
+import utils, detector
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
 BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
@@ -48,21 +50,21 @@ def imageCB(msg):
 
     imgPub.publish(pubImg)
 
-def depthCB(msg):
-    # transform depth image to np image 
-    np_image = rnp.numpify(msg)
+# def depthCB(msg):
+#     # transform depth image to np image 
+#     np_image = rnp.numpify(msg)
 
-    # the image is greyscale with intensity vals from 0 to 255
-    # 0 -> white, far away; 255 -> black, close
-    # make simple distance filter to find points that are closer
-    filter = np.zeros(np.shape(np_image))
-    filter[(np_image<200)&(np_image>100)] = 1
+#     # the image is greyscale with intensity vals from 0 to 255
+#     # 0 -> white, far away; 255 -> black, close
+#     # make simple distance filter to find points that are closer
+#     filter = np.zeros(np.shape(np_image))
+#     filter[(np_image<200)&(np_image>100)] = 1
 
-    structElem = np.ones((3,3))
+#     structElem = np.ones((3,3))
 
-    openedFilter = openFilter(filter, structElem)
+#     openedFilter = openFilter(filter, structElem)
 
-    finalFilter = closeFilter(openedFilter,structElem)
+#     finalFilter = closeFilter(openedFilter,structElem)
 
 def cloudCB(msg):
     # Convert ROS -> Open3D
@@ -84,13 +86,15 @@ def cloudCB(msg):
 
     openedFilter = openFilter(filterMask, structElem)
 
-    finalFilter = closeFilter(openedFilter,structElem)
+    closedFilter = closeFilter(openedFilter,structElem)
 
-    finalFilter = np.concatenate(finalFilter, finalFilter, finalFilter)
+    finalFilter = np.zeros(np.shape(points))
+    finalFilter[:,0] = finalFilter[:,1] = finalFilter[:,2] = closedFilter
 
     points_filtered = np.multiply(points, finalFilter)
 
     nonZeros = [val for ind, val in enumerate(points_filtered) if (val[0]**2 + val[1]**2 + val[2]**2) != 0]
+    nonZeros = np.array(nonZeros)
 
     averageVals = np.zeros((3,1))
 
@@ -107,38 +111,58 @@ def cloudCB(msg):
     #     if (dist < 0.8) and (height > -0.1):
     #         filterMask[i] = 1
 
-    pose_out = PoseStamped()
-    pose_out.header = msg.header
-    pose_out.pose.position.x = averageVals[0]
-    pose_out.pose.position.y = averageVals[1]
-    pose_out.pose.position.z = averageVals[2]
+    pose = PoseStamped()
+    pose.header = msg.header
+    pose.pose.position.x = averageVals[0]
+    pose.pose.position.y = averageVals[1]
+    pose.pose.position.z = averageVals[2]
+
+    try:
+        transform = tf_buffer.lookup_transform("map", pose.header.frame_id, msg.header.stamp, rospy.Duration(2))
+        pose_out = tf2_geometry_msgs.do_transform_pose(pose, transform)
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+        rospy.loginfo(e)
+
+    t = TransformStamped()
+    t.header = msg.header
+    t.header.frame_id = "map"
+    t.child_frame_id = "detection"
+
+    t.transform.translation = pose_out.pose.position
+    t.transform.rotation.w = 1
+    #transform = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, rospy.Duration(2))
+    tfbroadcaster.sendTransform(t)
+
+    rospy.loginfo("Publishing pose")
     posePub.publish(pose_out)
-
-
-
 
 
     
 def openFilter(filter, structElem):
-    erosion = binary_erosion(filter, structElem)
-    return binary_dilation(erosion,structElem)
+    erosion = binary_erosion(filter)
+    return binary_dilation(erosion)
 
 
 def closeFilter(filter, structElem):
-    dilation = binary_dilation(filter, structElem)
-    return binary_erosion(dilation,structElem)
+    dilation = binary_dilation(filter)
+    return binary_erosion(dilation)
     
 
 
 if __name__=="__main__":
     rospy.init_node("detection")
 
-    imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
-    pointCloudSub = rospy.Subscriber("/camera/depth/color/pointcloud", PointCloud2, cloudCB)
+    #imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
+    pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
 
-    # Load model
-    detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-30-19-206874.pt", device="gpu")
+    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+    tflistener = tf2_ros.TransformListener(tf_buffer)
+    tfbroadcaster = tf2_ros.TransformBroadcaster()
 
-    detectionModel.eval()
+    # Load model
+    # detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-30-19-206874.pt", device="gpu")
+
+    # detectionModel.eval()
+    rospy.spin()
