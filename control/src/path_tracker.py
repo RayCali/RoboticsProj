@@ -146,9 +146,10 @@ def tracker(msg:PoseStamped):
     global done_once
     if not done_once:
         cam_pose = PoseStamped()
+        twist = Twist()
+        duty = DutyCycles()
         rospy.sleep(2)
 
-        twist = Twist()
         print('tracker hej')
         # self.robot_pose = TFMessage()
 
@@ -215,14 +216,14 @@ def tracker(msg:PoseStamped):
                 pass
             inc_x= goal_pose.pose.position.x
             inc_y= goal_pose.pose.position.y
-            rospy.loginfo(math.atan2(inc_y, inc_x))
+            # rospy.loginfo(math.atan2(inc_y, inc_x))
         
         twist.angular.z = 0.0
         pub_twist.publish(twist)
         rate.sleep()
         rospy.sleep(1)
         while math.sqrt(inc_x**2 + inc_y**2) > 0.1:
-            rospy.loginfo(math.sqrt(inc_x**2 + inc_y**2))
+            # rospy.loginfo(math.sqrt(inc_x**2 + inc_y**2))
             twist.linear.x = 0.3
             twist.angular.z = 0.0
             pub_twist.publish(twist)
@@ -235,6 +236,17 @@ def tracker(msg:PoseStamped):
                 pass
             inc_x= goal_pose.pose.position.x
             inc_y= goal_pose.pose.position.y
+            if (math.atan2(inc_y, inc_x)) > 0.1:
+                twist.linear.x = 0.3
+                twist.angular.z = -0.2 #either -0.2 or 0.2
+                pub_duty.publish(twist)
+                rate.sleep()
+
+            elif (math.atan2(inc_y, inc_x)) < -0.1:
+                twist.linear.x = 0.3
+                twist.angular.z = 0.2 #either -0.2 or 0.2
+                pub_duty.publish(twist)
+                rate.sleep()
         
         rospy.loginfo('You have reached the goal')
         done_once = True
