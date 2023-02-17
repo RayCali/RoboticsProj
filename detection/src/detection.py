@@ -75,13 +75,15 @@ def cloudCB(msg):
 
     # Convert Open3D -> NumPy
     points = np.asarray(ds_cloud.points)
+    #print(points.shape)
     #colors = np.asarray(ds_cloud.colors)
+    
 
-    reducedCloud = cloud.select_by_index([i for i, p in enumerate(cloud.points) if (np.sqrt(p[0]**2 + p[1]**2) < 0.8) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1)])
+    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 0.8) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1)])
 
     points_filtered = np.array(reducedCloud.points)
     print(points_filtered.shape)
-    if points_filtered.shape[0] != 0 and points_filtered.shape[0] < 20000:
+    if points_filtered.shape[0] != 0 and points_filtered.shape[0] < 200:
         averageVals = np.zeros((3,1))
 
         averageVals[0] = np.sum(points_filtered[:,0])/points_filtered.shape[0]
