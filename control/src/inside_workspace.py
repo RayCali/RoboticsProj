@@ -28,9 +28,10 @@ def workspacecallback(data:Marker):
 
 def twistcallback(data:Twist):
     global twistmsg, listener, workspace, tf_buffer, pub
+    rospy.loginfo("got twist")
     twistmsg = data
-    if twistmsg.linear.x > 0:
-        transform = tf_buffer.lookup_transform('base_link', 'arucomap', rospy.Time())
+    if twistmsg.linear.x != 0:
+        transform = tf_buffer.lookup_transform('base_link', 'arucomap', rospy.Time(0))
         #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
         poly = workspace
         if point_inside_polygon(transform.transform.translation.x+twistmsg.linear.x, transform.transform.translation.y, poly):
@@ -40,6 +41,8 @@ def twistcallback(data:Twist):
             rospy.loginfo("outside workspace")
             twistmsg.linear.x = 0
             pub.publish(twistmsg)
+    else:
+        pub.publish(twistmsg)
             
 
 
@@ -68,11 +71,11 @@ if __name__ == '__main__':
     vel_sub = rospy.Subscriber('/cmd_vel', Twist, twistcallback)
     workspace_sub = rospy.Subscriber('/boundaries', Marker, workspacecallback)
     pub = rospy.Publisher('/cmd_vel_proc', Twist, queue_size=1)
-    listener = tf2_ros.TransformListener()
-    tf_buffer = tf2_ros.Buffer(100)
-    #create a polygon
+    tf_buffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tf_buffer)
     
+    #create a polygon
+    rospy.spin()
 
     #check if a point is inside the polygon
-    print(point_inside_polygon(2.2,0.3,poly))
     #print(point_inside_polygon(1.5,0.5,poly))
