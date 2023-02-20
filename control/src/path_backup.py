@@ -311,8 +311,10 @@ def tracker(msg:PoseStamped):
         twist.angular.z = 0.0
         pub_twist.publish(twist)
         rate.sleep()
+            # broadcaster.sendTransform(t)
 
 
+            # rate.sleep()
 if __name__ == "__main__":
     rospy.init_node("path_tracker")
     rospy.loginfo("Starting path_tracker node")
