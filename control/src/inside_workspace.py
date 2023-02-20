@@ -6,6 +6,7 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Twist
 from robp_msgs.msg import Encoders 
 from visualization_msgs.msg import Marker
+from geometry_msgs.msg import PoseStamped
 import tf_conversions
 import tf2_ros
 import tf2_msgs.msg
@@ -22,19 +23,31 @@ twistmsg = None
 listener = None
 tf_buffer = None
 pub= None
+marginpose = PoseStamped()
+marginpose.pose.position.x = 0.4
+marginpose.pose.position.y = 0
+marginpose.pose.position.z = 0
+marginpose.pose.orientation.x = 0
+marginpose.pose.orientation.y = 0
+marginpose.pose.orientation.z = 0
+marginpose.pose.orientation.w = 1
+marginpose.header.frame_id = 'base_link'
 def workspacecallback(data:Marker):
     global workspace
     workspace = data.points[:-1]
 
 def twistcallback(data:Twist):
-    global twistmsg, listener, workspace, tf_buffer, pub
+    global twistmsg, listener, workspace, tf_buffer, pub,marginpose
     rospy.loginfo("got twist")
     twistmsg = data
     if twistmsg.linear.x != 0:
         transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
+        
+        new_marginpose = tf2_geometry_msgs.do_transform_pose(marginpose, transform)
         #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
         poly = workspace
-        if point_inside_polygon(transform.transform.translation.x+twistmsg.linear.x, transform.transform.translation.y, poly):
+
+        if point_inside_polygon(new_marginpose.pose.position.x, new_marginpose.pose.position.y, poly):
             rospy.loginfo("inside workspace")
             pub.publish(twistmsg)
         else:
