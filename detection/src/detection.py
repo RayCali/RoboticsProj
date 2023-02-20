@@ -78,7 +78,7 @@ def cloudCB(msg):
     #colors = np.asarray(ds_cloud.colors)
     
 
-    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 0.8) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1) and (p[2] < 0.01)])
+    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 1.0) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1) and (p[2] < 0.5)])
 
     points_filtered = np.array(reducedCloud.points)
     print(points_filtered.shape)
@@ -111,7 +111,8 @@ def cloudCB(msg):
         t.transform.translation = pose_out.pose.position
         try:
             map_to_base = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, timeout=rospy.Duration(2))
-            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(map_to_base.rotation)
+            rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
+            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
             yaw = yaw + math.pi
             quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
             t.transform.rotation.x = quat[0]
