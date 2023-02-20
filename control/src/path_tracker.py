@@ -225,11 +225,11 @@ def tracker(msg:PoseStamped):
 
         rospy.loginfo(abs(rotation))
         # rospy.loginfo(math.atan2(inc_y, inc_x))
-        while abs(math.atan2(inc_y, inc_x)) > 0.08: # or math.atan2(inc_y, inc_x) < -0.2:
+        while math.atan2(inc_y, inc_x)< -0.08: # or math.atan2(inc_y, inc_x) < -0.2:
             twist.linear.x = 0.0
-            twist.angular.z = 0.7
+            twist.angular.z = -0.7
 
-            rospy.loginfo("Turning")
+            rospy.loginfo("Turning right")
             pub_twist.publish(twist)
             rate.sleep()
             try:
@@ -240,9 +240,23 @@ def tracker(msg:PoseStamped):
                 pass
             inc_x= goal_pose.pose.position.x
             inc_y= goal_pose.pose.position.y
-            # rospy.loginfo(math.atan2(inc_y, inc_x))
+
+        while math.atan2(inc_y, inc_x) > 0.08: # or math.atan2(inc_y, inc_x) < -0.2:
+            twist.linear.x = 0.0
+            twist.angular.z = 0.7
+
+            rospy.loginfo("Turning left")
+            pub_twist.publish(twist)
+            rate.sleep()
+            try:
+                trans = tfBuffer.lookup_transform("base_link", "odom", msgTime, timeout=rospy.Duration(2.0))
+                goal_pose = tf2_geometry_msgs.do_transform_pose(cam_pose, trans)
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                rospy.logerr("Failed to transform point from odom frame to base_link frame")
+                pass
+            inc_x= goal_pose.pose.position.x
+            inc_y= goal_pose.pose.position.y
         
-        # distance = math.sqrt(inc_x**2 + inc_y**2)
         twist.angular.z = 0.0
         pub_twist.publish(twist)
         rate.sleep()
@@ -311,8 +325,10 @@ def tracker(msg:PoseStamped):
         twist.angular.z = 0.0
         pub_twist.publish(twist)
         rate.sleep()
+            # broadcaster.sendTransform(t)
 
 
+            # rate.sleep()
 if __name__ == "__main__":
     rospy.init_node("path_tracker")
     rospy.loginfo("Starting path_tracker node")
@@ -323,7 +339,7 @@ if __name__ == "__main__":
     pub_duty = rospy.Publisher('/motor/duty_cycles', DutyCycles, queue_size=10)
     pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
     try:
-        planner = path()
+        path()
         
     except rospy.ROSInterruptException:
         pass
