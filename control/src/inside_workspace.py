@@ -42,7 +42,10 @@ def twistcallback(data:Twist):
     twistmsg = data
     if twistmsg.linear.x != 0:
         transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
-        
+        if twistmsg.linear.x > 0:
+            marginpose.pose.position.x = 0.4
+        else:
+            marginpose.pose.position.x = -0.4
         new_marginpose = tf2_geometry_msgs.do_transform_pose(marginpose, transform)
         #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
         poly = workspace
