@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 
 import numpy as np
+import math
 import rospy
 import tf2_ros
 import tf2_geometry_msgs
+import tf_conversions
 import ros_numpy as rnp
 import torch
 from scipy.ndimage import binary_erosion, binary_dilation
@@ -71,7 +73,7 @@ def cloudCB(msg):
     cloud = o3drh.rospc_to_o3dpc(msg)
 
     # Downsample the point cloud to 5 cm
-    ds_cloud = cloud.voxel_down_sample(voxel_size=0.05)
+    ds_cloud = cloud.voxel_down_sample(voxel_size=0.01)
 
     # Convert Open3D -> NumPy
     points = np.asarray(ds_cloud.points)
@@ -79,7 +81,7 @@ def cloudCB(msg):
     #colors = np.asarray(ds_cloud.colors)
     
 
-    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 0.8) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1)])
+    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 0.8) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1) and (p[2] < 0.01)])
 
     points_filtered = np.array(reducedCloud.points)
     print(points_filtered.shape)
@@ -110,9 +112,22 @@ def cloudCB(msg):
         t.child_frame_id = "detection"
 
         t.transform.translation = pose_out.pose.position
-        t.transform.rotation.w = 1
-        #transform = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, rospy.Duration(2))
+        try:
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, timeout=rospy.Duration(2))
+            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(map_to_base.rotation)
+            yaw = yaw + math.pi
+            quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
+            t.transform.rotation.x = quat[0]
+            t.transform.rotation.y = quat[1]
+            t.transform.rotation.z = quat[2]
+            t.transform.rotation.w = quat[3]
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+            t.transform.rotation.w = 1
+        
         tfbroadcaster.sendTransform(t)
+
+        
 
     # filterMask = np.zeros(len(points[:,1]))
     # # filterMask[(np.sqrt(points[:,0]**2 + points[:,1]**2) < 0.8) &
