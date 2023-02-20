@@ -12,7 +12,7 @@ from scipy.ndimage import binary_erosion, binary_dilation
 from sensor_msgs.msg import Image, PointCloud2
 from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
@@ -24,6 +24,9 @@ def imageCB(msg):
     # msg is of type Image, convert to torch tensor
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
     torch_image = torch.from_numpy(np_image) # size: (720,1280,3)
+    
+    centerimg_x = np_image.shape[1]/2
+    centerimg_y = np_image.shape[0]/2
 
     inference = detectionModel(torch_image) # size: (15,20,5)
 
@@ -38,8 +41,10 @@ def imageCB(msg):
         height = bb["height"]
 
         # extract center position of box
-        center_x = x+int(width/2)
-        center_y = y-int(height/2)
+        centerbb_x = x+int(width/2)
+        centerbb_y = y-int(height/2)
+        # deviation of bounding box from center (only in x)
+        error_x = centerbb_x - centerimg_x
 
         # overlay box on image
         X = np.arange(x, x+width)
@@ -49,24 +54,16 @@ def imageCB(msg):
         np_image[Y,X,2] = 0
     
     pubImg = rnp.msgify(Image,np_image)
-
+    
     imgPub.publish(pubImg)
 
-# def depthCB(msg):
-#     # transform depth image to np image 
-#     np_image = rnp.numpify(msg)
+    error_msg = Vector3Stamped()
+    error_msg.header.stamp = msg.header.stamp
+    error_msg.header.frame_id = msg.header.frame_id
+    error_msg.vector.x = error_x
 
-#     # the image is greyscale with intensity vals from 0 to 255
-#     # 0 -> white, far away; 255 -> black, close
-#     # make simple distance filter to find points that are closer
-#     filter = np.zeros(np.shape(np_image))
-#     filter[(np_image<200)&(np_image>100)] = 1
+    errPub.publish(error_msg)
 
-#     structElem = np.ones((3,3))
-
-#     openedFilter = openFilter(filter, structElem)
-
-#     finalFilter = closeFilter(openedFilter,structElem)
 
 def cloudCB(msg):
     # Convert ROS -> Open3D
@@ -211,6 +208,7 @@ if __name__=="__main__":
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
+    errPub = rospy.Publisher("/detection/bb_error", Vector3Stamped, queue_size=10)
 
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
