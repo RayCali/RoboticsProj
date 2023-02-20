@@ -46,7 +46,7 @@ def PI():
    
     while not rospy.is_shutdown():
         #rospy.loginfo("im in the mainframe")
-        rospy.loginfo("lesgo")
+        # rospy.loginfo("lesgo")
         if(Efeedback is None or desiredTwist is None):
             continue
         r=0.04921
@@ -76,7 +76,7 @@ def PI():
         pwm2 = alpha2 * error2 + beta2 * int_error2
         mesg.duty_cycle_left=pwm1
         mesg.duty_cycle_right=pwm2
-        rospy.loginfo("waiting for data")
+        # rospy.loginfo("waiting for data")
 
         pub.publish(mesg)
         rate.sleep()
