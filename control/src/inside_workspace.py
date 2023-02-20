@@ -31,7 +31,7 @@ def twistcallback(data:Twist):
     rospy.loginfo("got twist")
     twistmsg = data
     if twistmsg.linear.x != 0:
-        transform = tf_buffer.lookup_transform('base_link', 'arucomap', rospy.Time(0))
+        transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
         #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
         poly = workspace
         if point_inside_polygon(transform.transform.translation.x+twistmsg.linear.x, transform.transform.translation.y, poly):
