@@ -70,3 +70,17 @@ While the robot is on the IoT network, it should have a static ip. The last know
 ## How to fix Rosbag
 1. rosbag fix (bag_name) (new_bagname) if it asks for it
 2. rosbag reindex (bag_name)
+
+# Robot arm
+## Launching the arm
+1. In ~/.bashrc uncomment the line with "export ROS_IP=10.0.0.1" to enable publishing to the arm
+2. Start a new terminator/terminal and run roscore
+3. Switch on the raspberry Pi and wait for some time (until the arm moves into its home position and greets you with a **beep**)
+4. To verify that the arm is running, run rostopic list (you should see a list of arm topics)
+5. To move seperate joints from terminal run *rostopic pub /joint1_controller/command_duration hiwonder_servo_msgs/CommandDuration "data: 0.0 duration: 0.0"*
+   - You can also publish to /jointx_controller/command (where x is joint number)
+   - The published value is the joint position
+
+## Other info
+- home position: [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664] (last joint is gripper)
+- 
