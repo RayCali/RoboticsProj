@@ -83,4 +83,4 @@ While the robot is on the IoT network, it should have a static ip. The last know
 
 ## Other info
 - home position: [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664] (last joint is gripper)
-- 
+- the action server for following trajectories is /arm_controller/follow_joint_trajectory
