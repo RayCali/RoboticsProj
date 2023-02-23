@@ -75,10 +75,22 @@ def cloudCB(msg):
     # Convert Open3D -> NumPy
     points = np.asarray(ds_cloud.points)
     #print(points.shape)
-    #colors = np.asarray(ds_cloud.colors)
+    colors = np.asarray(ds_cloud.colors)
+
+    # sample color of ground
+    ground_color = np.mean(colors[np.logical_and(points[:,1] < 0.08, points[:,2] < 0.1)], axis=0)
+
+    # filter out ground
+    nogroundCloud = ds_cloud.select_by_index([i for i,c in enumerate(colors) if (np.linalg.norm(c-ground_color) > 0.001)])
+    noGroundPoints = np.asarray(nogroundCloud.points)
     
 
-    reducedCloud = ds_cloud.select_by_index([i for i, p in enumerate(points) if (np.sqrt(p[0]**2 + p[1]**2) < 1.0) and (np.sqrt(p[0]**2 + p[1]**2) > 0.2) and (p[2] > -0.1) and (p[2] < 0.5)])
+    reducedCloud = nogroundCloud.select_by_index([i for i, p in enumerate(noGroundPoints) if (np.sqrt(p[0]**2 + p[2]**2) < 1.0) and (np.sqrt(p[0]**2 + p[2]**2) > 0.2) and (p[1] < 0.1) and (p[1] > 0)])
+
+    # Convert Open3D -> ROS and publish reduced cloud
+    out_msg = o3drh.o3dpc_to_rospc(reducedCloud)
+    out_msg.header = msg.header
+    cloudPub.publish(out_msg)
 
     points_filtered = np.array(reducedCloud.points)
     print(points_filtered.shape)
@@ -124,81 +136,6 @@ def cloudCB(msg):
             t.transform.rotation.w = 1
         
         tfbroadcaster.sendTransform(t)
-
-        
-
-    # filterMask = np.zeros(len(points[:,1]))
-    # # filterMask[(np.sqrt(points[:,0]**2 + points[:,1]**2) < 0.8) &
-    # #            (np.sqrt(points[:,0]**2 + points[:,1]**2) > 0.3) &
-    # #            (points[:,2] > 0.1)] = 1
-
-    # for i in range(len(points[:,1])):
-    #     dist = np.sqrt(points[i,0]**2 + points[i,1]**2)
-    #     height = points[i,2]
-
-    #     # Filtering points by distance and height from the ground
-    #     if (dist < 0.8) and (dist > 0.2) and (height > -0.1):
-    #         filterMask[i] = 1
-
-    # structElem = np.ones((3,3))
-
-    # openedFilter = openFilter(filterMask, structElem)
-
-    # closedFilter = closeFilter(openedFilter,structElem)
-
-    # finalFilter = np.zeros(np.shape(points))
-    # finalFilter[:,0] = finalFilter[:,1] = finalFilter[:,2] = closedFilter
-
-    # points_filtered = np.multiply(points, finalFilter)
-
-    # nonZeros = [val for ind, val in enumerate(points_filtered) if (val[0]**2 + val[1]**2 + val[2]**2) != 0]
-    # if len(nonZeros) != 0 and len(nonZeros) < 100:
-    #     nonZeros = np.array(nonZeros)
-    #     print(nonZeros.shape)
-    #     print(len(nonZeros[0,:]))
-
-    #     averageVals = np.zeros((3,1))
-
-    #     averageVals[0] = np.sum(nonZeros[:,0])/nonZeros.shape[0]
-    #     averageVals[1] = np.sum(nonZeros[:,1])/nonZeros.shape[0]
-    #     averageVals[2] = np.sum(nonZeros[:,2])/nonZeros.shape[0]
-
-    #     pose = PoseStamped()
-    #     pose.header = msg.header
-    #     pose.pose.position.x = averageVals[0]
-    #     pose.pose.position.y = averageVals[1]
-    #     pose.pose.position.z = averageVals[2]
-
-    #     try:
-    #         transform = tf_buffer.lookup_transform("map", msg.header.frame_id, msg.header.stamp, rospy.Duration(2))
-    #         pose_out = tf2_geometry_msgs.do_transform_pose(pose, transform)
-    #         rospy.loginfo("Publishing pose")
-    #         posePub.publish(pose_out)
-    #     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-    #         rospy.loginfo(e)
-
-    #     t = TransformStamped()
-    #     t.header = msg.header
-    #     t.header.frame_id = "map"
-    #     t.child_frame_id = "detection"
-
-    #     t.transform.translation = pose_out.pose.position
-    #     t.transform.rotation.w = 1
-    #     #transform = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, rospy.Duration(2))
-    #     tfbroadcaster.sendTransform(t)
-
-    
-
-
-    
-def openFilter(filter, structElem):
-    erosion = binary_erosion(filter)
-    return binary_dilation(erosion)
-
-
-def closeFilter(filter, structElem):
-    dilation = binary_dilation(filter)
-    return binary_erosion(dilation)
     
 
 
@@ -206,6 +143,7 @@ if __name__=="__main__":
     rospy.init_node("detection")
 
     #imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
+    cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
