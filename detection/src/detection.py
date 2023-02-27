@@ -74,7 +74,7 @@ def cloudCB(msg):
 
     # Convert Open3D -> NumPy
     points = np.asarray(ds_cloud.points)
-    #print(points.shape)
+    print("Points size: ",points.shape)
     colors = np.asarray(ds_cloud.colors)
 
     # sample color of ground
@@ -83,22 +83,24 @@ def cloudCB(msg):
     min_x = min(points[:,0])
     min_y = min(points[:,1])
     max_y = max(points[:,1])
-    cloud_ground = ds_cloud.select_by_index([i for i,p in enumerate(points) if p[2] < 0.35 and p[1] > 0.1])
+    # print("Min z: {}, min x: {}, min y: {}, max y: {}".format(min_dist, min_x, min_y, max_y))
+    cloud_ground = ds_cloud.select_by_index([i for i,p in enumerate(points) if p[2] < 0.5 and p[1] > 0.07])
     ground_color = np.mean(cloud_ground.colors, axis=0)
-    print(ground_color)
+    print("Size ground points: ",np.asarray(cloud_ground.points).shape)
 
     # filter out ground
     nogroundCloud = ds_cloud.select_by_index([i for i,c in enumerate(colors) if
-                                               (c[0]<ground_color[0]+0.01) and (c[0]>ground_color[0]-0.01) and
-                                                (c[1]<ground_color[1]+0.01) and (c[1]>ground_color[1]-0.01) and
-                                                 (c[2]<ground_color[2]+0.01) and (c[2]>ground_color[2]-0.01)])
+                                               ((c[0]<ground_color[0]-0.1) or (c[0]>ground_color[0]+0.1)) and
+                                                ((c[1]<ground_color[1]-0.1) or (c[1]>ground_color[1]+0.1)) and
+                                                 ((c[2]<ground_color[2]-0.1) or (c[2]>ground_color[2]+0.1))])
     noGroundPoints = np.asarray(nogroundCloud.points)
+
     
 
     reducedCloud = nogroundCloud.select_by_index([i for i, p in enumerate(noGroundPoints) if
-                                                  (np.sqrt(p[0]**2 + p[2]**2) < 1.0) and
+                                                  (np.sqrt(p[0]**2 + p[2]**2) < 1) and
                                                    (np.sqrt(p[0]**2 + p[2]**2) > 0.2) and
-                                                    (p[1] < 0.1) and (p[1] > 0)])
+                                                    (p[1] < 0.07) and (p[1] > -0.1)])
 
     # Convert Open3D -> ROS and publish reduced cloud
     out_msg = o3drh.o3dpc_to_rospc(reducedCloud)
@@ -107,7 +109,7 @@ def cloudCB(msg):
 
     points_filtered = np.array(reducedCloud.points)
     print(points_filtered.shape)
-    if points_filtered.shape[0] != 0 and points_filtered.shape[0] < 200:
+    if points_filtered.shape[0] != 0 and points_filtered.shape[0] < 30:
         averageVals = np.zeros((3,1))
 
         averageVals[0] = np.sum(points_filtered[:,0])/points_filtered.shape[0]
