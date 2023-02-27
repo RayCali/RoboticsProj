@@ -18,12 +18,15 @@ from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryG
 
 joint_states = None
 # Denavit-Hartenberg parameters
-d = [0.026, 0.09, 0.097, 0.053, 0.08]
-print(sum(d))
-a = [0.0, 0.0, 0.0, 0.0, 0.0]
+d = [0.02, 0.0, 0.0, 0.0, 0.0]
+a = [0.0, 0.09, 0.097, 0.053, 0.08]
 alpha = [math.pi/2, 0.0, 0.0, -math.pi/2, 0.0]
 
 def forward_kinematics(q):
+    # forward kinematics for robot arm
+    # input: joint angles q1, q2, q3, q4, q5
+    # output: transformation matrix T_0E and Jacobian
+    q[1] += math.pi/2
     # transformation matrix 0TE for forward kinematics
     T_0E = np.identity((4))
     # and parameters for Jacobian computation
@@ -41,6 +44,11 @@ def forward_kinematics(q):
         T_i = np.matmul(Trans_di, Rot_thetai)
         T_i = np.matmul(T_i, Trans_ai)
         T_i = np.matmul(T_i, Rot_alphai)
+
+        # T_i = np.array([[cos(q[i]), -sin(q[i])*cos(alpha[i]), sin(q[i])*sin(alpha[i]), d[i]*cos(q[i])],
+        #                 [sin(q[i]), cos(q[i])*cos(alpha[i]), -cos(q[i])*sin(alpha[i]), d[i]*sin(q[i])],
+        #                 [0, sin(alpha[i]), cos(alpha[i]), d[i]],
+        #                 [0, 0, 0, 1]])
 
         
 
@@ -64,6 +72,33 @@ def forward_kinematics(q):
 
     return T_0E, Jac
 
+def analyticalIK(position):
+    # inverse kinematics for robot arm
+    # input: pose (x,y,z) in base_link frame
+    # output: joint angles q1, q2, q3, q4, q5
+
+    # lock q1, q4, and q5
+    q1 = 0.0
+    q4 = -math.pi/2
+    q5 = 0.0
+
+    # compute q2 and q3
+    x = position[0]
+    y = position[1]
+    z = position[2]
+
+    l0 = 0.09
+    l1 = 0.097
+    l2 = 0.053
+    l3 = 0.08
+
+    l2_eff = math.sqrt(l1**2 + (l2+l3)**2)
+
+    q3 = 
+    
+
+
+    return q
 
 def pose_callback(msg: PoseStamped):
     stamp = msg.header.stamp
@@ -115,7 +150,7 @@ def testPick():
     pose = PoseStamped()
     pose.header.stamp = rospy.Time.now()
     pose.header.frame_id = 'base_link'
-    pose.pose.position.x = 0.3
+    pose.pose.position.x = 0.1
     pose.pose.position.y = 0.0
     pose.pose.position.z = 0.05
 
@@ -238,7 +273,8 @@ if __name__ == "__main__":
     rate = rospy.Rate(0.1) # 10hz
 
     q = [0.0, -1.06, -0.81, -1.16, -0.04]
-    q = [0.0, 0.0, 0.0, 0.0, 0.0]
+    # q = [0.0, 0.0, 0.0, 0.0, 0.0]
+    q= [0.0, -1.0011208418666664, 0.0, -1.5707962999999998, 0.0]
     T0E, Jac = forward_kinematics(q)
     print(T0E)
     if(False):
