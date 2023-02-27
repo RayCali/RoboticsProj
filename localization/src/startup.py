@@ -94,7 +94,7 @@ def aruco_callback(mesg):
     
     for mark in markers:
         
-        if mark.id == 2:
+        if mark.id == 500:
             arucopose = PoseStamped()
             arucopose.header.frame_id="/camera_link"
             arucopose.header.stamp=mesg.header.stamp

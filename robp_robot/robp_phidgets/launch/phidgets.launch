@@ -34,7 +34,7 @@
   </include>
   <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
   <node pkg="localization" type="startup.py" name="aruco_node" output="screen"/>
-  <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/>
+  <!-- <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/> -->
   <!-- <node pkg ="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/> -->
   
   <include file="$(find teleop_twist_joy)/launch/teleop.launch">
