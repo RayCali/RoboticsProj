@@ -37,21 +37,23 @@ def encoder_callback(msg):
     w= (vw_2-vw_1)/(b)
     mu = np.array([v,w])
     G = np.identity(2)
-    sigma = G @ sigma @ G.T + np.array([[0.3,0],[0,0.3]])
+    sigma = G @ sigma @ G.transpose() + np.array([[5,0],[0,1000]])
     
     
     #Update
-    if len(imu_lin) != 0:
-        vupdate = dt*np.sum(imu_lin)/len(imu_lin)
-        wupdate = np.sum(imu_ang)/len(imu_ang)
-        z = np.array([vupdate,wupdate])
-        H = np.identity(2)
-        K = sigma @ H.T @ np.linalg.inv(H @ sigma @ H.T + np.array([[0.1,0],[0,0.1]]))
-        mu = mu + K @ (z - mu)
-        sigma = (np.identity(2) - K @ H) @ sigma
-        imu_lin = []
-        imu_ang = []
-        rospy.loginfo("updated")
+    # if len(imu_lin) != 0:
+    #     vupdate = dt*np.sum(imu_lin)/len(imu_lin)
+    #     wupdate = np.sum(imu_ang)/len(imu_ang)
+    #     #vupdate = imu_lin[-1]
+    #     #wupdate = -imu_ang[-1]
+    #     z = np.array([vupdate,wupdate])
+    #     H = np.identity(2)
+    #     K = sigma @ H.T @ np.linalg.inv(H @ sigma @ H.T + np.array([[10000000000000,0],[0,0.1]]))
+    #     mu = mu + K @ (z - mu)
+    #     sigma = (np.identity(2) - K @ H) @ sigma
+    #     imu_lin = []
+    #     imu_ang = []
+    #     rospy.loginfo("updated")
     
     
     v = mu[0]
@@ -79,9 +81,16 @@ def encoder_callback(msg):
     br.sendTransform(t)
 
 def imu_callback(msg:Imu):
-    global x,y,yaw, imu_lin, imu_ang
-    imu_lin.append(msg.linear_acceleration.x)
-    imu_ang.append(msg.angular_velocity.z)
+    global x,y,yaw, imu_lin, imu_ang, mu, sigma
+    vupdate = msg.linear_acceleration.y*1/20
+    wupdate = -msg.angular_velocity.z
+    z = np.array([vupdate,wupdate])
+    H = np.identity(2)
+    K = sigma @ H.transpose() @ np.linalg.inv(H @ sigma @ H.transpose() + np.array([[10000000000000,0],[0,0.1]]))
+    mu = mu + K @ (z - mu)
+    sigma = (np.identity(2) - K @ H) @ sigma
+
+  
     
 
 
