@@ -78,14 +78,27 @@ def cloudCB(msg):
     colors = np.asarray(ds_cloud.colors)
 
     # sample color of ground
-    ground_color = np.mean(colors[np.logical_and(points[:,1] < 0.08, points[:,2] < 0.1)], axis=0)
+    # Min z: 0.25438890357812244, min x: -1.4876816272735596, min y: -19.418909072875977, max y: 0.36200428009033203
+    min_dist = min(points[:,2])
+    min_x = min(points[:,0])
+    min_y = min(points[:,1])
+    max_y = max(points[:,1])
+    cloud_ground = ds_cloud.select_by_index([i for i,p in enumerate(points) if p[2] < 0.35 and p[1] > 0.1])
+    ground_color = np.mean(cloud_ground.colors, axis=0)
+    print(ground_color)
 
     # filter out ground
-    nogroundCloud = ds_cloud.select_by_index([i for i,c in enumerate(colors) if (np.linalg.norm(c-ground_color) > 0.001)])
+    nogroundCloud = ds_cloud.select_by_index([i for i,c in enumerate(colors) if
+                                               (c[0]<ground_color[0]+0.01) and (c[0]>ground_color[0]-0.01) and
+                                                (c[1]<ground_color[1]+0.01) and (c[1]>ground_color[1]-0.01) and
+                                                 (c[2]<ground_color[2]+0.01) and (c[2]>ground_color[2]-0.01)])
     noGroundPoints = np.asarray(nogroundCloud.points)
     
 
-    reducedCloud = nogroundCloud.select_by_index([i for i, p in enumerate(noGroundPoints) if (np.sqrt(p[0]**2 + p[2]**2) < 1.0) and (np.sqrt(p[0]**2 + p[2]**2) > 0.2) and (p[1] < 0.1) and (p[1] > 0)])
+    reducedCloud = nogroundCloud.select_by_index([i for i, p in enumerate(noGroundPoints) if
+                                                  (np.sqrt(p[0]**2 + p[2]**2) < 1.0) and
+                                                   (np.sqrt(p[0]**2 + p[2]**2) > 0.2) and
+                                                    (p[1] < 0.1) and (p[1] > 0)])
 
     # Convert Open3D -> ROS and publish reduced cloud
     out_msg = o3drh.o3dpc_to_rospc(reducedCloud)
@@ -114,6 +127,7 @@ def cloudCB(msg):
             posePub.publish(pose_out)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
+            return
 
         t = TransformStamped()
         t.header = msg.header
