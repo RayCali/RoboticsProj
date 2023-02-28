@@ -17,6 +17,10 @@ import actionlib
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 
 joint_states = None
+
+# home position
+home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
+
 # Denavit-Hartenberg parameters
 d = [0.02, 0.0, 0.0, 0.0, 0.0]
 a = [0.0, 0.09, 0.097, 0.053, 0.08]
@@ -45,100 +49,91 @@ def forward_kinematics(q):
         T_i = np.matmul(T_i, Trans_ai)
         T_i = np.matmul(T_i, Rot_alphai)
 
-        # T_i = np.array([[cos(q[i]), -sin(q[i])*cos(alpha[i]), sin(q[i])*sin(alpha[i]), d[i]*cos(q[i])],
-        #                 [sin(q[i]), cos(q[i])*cos(alpha[i]), -cos(q[i])*sin(alpha[i]), d[i]*sin(q[i])],
-        #                 [0, sin(alpha[i]), cos(alpha[i]), d[i]],
-        #                 [0, 0, 0, 1]])
-
-        
-
-        #T_0E = np.matmul(Trans_di, np.matmul(Rot_thetai, np.matmul(Trans_ai, Rot_alphai)))
-
         T_0E = np.matmul(T_0E, T_i)
-        print(T_0E)
-        #T_0E = T_i
 
-        if i < 4:
-            z[:,i+1] = T_0E[0:3, 2]
-            p[:,i+1] = T_0E[0:3, 3]
+    #     if i < 4:
+    #         z[:,i+1] = T_0E[0:3, 2]
+    #         p[:,i+1] = T_0E[0:3, 3]
 
-    pe = T_0E[0:3,3]
+    # pe = T_0E[0:3,3]
 
-    # Computation of Jacobian
-    Jac = np.zeros((6,5))
-    for i in range(5):
-        Jac[0:3, i] = np.cross(z[:,i], pe-p[:,i])
-        Jac[3:, i] = z[:,i]
+    # # Computation of Jacobian
+    # Jac = np.zeros((6,5))
+    # for i in range(5):
+    #     Jac[0:3, i] = np.cross(z[:,i], pe-p[:,i])
+    #     Jac[3:, i] = z[:,i]
 
-    return T_0E, Jac
+    return T_0E
 
 def analyticalIK(position):
     # inverse kinematics for robot arm
     # input: pose (x,y,z) in base_link frame
     # output: joint angles q1, q2, q3, q4, q5
 
-    # lock q1, q4, and q5
-    q1 = 0.0
+    # lock q4 and q5
     q4 = -math.pi/2
     q5 = 0.0
 
-    # compute q2 and q3
     x = position[0]
     y = position[1]
     z = position[2]
 
-    l0 = 0.09
-    l1 = 0.097
-    l2 = 0.053
-    l3 = 0.08
+    # rotate arm towards object
+    q1 = math.atan2(y, x)
 
-    l2_eff = math.sqrt(l1**2 + (l2+l3)**2)
+    # compute q3 and q2
+    l1 = 0.09
+    l2 = 0.097
+    l3 = 0.053
+    l4 = 0.08
 
-    q3 = 
+    l2_eff = math.sqrt(l2**2 + (l3+l4)**2)
+
+    print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
+    q3 = math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
+    q2 = math.atan2(z, x) - math.atan2(l2_eff*math.sin(q3), l1 + l2_eff*math.cos(q3))
+
+    q = [q1, q2, q3, q4, q5]
     
-
-
     return q
 
 def pose_callback(msg: PoseStamped):
     stamp = msg.header.stamp
-    
+
     try:
-        transform = tf_buffer.lookup_transform('base_link', msg.header.frame_id, stamp)
-        pose_base = tf2_ros.do_transform_pose(msg.pose, transform)
+        transform = tf_buffer.lookup_transform('arm_base', msg.header.frame_id, stamp, timeout=rospy.Duration(4.0))
+        pose_base = tf_buffer.transform(msg, 'arm_base')
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
         rospy.logerr("Could not get transform")
         return
-
+    
     # forward kinematics to get current position of end effector
-    T_0E, Jac = forward_kinematics(q)
-    current_pos = T_0E[0:3,3]
-    current_orientation = tf_conversions.transformations.quaternion_from_matrix(T_0E)
+    # T_0E = forward_kinematics(q)
+    # current_pos = T_0E[0:3,3]
 
-    # desired position and orientation
-    desired_pos = np.array([pose_base.position.x, pose_base.position.y, pose_base.position.z])
-    # desired_orientation = np.array([pose_base.orientation.x, pose_base.orientation.y, pose_base.orientation.z, pose_base.orientation.w])
+    # go to home position
+    q_home = home
 
-    # compute error
-    pos_error = desired_pos - current_pos
-    # orientation_error = tf_conversions.transformations.quaternion_multiply(tf_conversions.transformations.quaternion_inverse(current_orientation), desired_orientation)
-    
-    # compute velocity
-    vel = np.zeros((6,1))
-    vel[0:3] = pos_error
-    # vel[3:] = orientation_error
+    # go to hover position
+    pos_hover = [pose_base.pose.position.x, pose_base.pose.position.y, 0.02]
+    q_hover = analyticalIK(pos_hover)
 
-    # compute joint velocities
-    q_dot = np.matmul(np.linalg.pinv(Jac), vel)
+    # go to desired position
+    pos_pick = [pose_base.pose.position.x, pose_base.pose.position.y, pose_base.pose.position.z]
+    q_pick = analyticalIK(pos_pick)
 
-    # publish joint velocities
-    msg = JointTrajectory()
-    msg.header.stamp = rospy.Time.now()
-    msg.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    msg.points = [JointTrajectoryPoint(positions=q, velocities=q_dot, time_from_start=rospy.Duration(1.0))]
-    pub.publish(msg)
+    positions = [q_home, q_hover, q_pick]
 
-    
+    trajectory_client.wait_for_server()
+    goal = FollowJointTrajectoryGoal()
+    goal.trajectory.header.stamp = rospy.Time.now()
+    goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+    goal.trajectory.points = [JointTrajectoryPoint(positions=positions, velocities=[], time_from_start=rospy.Duration(15.0))]
+
+    trajectory_client.send_goal(goal)
+    trajectory_client.wait_for_result()
+
+    print(trajectory_client.get_result())    
 
 
 def joint_state_callback(msg: JointState):
@@ -146,139 +141,31 @@ def joint_state_callback(msg: JointState):
     joint_states = msg
 
 
-def testPick():
-    pose = PoseStamped()
-    pose.header.stamp = rospy.Time.now()
-    pose.header.frame_id = 'base_link'
-    pose.pose.position.x = 0.1
-    pose.pose.position.y = 0.0
-    pose.pose.position.z = 0.05
-
-    
-    try:
-        map_to_base = tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2))
-        rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
-        roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
-        yaw = yaw + math.pi
-        quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
-        pose.pose.orientation.x = quat[0]
-        pose.pose.orientation.y = quat[1]
-        pose.pose.orientation.z = quat[2]
-        pose.pose.orientation.w = quat[3]
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        rospy.logerr("Could not get transform")
-        return
-
-    try:
-        transform = tf_buffer.lookup_transform("map", pose.header.frame_id, rospy.Time(0), rospy.Duration(2))
-        pose_out = tf2_geometry_msgs.do_transform_pose(pose, transform)
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-        rospy.loginfo(e)
-        return
-
-    t = TransformStamped()
-    t.header = pose.header
-    t.header.frame_id = "map"
-    t.child_frame_id = "object"
-
-    
-    t.transform.translation = pose_out.pose.position
-    t.transform.rotation = pose_out.pose.orientation
-
-    tfbroadcaster.sendTransform(t)
-
-    # forward kinematics to get current position of end effector
-
-    q = joint_states.position[0:5]
-    T_0E, Jac = forward_kinematics(q)
-    current_pos = T_0E[0:3,3]
-    current_orientation = tf_conversions.transformations.quaternion_from_matrix(T_0E)
-
-    # desired position and orientation
-    desired_pos = np.array([pose.pose.position.x, pose.pose.position.y, pose.pose.position.z])
-    # desired_orientation = np.array([pose_base.orientation.x, pose_base.orientation.y, pose_base.orientation.z, pose_base.orientation.w])
-
-    # compute error
-    pos_error = desired_pos - current_pos
-    # orientation_error = tf_conversions.transformations.quaternion_multiply(tf_conversions.transformations.quaternion_inverse(current_orientation), desired_orientation)
-    
-    # compute velocity
-    vel = np.zeros((6,1))
-    vel[0:3] = np.reshape(pos_error, (3,1))
-    # vel[3:] = orientation_error
-
-    # compute joint velocities
-    q_dot = np.matmul(np.linalg.pinv(Jac), vel)
-    q_dot = q_dot.tolist()
-
-    # computer desired joint angles
-    q = np.reshape(np.array(q), (5,1))
-    q_des = q + q_dot
-    q_des = q_des.tolist()
-    for i in range(len(q_des)):
-        q_des[i] = q_des[i][0]
-        q_dot[i] = q_dot[i][0]
-
-
-    q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
-    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    print("wait for server")
-    client.wait_for_server()
-    print("Connected to server")
-    goal = FollowJointTrajectoryGoal()
-    goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(1.0))]
-
-
-    client.send_goal(goal)
-
-    client.wait_for_result()
-    print(client.get_result())
-    return client.get_result()
-
-    #print(q_des)
-    q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    # publish joint velocities
-    msg = JointTrajectory()
-    msg.header.stamp = rospy.Time.now()
-    msg.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    jtp = JointTrajectoryPoint()
-    jtp.positions = q_des
-    jtp.velocities = q_dot
-    jtp.time_from_start = rospy.Duration(200.0)
-    msg.points = [jtp]
-    print(msg)
-    pub.publish(msg)
-
-    # publish to joint 1
-    msg1 = CommandDuration()
-    msg1.data = q_des[0]
-    msg1.duration = 200.0
-    #joint1Pub.publish(msg1)
-    
-
-
-
 if __name__ == "__main__":
     rospy.init_node('pickup')
     poseSub = rospy.Subscriber('/detection/pose', PoseStamped, pose_callback)
     joint1Pub = rospy.Publisher('/joint1_controller/command_duration', CommandDuration, queue_size=10)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
-    pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
+    arm_pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
+    trajectory_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
     tfbroadcaster = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(0.1) # 10hz
+    rate = rospy.Rate(1000) # 10hz
 
-    q = [0.0, -1.06, -0.81, -1.16, -0.04]
-    # q = [0.0, 0.0, 0.0, 0.0, 0.0]
-    q= [0.0, -1.0011208418666664, 0.0, -1.5707962999999998, 0.0]
-    T0E, Jac = forward_kinematics(q)
-    print(T0E)
-    if(False):
-        while not rospy.is_shutdown():
-            if joint_states is not None:
-                testPick()
-                rate.sleep()
+    test_pose = PoseStamped()
+    test_pose.header.frame_id = "base_link"
+    test_pose.header.stamp = rospy.Time.now()
+    test_pose.pose.position.x = 0.15
+    test_pose.pose.position.y = 0.02
+    test_pose.pose.position.z = -0.1
+    test_pose.pose.orientation.x = 0.0
+    test_pose.pose.orientation.y = 0.0
+    test_pose.pose.orientation.z = 0.0
+    test_pose.pose.orientation.w = 1.0
+
+    while not rospy.is_shutdown():
+        if joint_states is not None:
+            pose_callback(test_pose)
+            rate.sleep()
