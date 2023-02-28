@@ -17,12 +17,7 @@ sigma = np.zeros((2,2))
 
 def encoder_callback(msg):
     global x,y,yaw,sigma,mu,imu_lin,imu_ang
-
-    br = tf2_ros.TransformBroadcaster()
-
-    t = TransformStamped()
-    t.header.frame_id = "odom"
-    t.child_frame_id = "base_link"
+  
  
     
     # 2*math.pi/3072 = radians per tick
@@ -39,23 +34,24 @@ def encoder_callback(msg):
     G = np.identity(2)
     sigma = G @ sigma @ G.transpose() + np.array([[5,0],[0,1000]])
     
-    
-    #Update
-    # if len(imu_lin) != 0:
-    #     vupdate = dt*np.sum(imu_lin)/len(imu_lin)
-    #     wupdate = np.sum(imu_ang)/len(imu_ang)
-    #     #vupdate = imu_lin[-1]
-    #     #wupdate = -imu_ang[-1]
-    #     z = np.array([vupdate,wupdate])
-    #     H = np.identity(2)
-    #     K = sigma @ H.T @ np.linalg.inv(H @ sigma @ H.T + np.array([[10000000000000,0],[0,0.1]]))
-    #     mu = mu + K @ (z - mu)
-    #     sigma = (np.identity(2) - K @ H) @ sigma
-    #     imu_lin = []
-    #     imu_ang = []
-    #     rospy.loginfo("updated")
-    
-    
+
+
+def imu_callback(msg:Imu):
+    global x,y,yaw, imu_lin, imu_ang, mu, sigma
+    br = tf2_ros.TransformBroadcaster()
+
+    t = TransformStamped()
+    t.header.frame_id = "odom"
+    t.child_frame_id = "base_link"
+    vupdate = msg.linear_acceleration.y*1/90.9
+    wupdate = -msg.angular_velocity.z
+    dt=1/90.9
+    z = np.array([vupdate,wupdate])
+    H = np.identity(2)
+    K = sigma @ H.transpose() @ np.linalg.inv(H @ sigma @ H.transpose() + np.array([[10000000000000,0],[0,0.1]]))
+    mu = mu + K @ (z - mu)
+    sigma = (np.identity(2) - K @ H) @ sigma
+
     v = mu[0]
     w = mu[1]
     diffx=v*dt*math.cos(yaw)
@@ -80,15 +76,6 @@ def encoder_callback(msg):
 
     br.sendTransform(t)
 
-def imu_callback(msg:Imu):
-    global x,y,yaw, imu_lin, imu_ang, mu, sigma
-    vupdate = msg.linear_acceleration.y*1/20
-    wupdate = -msg.angular_velocity.z
-    z = np.array([vupdate,wupdate])
-    H = np.identity(2)
-    K = sigma @ H.transpose() @ np.linalg.inv(H @ sigma @ H.transpose() + np.array([[10000000000000,0],[0,0.1]]))
-    mu = mu + K @ (z - mu)
-    sigma = (np.identity(2) - K @ H) @ sigma
 
   
     
@@ -100,3 +87,4 @@ sub_goal = rospy.Subscriber('/motor/encoders', Encoders, encoder_callback)
 sub_imu = rospy.Subscriber('/imu/data', Imu, imu_callback)
 if __name__ == '__main__':
     rospy.spin()
+
