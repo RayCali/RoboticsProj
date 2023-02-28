@@ -90,22 +90,25 @@ def analyticalIK(position):
     l2_eff = math.sqrt(l2**2 + (l3+l4)**2)
 
     print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
-    q3 = math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
+    q3 = -math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q2 = -math.atan2(x, z) - math.atan2(l2_eff*math.sin(q3), l1 + l2_eff*math.cos(q3))
 
     q = [q1, q2, q3, q4, q5]
+
+    print(q)
     
     return q
 
 def pose_callback(msg: PoseStamped):
     stamp = msg.header.stamp
+    pose_base = msg
 
-    try:
-        tf_buffer.lookup_transform('arm_base', msg.header.frame_id, stamp, timeout=rospy.Duration(4.0))
-        pose_base = tf_buffer.transform(msg, 'arm_base')
-    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        rospy.logerr("Could not get transform")
-        return
+    # try:
+    #     tf_buffer.lookup_transform('arm_base', msg.header.frame_id, stamp, timeout=rospy.Duration(4.0))
+    #     pose_base = tf_buffer.transform(msg, 'arm_base')
+    # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+    #     rospy.logerr("Could not get transform")
+    #     return
     
     # forward kinematics to get current position of end effector
     # T_0E = forward_kinematics(q)
@@ -124,26 +127,22 @@ def pose_callback(msg: PoseStamped):
 
     #positions = [q_home, q_hover, q_pick]
 
-    q0 = [0.0, 0.0, 0.0, 0.0, 0.0]
+    q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
+    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
 
-    print("Waiting for trajectory controller...")
-    trajectory_client.wait_for_server()
-    print("Connected to server.")
+    print("wait for server")
+    client.wait_for_server()
+    print("Connected to server")
     goal = FollowJointTrajectoryGoal()
-    goal.trajectory.header.stamp = rospy.Time.now()
     goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_home, velocities=q0, time_from_start=rospy.Duration(1.0)),
-                              JointTrajectoryPoint(positions=q0, velocities=q0, time_from_start=rospy.Duration(10.0))]
-    # goal.trajectory.points = [JointTrajectoryPoint(positions=q_home, velocities=[], time_from_start=rospy.Duration(5.0)),
-    #                           JointTrajectoryPoint(positions=q_hover, velocities=[], time_from_start=rospy.Duration(10.0)),
-    #                           JointTrajectoryPoint(positions=q_pick, velocities=[], time_from_start=rospy.Duration(15.0))]
-    print("Sending goal...")
-    trajectory_client.send_goal(goal)
-    
-    trajectory_client.wait_for_result()
-    print("Finished")
+    goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(5.0)),
+                              JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(10.0)),]
 
-    print(trajectory_client.get_result())    
+    print("Sending goal")
+    client.send_goal(goal)
+
+    client.wait_for_result()
+    print(client.get_result())  
 
 
 def joint_state_callback(msg: JointState):
@@ -162,7 +161,7 @@ if __name__ == "__main__":
     joint1Sub = rospy.Subscriber('/joint1_controller/command_duration', CommandDuration, joint1_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
     arm_pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
-    trajectory_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+    client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
 
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
@@ -170,9 +169,9 @@ if __name__ == "__main__":
     rate = rospy.Rate(1000) # 10hz
 
     test_pose = PoseStamped()
-    test_pose.header.frame_id = "base_link"
+    test_pose.header.frame_id = "arm_base"
     test_pose.header.stamp = rospy.Time.now()
-    test_pose.pose.position.x = 0.05
+    test_pose.pose.position.x = 0.3
     test_pose.pose.position.y = 0.02
     test_pose.pose.position.z = -0.1
     test_pose.pose.orientation.x = 0.0
@@ -181,34 +180,39 @@ if __name__ == "__main__":
     test_pose.pose.orientation.w = 1.0
 
 
-    joint1_command = CommandDuration()
-    joint1_command.duration = 200.0
-    joint1_command.data = 1.0
+    # rospy.sleep(1)
+    # msg = CommandDuration()
+    # msg.duration = 1000.0
+    # msg.data = 2.0
+    # joint1Pub.publish(msg)
+    # rospy.sleep(1)
+    # msg.duration = 500.0
+    # msg.data = 0.0
+    # joint1Pub.publish(msg)
+    # rospy.spin()
+    # exit()
 
-    print("Publishing")
-    joint1Pub.publish(joint1_command)
-    rospy.spin()
-    exit()
+    # q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
+    # q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
+    # q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
+    # #client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+    # print("wait for server")
+    # client.wait_for_server()
+    # print("Connected to server")
+    # goal = FollowJointTrajectoryGoal()
+    # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+    # goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
+    #                           JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(6.0)),]
 
-    q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
-    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    print("wait for server")
-    client.wait_for_server()
-    print("Connected to server")
-    goal = FollowJointTrajectoryGoal()
-    goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(1.0))]
+    # print("Sending goal")
+    # client.send_goal(goal)
 
-    print("Sending goal")
-    client.send_goal(goal)
-
-    client.wait_for_result()
-    print(client.get_result())
-    #return client.get_result()
-    exit()
+    # client.wait_for_result()
+    # print(client.get_result())
+    # #return client.get_result()
+    # exit()
 
     while not rospy.is_shutdown():
         if joint_states is not None:
             pose_callback(test_pose)
-            rate.sleep()
+            rospy.sleep(5)
