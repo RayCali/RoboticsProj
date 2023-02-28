@@ -8,9 +8,10 @@ project(robot_arm)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  robp_msgs
+  geometry_msgs
+  hiwonder_servo_msgs
   rospy
-  std_msgs
+  trajectory_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -70,7 +71,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   robp_msgs#   std_msgs
+#   geometry_msgs#   hiwonder_servo_msgs#   trajectory_msgs
 # )
 
 ################################################
@@ -105,7 +106,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_arm
-#  CATKIN_DEPENDS robp_msgs rospy std_msgs
+#  CATKIN_DEPENDS geometry_msgs hiwonder_servo_msgs rospy trajectory_msgs
 #  DEPENDS system_lib
 )
 

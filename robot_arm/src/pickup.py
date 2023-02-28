@@ -151,10 +151,15 @@ def joint_state_callback(msg: JointState):
     joint_states = msg
 
 
+def joint1_callback(msg: CommandDuration):
+    print(msg)
+
+
 if __name__ == "__main__":
     rospy.init_node('pickup')
     #poseSub = rospy.Subscriber('/detection/pose', PoseStamped, pose_callback)
     joint1Pub = rospy.Publisher('/joint1_controller/command_duration', CommandDuration, queue_size=10)
+    joint1Sub = rospy.Subscriber('/joint1_controller/command_duration', CommandDuration, joint1_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
     arm_pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
     trajectory_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
