@@ -13,11 +13,13 @@ yaw = 0.0
 imu_lin = []
 imu_ang = []
 mu = np.zeros(2)
+
 sigma = np.zeros((2,2))
 
 def encoder_callback(msg):
     global x,y,yaw,sigma,mu,imu_lin,imu_ang
-  
+
+    
  
     
     # 2*math.pi/3072 = radians per tick
@@ -35,7 +37,6 @@ def encoder_callback(msg):
     sigma = G @ sigma @ G.transpose() + np.array([[5,0],[0,1000]])
     
 
-
 def imu_callback(msg:Imu):
     global x,y,yaw, imu_lin, imu_ang, mu, sigma
     br = tf2_ros.TransformBroadcaster()
@@ -51,7 +52,6 @@ def imu_callback(msg:Imu):
     K = sigma @ H.transpose() @ np.linalg.inv(H @ sigma @ H.transpose() + np.array([[10000000000000,0],[0,0.1]]))
     mu = mu + K @ (z - mu)
     sigma = (np.identity(2) - K @ H) @ sigma
-
     v = mu[0]
     w = mu[1]
     diffx=v*dt*math.cos(yaw)
@@ -76,7 +76,6 @@ def imu_callback(msg:Imu):
 
     br.sendTransform(t)
 
-
   
     
 
@@ -87,4 +86,3 @@ sub_goal = rospy.Subscriber('/motor/encoders', Encoders, encoder_callback)
 sub_imu = rospy.Subscriber('/imu/data', Imu, imu_callback)
 if __name__ == '__main__':
     rospy.spin()
-
