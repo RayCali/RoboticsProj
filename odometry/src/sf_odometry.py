@@ -35,46 +35,6 @@ def encoder_callback(msg):
     G = np.identity(2)
     sigma = G @ sigma @ G.transpose() + np.array([[5,0],[0,1000]])
     
-    
-    #Update
-    # if len(imu_lin) != 0:
-    #     vupdate = dt*np.sum(imu_lin)/len(imu_lin)
-    #     wupdate = np.sum(imu_ang)/len(imu_ang)
-    #     #vupdate = imu_lin[-1]
-    #     #wupdate = -imu_ang[-1]
-    #     z = np.array([vupdate,wupdate])
-    #     H = np.identity(2)
-    #     K = sigma @ H.T @ np.linalg.inv(H @ sigma @ H.T + np.array([[10000000000000,0],[0,0.1]]))
-    #     mu = mu + K @ (z - mu)
-    #     sigma = (np.identity(2) - K @ H) @ sigma
-    #     imu_lin = []
-    #     imu_ang = []
-    #     rospy.loginfo("updated")
-    
-    
-    # v = mu[0]
-    # w = mu[1]
-    # diffx=v*dt*math.cos(yaw)
-    # diffy=v*dt*math.sin(yaw)
-    # difftheta=w*dt
-    # x=x+diffx
-    # y=y+diffy
-    # yaw = yaw + difftheta #
-    
-
-    # t.transform.translation.x = x
-    # t.transform.translation.y = y
-    
-    # t.header.stamp=msg.header.stamp
-    # t.transform.translation.x = x
-    # t.transform.translation.y = y
-    # q = tf_conversions.transformations.quaternion_from_euler(0, 0, yaw)
-    # t.transform.rotation.x = q[0]
-    # t.transform.rotation.y = q[1]
-    # t.transform.rotation.z = q[2]
-    # t.transform.rotation.w = q[3]
-
-    # br.sendTransform(t)
 
 def imu_callback(msg:Imu):
     global x,y,yaw, imu_lin, imu_ang, mu, sigma
