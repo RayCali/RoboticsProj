@@ -172,5 +172,7 @@ if __name__=="__main__":
     # Load model
     # detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-30-19-206874.pt", device="gpu")
 
+    detectionModel = utils.load_model(detector.Detector(),"~models/working_model/latest.pt", device="cpu")
+
     # detectionModel.eval()
     rospy.spin()
