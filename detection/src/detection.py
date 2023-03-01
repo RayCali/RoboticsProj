@@ -158,7 +158,9 @@ def cloudCB(msg):
 if __name__=="__main__":
     rospy.init_node("detection")
 
-    #imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
+    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cpu")
+
+    imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
     cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
@@ -172,7 +174,7 @@ if __name__=="__main__":
     # Load model
     # detectionModel = utils.load_model(detector.Detector(),"~/RoboticsProj_VisionModel/models/det_2023-02-13_17-30-19-206874.pt", device="gpu")
 
-    detectionModel = utils.load_model(detector.Detector(),"~models/working_model/latest.pt", device="cpu")
+    
 
     # detectionModel.eval()
     rospy.spin()
