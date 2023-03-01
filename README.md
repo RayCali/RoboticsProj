@@ -14,7 +14,7 @@ rostopic pub /cmd_vel geometry_msgs/Twist
 alias cb="cd ~/dd2419_ws;catkin build;cd -;source ~/dd2419_ws/devel/setup.bash"
 # launch camera
 roslaunch realsense2_camera rs_camera.launch filters:=pointcloud
-# launch everything else including odometry and cartesian controller
+# launch everything else including odometry and cartesian controllerS
 roslaunch robp_phidgets phidgets.launch
 # usb_cam name 
 for some reason it changes name for the usb_cam between /dev/video6 (when launching it seperatly) 
@@ -84,3 +84,7 @@ While the robot is on the IoT network, it should have a static ip. The last know
 ## Other info
 - home position: [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664] (last joint is gripper)
 - the action server for following trajectories is /arm_controller/follow_joint_trajectory
+
+
+# Glitches
+## catkin packages being unbuilt
