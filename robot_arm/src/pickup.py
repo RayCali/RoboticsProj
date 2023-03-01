@@ -192,25 +192,25 @@ if __name__ == "__main__":
     # rospy.spin()
     # exit()
 
-    # q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
-    # q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
-    # q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    # #client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    # print("wait for server")
-    # client.wait_for_server()
-    # print("Connected to server")
-    # goal = FollowJointTrajectoryGoal()
-    # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    # goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
-    #                           JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(6.0)),]
+    q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
+    q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
+    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
+    #client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
+    print("wait for server")
+    client.wait_for_server()
+    print("Connected to server")
+    goal = FollowJointTrajectoryGoal()
+    goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+    goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
+                              JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(6.0)),]
 
-    # print("Sending goal")
-    # client.send_goal(goal)
+    print("Sending goal")
+    client.send_goal(goal)
 
-    # client.wait_for_result()
-    # print(client.get_result())
-    # #return client.get_result()
-    # exit()
+    client.wait_for_result()
+    print(client.get_result())
+    #return client.get_result()
+    exit()
 
     while not rospy.is_shutdown():
         if joint_states is not None:
