@@ -51,8 +51,9 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     global marker_pub
     rospy.loginfo(os.getcwd())
     points = []
-    with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace.tsv", "r") as f:
+    with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace-1.tsv", "r") as f:
         for line in f:
+            line = line.strip("\n")
             l = line.split("\t")
             points.append(l)
     
