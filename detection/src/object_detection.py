@@ -8,57 +8,85 @@ import tf2_geometry_msgs
 import tf_conversions
 import ros_numpy as rnp
 import torch
+from torchvision import transforms
+from torchvision.utils import draw_bounding_boxes
+from torchvision.io import read_image
 from scipy.ndimage import binary_erosion, binary_dilation
 from sensor_msgs.msg import Image, PointCloud2
 from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
-from detection.msg import vector_array
+from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg
+from PIL import Image as pil
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+from rospy import loginfo
+
+
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
 BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
 BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
+CENTERIMG_X = 640 # center of image in x direction
 
 def imageCB(msg):
-    return
+    #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
+    
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
-    torch_image = torch.from_numpy(np_image) # size: (720,1280,3)
     
-    centerimg_x = np_image.shape[1]/2
-    centerimg_y = np_image.shape[0]/2
-
-    inference = detectionModel(torch_image) # size: (15,20,5)
-
-    bbs = detectionModel.decode_output(inference, threshold=0.7)
+    image = transforms.ToTensor()(np_image) # shape: (3,720,1280)
     
-    # only one image, so iterate over all bbs in that image
-    # to extract their position and overlay them over the image
-    for bb in bbs[0]:
-        x = bb["x"]
-        y = bb["y"]
-        width = bb["width"]
-        height = bb["height"]
+    image = image.unsqueeze(0)
+        
 
+    inference = detectionModel() # size: (15,20,5)
+    
+    bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
+    bbxArrayMsg = boundingboxArray()
+    image = torch.from_numpy(np_image).permute(2,0,1)
+    for bbx in bbs:
+        x, y, width, height, score = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"]
+        bbxMsg = boundingboxMsg()
+        bbxMsg.x = x
+        bbxMsg.y = y
+        bbxMsg.width = width
+        bbxMsg.height = height
+        bbxMsg.score = score
+        bbxArrayMsg.bbs.append(bbxMsg)
+    
+        
         # extract center position of box
-        centerbb_x = x+int(width/2)
+        centerbbx_x = x+int(width/2)
         centerbb_y = y-int(height/2)
         # deviation of bounding box from center (only in x)
-        error_x = centerbb_x - centerimg_x
+        error_x = centerbbx_x - CENTERIMG_X
 
         # overlay box on image
-        X = np.arange(x, x+width)
-        Y = np.arange(y, y-height, step=-1)
-        np_image[Y,X,0] = 255
-        np_image[Y,X,1] = 0
-        np_image[Y,X,2] = 0
+        #X = np.arange(x, x+width)
+        #Y = np.arange(y, y-height, step=-1)
+        box = torch.tensor([x,y-height,x+width,y], dtype=torch.int).unsqueeze(0)
+        image = draw_bounding_boxes(image, box, width=5,
+                          colors="green", 
+                          fill=True)
+        #image = transforms.ToPILImage()(image)
+        #loginfo(box)
+        #plt.imshow(image)
+        #plt.show()
+        #return
+        #image = rnp.numpify(msg)
+        #image[Y,X,0] = 255
+        #image[Y,X,1] = 0
+        #image[Y,X,2] = 0
     
-    pubImg = rnp.msgify(Image,np_image)
+    #pubImg = rnp.msgify(Image,rnp.numpify(msg),encoding='rgb8')
+    loginfo(image.size())
+    pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
     imgPub.publish(pubImg)
-
+    return
     error_msg = Vector3Stamped()
     error_msg.header.stamp = msg.header.stamp
     error_msg.header.frame_id = msg.header.frame_id
@@ -159,13 +187,11 @@ def cloudCB(msg):
 
 
 if __name__=="__main__":
-    sm = vector_array()
-    print(sm)
     rospy.init_node("detection")
-    
 
-    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cpu")
 
+    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
+    detectionModel.eval()
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
     cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
