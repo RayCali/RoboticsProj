@@ -9,7 +9,9 @@ project(detection)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  std_msgs
   sensor_msgs
+  geometry_msgs
   message_generation
 )
 
@@ -49,6 +51,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
    FILES
+   myarray.msg
+   renamed_samplemsg.msg
    samplemsg.msg
  )
 
@@ -69,7 +73,9 @@ add_message_files(
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
+   std_msgs
    sensor_msgs
+   geometry_msgs
  )
 
 ################################################
@@ -102,10 +108,7 @@ add_message_files(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES detection
-  CATKIN_DEPENDS rospy sensor_msgs message_runtime
-#  DEPENDS system_lib
+  CATKIN_DEPENDS rospy sensor_msgs message_runtime std_msgs
 )
 
 ###########
@@ -148,7 +151,6 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-
 #############
 ## Install ##
 #############

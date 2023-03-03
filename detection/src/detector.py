@@ -11,7 +11,6 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import models, transforms
 from torchvision.models import MobileNet_V2_Weights
-from msg import samplemsg
 
 class BoundingBox(TypedDict):
     """Bounding box dictionary.
