@@ -42,28 +42,22 @@ def imageCB(msg):
     image = image.unsqueeze(0)
         
 
-    inference = detectionModel() # size: (15,20,5)
+    inference = detectionModel(image) # size: (15,20,5)
     
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
-    bbxArrayMsg = boundingboxArray()
     image = torch.from_numpy(np_image).permute(2,0,1)
+    errors = centerpointArray()
     for bbx in bbs:
         x, y, width, height, score = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"]
-        bbxMsg = boundingboxMsg()
-        bbxMsg.x = x
-        bbxMsg.y = y
-        bbxMsg.width = width
-        bbxMsg.height = height
-        bbxMsg.score = score
-        bbxArrayMsg.bbs.append(bbxMsg)
-    
-        
         # extract center position of box
         centerbbx_x = x+int(width/2)
-        centerbb_y = y-int(height/2)
-        # deviation of bounding box from center (only in x)
         error_x = centerbbx_x - CENTERIMG_X
-
+        v3s = Vector3Stamped()
+        v3s.vector.x = error_x
+        errors.objects_in_view.append(v3s)
+        
+        # deviation of bounding box from center (only in x)
+        
         # overlay box on image
         #X = np.arange(x, x+width)
         #Y = np.arange(y, y-height, step=-1)
@@ -71,28 +65,12 @@ def imageCB(msg):
         image = draw_bounding_boxes(image, box, width=5,
                           colors="green", 
                           fill=True)
-        #image = transforms.ToPILImage()(image)
-        #loginfo(box)
-        #plt.imshow(image)
-        #plt.show()
-        #return
-        #image = rnp.numpify(msg)
-        #image[Y,X,0] = 255
-        #image[Y,X,1] = 0
-        #image[Y,X,2] = 0
     
-    #pubImg = rnp.msgify(Image,rnp.numpify(msg),encoding='rgb8')
-    loginfo(image.size())
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
+    loginfo(errors)
     imgPub.publish(pubImg)
-    return
-    error_msg = Vector3Stamped()
-    error_msg.header.stamp = msg.header.stamp
-    error_msg.header.frame_id = msg.header.frame_id
-    error_msg.vector.x = error_x
-
-    errPub.publish(error_msg)
+    errPub.publish(errors)
 
 
 def cloudCB(msg):
@@ -197,7 +175,7 @@ if __name__=="__main__":
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
-    errPub = rospy.Publisher("/detection/bb_error", Vector3Stamped, queue_size=10)
+    errPub = rospy.Publisher("/detection/bb_error", centerpointArray, queue_size=10)
 
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
