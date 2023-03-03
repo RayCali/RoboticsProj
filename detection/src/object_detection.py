@@ -14,7 +14,7 @@ from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
-from detection.msg import samplemsg
+from detection.msg import vector_array
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
 BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
@@ -22,6 +22,7 @@ BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
 
 def imageCB(msg):
+    return
     # msg is of type Image, convert to torch tensor
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
     torch_image = torch.from_numpy(np_image) # size: (720,1280,3)
@@ -67,6 +68,7 @@ def imageCB(msg):
 
 
 def cloudCB(msg):
+    return
     # Convert ROS -> Open3D
     cloud = o3drh.rospc_to_o3dpc(msg)
 
@@ -157,7 +159,10 @@ def cloudCB(msg):
 
 
 if __name__=="__main__":
+    sm = vector_array()
+    print(sm)
     rospy.init_node("detection")
+    
 
     detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cpu")
 
