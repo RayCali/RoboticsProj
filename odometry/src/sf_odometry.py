@@ -7,19 +7,18 @@ import tf2_ros
 import math
 from sensor_msgs.msg import Imu
 import numpy as np
+from geometry_msgs.msg import Twist
 x=0.0
 y=0.0
 yaw = 0.0
 imu_lin = []
 imu_ang = []
 mu = np.zeros(2)
-
 sigma = np.zeros((2,2))
 
 def encoder_callback(msg):
     global x,y,yaw,sigma,mu,imu_lin,imu_ang
-
-    
+  
  
     
     # 2*math.pi/3072 = radians per tick
@@ -37,11 +36,13 @@ def encoder_callback(msg):
     sigma = G @ sigma @ G.transpose() + np.array([[5,0],[0,1000]])
     
 
+
 def imu_callback(msg:Imu):
-    global x,y,yaw, imu_lin, imu_ang, mu, sigma
+    global x,y,yaw, imu_lin, imu_ang, mu, sigma,pub_vel
     br = tf2_ros.TransformBroadcaster()
 
     t = TransformStamped()
+    rate = rospy.Rate(90.9)
     t.header.frame_id = "odom"
     t.child_frame_id = "base_link"
     vupdate = msg.linear_acceleration.y*1/90.9
@@ -52,6 +53,7 @@ def imu_callback(msg:Imu):
     K = sigma @ H.transpose() @ np.linalg.inv(H @ sigma @ H.transpose() + np.array([[10000000000000,0],[0,0.1]]))
     mu = mu + K @ (z - mu)
     sigma = (np.identity(2) - K @ H) @ sigma
+
     v = mu[0]
     w = mu[1]
     diffx=v*dt*math.cos(yaw)
@@ -75,6 +77,12 @@ def imu_callback(msg:Imu):
     t.transform.rotation.w = q[3]
 
     br.sendTransform(t)
+    vel = Twist()
+    vel.linear.x = v
+    vel.angular.z = w
+    pub_vel.publish(vel)
+    rate.sleep()
+
 
   
     
@@ -84,5 +92,7 @@ def imu_callback(msg:Imu):
 rospy.init_node('sf_odometry')
 sub_goal = rospy.Subscriber('/motor/encoders', Encoders, encoder_callback)
 sub_imu = rospy.Subscriber('/imu/data', Imu, imu_callback)
+pub_vel = rospy.Publisher('/predictedvel', Twist, queue_size=1)
 if __name__ == '__main__':
     rospy.spin()
+

@@ -44,6 +44,10 @@ roslaunch robp_phidgets phidgetsrosplayer.launch
  
 5. If you wish to record, then launch
     rosbag record /motor/duty_cycles /usb_cam/image_raw /camera/color/camera_info /camera/color/image_raw /camera/depth/camera_info /camera/depth/color/points /camera/depth/image_rect_raw /camera/extrinsics/depth_to_color /tf /tf_static (name.bag)
+    
+    
+    rosbag record /imu/data /motor/encoders /aruco/markers /camera/color/camera_info /camera/color/image_raw /camera/depth/camera_info /camera/depth/color/points /camera/depth/image_rect_raw /camera/extrinsics/depth_to_color /motor/duty_cycles
+
 
 6. If you wish to play back
    roslaunch robp_phidgets phidgetsrosplayer.launch 

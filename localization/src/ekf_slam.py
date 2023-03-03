@@ -10,15 +10,12 @@ import tf2_geometry_msgs
 import tf
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Point
-from aruco_msgs.msg import MarkerArray
+from aruco_msgs.msg import MarkerArray as ArucoMarkerArray
 import math
-from visualization_msgs.msg import Marker
 import numpy as np
-from geometry_msgs.msg import PoseStamped
-
-x=0
-y=0
-yaw=0
+from geometry_msgs.msg import Twist
+from visualization_msgs.msg import MarkerArray, Marker
+yaw = 0
 br= None
 tfBuffer = None
 listener = None
@@ -26,9 +23,6 @@ R = np.identity(3)*0.01
 Q = np.identity(2)*0.01
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
 landmarks = 1
-firsttime0 = True
-firsttime1 = True
-firsttime2 = True
 mu_slam = np.zeros(3+2*landmarks)
 P_up = np.zeros([3,3+2*landmarks])
 p_downleft = np.zeros([2*landmarks,3])
@@ -42,6 +36,7 @@ G = np.zeros([3+2*landmarks,3+2*landmarks])
 G[3:3+2*landmarks,3:3+2*landmarks]=np.identity(2*landmarks)
 latestupdate = None
 Landmarklist = []
+marker_pub = rospy.Publisher("/covariances", MarkerArray, queue_size=10)
 #create a class with attributes: int id and int order
 class Landmark:
     def __init__(self, id, order):
@@ -51,21 +46,86 @@ class Landmark:
         return "id: " + str(self.id) + " order: " + str(self.order)
     def __repr__(self):
         return self.__str__()
+    def getid(self):
+        return self.id
 
 
 
+def updaterviz():
+    global mu_slam, P, br, landmarks, Landmarklist
+    # visualize the covariance ellipses of robot and landmarks    
+    rate = rospy.Rate(10)
+    markerarray = MarkerArray()
+    for landmark in Landmarklist:
+        marker = Marker()
+        marker.header.frame_id = "map"
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = "covariance"
+        marker.type = marker.SPHERE
+        marker.action = marker.ADD
+        marker.pose.position.x = mu_slam[landmark.order*2+3]
+        marker.pose.position.y = mu_slam[landmark.order*2+4]
+        marker.pose.position.z = 0.0
 
+        (eigvals, eigvecs) = np.linalg.eig(P[landmark.order*2+3:landmark.order*2+5,landmark.order*2+3:landmark.order*2+5])
+        marker.scale.x = eigvals[0]*2
+        marker.scale.y = eigvals[1]*2
+        marker.scale.z = 0
+        marker.color.a = 0.5
+        marker.color.r = 0.0
+        marker.color.g = 0.0
+        marker.color.b = 1.0
+        marker.id = landmark.id
+        markerarray.markers.append(marker)
+    marker = Marker()
+    marker.header.frame_id = "map"
+    marker.header.stamp = rospy.Time.now()
+    marker.ns = "covariance"
+    marker.type = marker.SPHERE
+    marker.action = marker.ADD
+    marker.pose.position.x = mu_slam[0]
+    marker.pose.position.y = mu_slam[1]
+    marker.pose.position.z = 0.0
 
+    (eigvals, eigvecs) = np.linalg.eig(P[0:2,0:2])
+    marker.scale.x = eigvals[0]*2
+    marker.scale.y = eigvals[1]*2
+    marker.scale.z = 0
+    marker.color.a = 0.5
+    marker.color.r = 0.0
+    marker.color.g = 0.0
+    marker.color.b = 1.0
+    marker.id = 400
+    markerarray.markers.append(marker)
+    marker_pub.publish(markerarray)
+    rate.sleep()
 
-
+    
+    
+    
 def predict_callback(msg:Twist):
-    global x,y,yaw,Fx,mu_slam,P,G, tfBuffer
+    global yaw,Fx,mu_slam,P,G, tfBuffer, yaw
+    dt = 1/90.9
+    v = msg.linear.x
+    w = msg.angular.z
+    transformblmap = tfBuffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(1.0))
+    mu_slam[0] = transformblmap.transform.translation.x
+    mu_slam[1] = transformblmap.transform.translation.y
+    anglelist = [transformblmap.transform.rotation.x, transformblmap.transform.rotation.y, transformblmap.transform.rotation.z,transformblmap.transform.rotation.w]
+    roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
+    mu_slam[2] = yaw2
+    yaw = yaw + w*dt
+    Gx = np.array([[1,0,-v*dt*math.sin(yaw)],[0,1,v*dt*math.cos(yaw)],[0,0,1]])
+    G[0:3,0:3]=Gx
+    P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
+    updaterviz()
 # find the transform between bas and map, set that to mu_slam calculate G from the message
+
 
     
     
 def update_callback(msg: MarkerArray):
-    global x,y,yaw,Fx,mu_slam,P,G, tfBuffer, listener, firsttime0, firsttime1, firsttime2,R,br,latestupdate,Landmarklist,landmarks
+    global yaw,Fx,mu_slam,P,G, tfBuffer, listener, firsttime0, firsttime1, firsttime2,R,br,latestupdate,Landmarklist,landmarks
     for mark in msg.markers:
         if mark.id!=500:
             time = rospy.Time(0)
@@ -74,14 +134,15 @@ def update_callback(msg: MarkerArray):
             markerpose = tf2_geometry_msgs.do_transform_pose(mark.pose, transform)
             currentid = 1000000
             currentorder = 1000000
-            for landmarks in Landmarklist:
-                if landmarks.id == mark.id:
+            dontupdate = False
+            for landmark in Landmarklist:
+                if landmark.id == mark.id:
                     hasbeenseen=True
-                    currentid = landmarks.id
-                    currentorder = landmarks.order
+                    currentid = landmark.id
+                    currentorder = landmark.order
                     break
             if not hasbeenseen:
-                if len(Landmarklist)<=landmarks:
+                if len(Landmarklist)<landmarks:
                     Landmarklist.append(Landmark(mark.id,len(Landmarklist)))
                     currentorder = len(Landmarklist)-1
                     currentid = mark.id
@@ -106,7 +167,10 @@ def update_callback(msg: MarkerArray):
                     br.sendTransform(marktransform)
                     firsttime0 = False
                     latestupdate = rospy.Time.now()
-            else:
+                else:
+                    dontupdate = True
+            
+            if not dontupdate:
                 addon = np.zeros([2,3+2*landmarks])
                 addon[0, 3+2*currentorder] = 1
                 addon[1, 4+2*currentorder] = 1
@@ -129,7 +193,7 @@ def update_callback(msg: MarkerArray):
                 
                 K = np.matmul(np.matmul(P,np.transpose(Hj)),np.linalg.inv(np.matmul(np.matmul(Hj,P),np.transpose(Hj))+Q))
 
-                mu = mu + np.matmul(K,z-zpredict)
+                mu_slam = mu_slam + np.matmul(K,z-zpredict)
                 rospy.loginfo(np.matmul(K,z-zpredict))
                 
 
@@ -172,16 +236,16 @@ def update_callback(msg: MarkerArray):
                 marktransform.transform.rotation.z =  0      #markerpose.pose.orientation.z
                 marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
                 br.sendTransform(marktransform)
-
+                updaterviz()
                 rospy.loginfo("updated")
-        else:
-            P[0:3,0:3].fill(0)
+            else:
+                P[0:3,0:3].fill(0)
 
 
 if __name__ == '__main__':
     rospy.init_node('ekf_slam')
-    sub_goal = rospy.Subscriber('/predictedvel', Encoders, predict_callback)
-    update = rospy.Subscriber('/aruco/markers', MarkerArray, update_callback)
+    sub_goal = rospy.Subscriber('/predictedvel', Twist, predict_callback)
+    update = rospy.Subscriber('/aruco/markers', ArucoMarkerArray, update_callback)
     tfBuffer = tf2_ros.Buffer(rospy.Duration(12000.0))
     listener = tf2_ros.TransformListener(tfBuffer)
     br = tf2_ros.TransformBroadcaster()
