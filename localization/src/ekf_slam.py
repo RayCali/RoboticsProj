@@ -109,7 +109,7 @@ def updaterviz():
     rate.sleep()
 def updatervizpos():
     global mu_slam, P, br, landmarks, Landmarklist
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(40)
     markerArray = MarkerArray()
     marker = Marker()
     marker.header.frame_id = "map"
