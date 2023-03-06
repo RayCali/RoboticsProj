@@ -22,8 +22,8 @@ from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from rospy import loginfo
-
-
+from cv_bridge import CvBridge
+import cv2
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
 BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
@@ -31,18 +31,28 @@ BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
 CENTERIMG_X = 640 # center of image in x direction
 
-def imageCB(msg):
+def imageCB(msg: Image):
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
-    
+    cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+    color_converted = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
+    PIL_image = pil.fromarray(color_converted)
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
+    # PIL_image = pil.fromarray(np.uint8(np_image)).convert('RGB')
+    im = pil.open("/home/robot/Downloads/frame0008.jpg") 
+    # loginfo(PIL_image)
+    # loginfo(im)
     
-    image = transforms.ToTensor()(np_image) # shape: (3,720,1280)
+    image = transforms.ToTensor()(PIL_image) # shape: (3,720,1280)
+    image = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )(image)
+
     
     image = image.unsqueeze(0)
-        
-
-    inference = detectionModel(image) # size: (15,20,5)
+    #loginfo(image)
+    
+    inference = detectionModel(image).cpu() # size: (15,20,5)
     
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
     image = torch.from_numpy(np_image).permute(2,0,1)
@@ -68,7 +78,6 @@ def imageCB(msg):
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
-    loginfo(errors)
     imgPub.publish(pubImg)
     errPub.publish(errors)
 
@@ -168,8 +177,14 @@ if __name__=="__main__":
     rospy.init_node("detection")
 
 
-    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
+    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/all_models/ObjectDetection_pretty-mountain-43.pt", device="cuda")
     detectionModel.eval()
+
+    im = pil.open("/home/robot/Downloads/frame0008.jpg") 
+
+
+    bridge = CvBridge()
+
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
     cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
