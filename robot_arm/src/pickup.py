@@ -87,7 +87,7 @@ def analyticalIK(position):
     l3 = 0.053
     l4 = 0.08
 
-    l2_eff = math.sqrt(l2**2 + (l3+l4)**2)
+    l2_eff = l2**2 + (l3+l4)**2 - 2*l2*(l3+l4)*math.cos(q4)
 
     print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q3 = -math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
@@ -101,7 +101,7 @@ def analyticalIK(position):
 
 def pose_callback(msg: PoseStamped):
     stamp = msg.header.stamp
-    pose_base = msg
+    pose_base = msg.pose
 
     # try:
     #     tf_buffer.lookup_transform('arm_base', msg.header.frame_id, stamp, timeout=rospy.Duration(4.0))
@@ -131,11 +131,11 @@ def pose_callback(msg: PoseStamped):
     q_des[3] = -1.3
 
     # go to hover position
-    pos_hover = [pose_base.pose.position.x, pose_base.pose.position.y, 0.05]
+    pos_hover = [pose_base.position.x, pose_base.position.y, 0.05]
     q_hover = analyticalIK(pos_hover)
 
     # go to desired position
-    pos_pick = [pose_base.pose.position.x, pose_base.pose.position.y, pose_base.pose.position.z]
+    pos_pick = [pose_base.position.x, pose_base.position.y, pose_base.position.z]
     q_pick = analyticalIK(pos_pick)
 
     #positions = [q_home, q_hover, q_pick]
@@ -151,7 +151,7 @@ def pose_callback(msg: PoseStamped):
     # goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(5.0)),
     #                           JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(10.0)),]
     
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(5.0))]
+    goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(5.0))]
 
     print("Sending goal")
     client.send_goal(goal)
