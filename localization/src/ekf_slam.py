@@ -66,6 +66,10 @@ def updaterviz():
         marker.pose.position.x = mu_slam[landmark.order*2+3]
         marker.pose.position.y = mu_slam[landmark.order*2+4]
         marker.pose.position.z = 0.0
+        marker.pose.orientation.x = 0.0
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.z = 0.0
+        marker.pose.orientation.w = 1.0
 
         (eigvals, eigvecs) = np.linalg.eig(P[landmark.order*2+3:landmark.order*2+5,landmark.order*2+3:landmark.order*2+5])
         marker.scale.x = eigvals[0]*2
@@ -86,6 +90,10 @@ def updaterviz():
     marker.pose.position.x = mu_slam[0]
     marker.pose.position.y = mu_slam[1]
     marker.pose.position.z = 0.0
+    marker.pose.orientation.x = 0.0
+    marker.pose.orientation.y = 0.0
+    marker.pose.orientation.z = 0.0
+    marker.pose.orientation.w = 1.0
 
     (eigvals, eigvecs) = np.linalg.eig(P[0:2,0:2])
     marker.scale.x = eigvals[0]*2
@@ -112,6 +120,11 @@ def updatervizpos():
     marker.pose.position.x = mu_slam[0]
     marker.pose.position.y = mu_slam[1]
     marker.pose.position.z = 0.0
+    marker.pose.orientation.x = 0.0
+    marker.pose.orientation.y = 0.0
+    marker.pose.orientation.z = 0.0
+    marker.pose.orientation.w = 1.0
+
 
     (eigvals, eigvecs) = np.linalg.eig(P[0:2,0:2])
     marker.scale.x = eigvals[0]*2
@@ -143,6 +156,12 @@ def predict_callback(msg:Twist):
     yaw = yaw + w*dt
     Gx = np.array([[1,0,-v*dt*math.sin(yaw)],[0,1,v*dt*math.cos(yaw)],[0,0,1]])
     G[0:3,0:3]=Gx
+    rospy.loginfo(v)
+    rospy.loginfo(w)
+    if w<0.001 and w>-0.001  and v<1e-5:
+        R = np.zeros((3,3))
+    else:
+        R = np.identity(3)*0.01
     P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
     updatervizpos()
 # find the transform between bas and map, set that to mu_slam calculate G from the message

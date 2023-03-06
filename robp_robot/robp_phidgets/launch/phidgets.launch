@@ -11,17 +11,17 @@
     <arg name="manager" value="$(arg manager)"/>
   </include>
 
-  <!-- <include file="$(find robp_phidgets)/launch/motors.launch">
+  <include file="$(find robp_phidgets)/launch/motors.launch">
     <arg name="manager" value="$(arg manager)"/>
     <arg name="left_port" default="$(arg motor_left_port)"/>
     <arg name="right_port" default="$(arg motor_right_port)"/>
-  </include> -->
+  </include>
 
-  <!-- <include file="$(find robp_phidgets)/launch/encoders.launch">
+  <include file="$(find robp_phidgets)/launch/encoders.launch">
     <arg name="manager" value="$(arg manager)"/>
     <arg name="left_port" default="$(arg motor_left_port)"/>
     <arg name="right_port" default="$(arg motor_right_port)"/>
-  </include> -->
+  </include>
 
   <include file="$(find robp_phidgets)/launch/spatial.launch">
     <arg name="manager" value="$(arg manager)"/>
@@ -38,9 +38,9 @@
   <!-- <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/> -->
   <!-- <node pkg ="teleop_twist_keyboard" type="teleop_twist_keyboard.py" name="teleop_twist_keyboard" output="screen"/> -->
   
-  <!-- <include file="$(find teleop_twist_joy)/launch/teleop.launch">
+  <include file="$(find teleop_twist_joy)/launch/teleop.launch">
     
-  </include> -->
+  </include>
   <include file="$(find odometry)/launch/odometry.launch">
     
   </include>
