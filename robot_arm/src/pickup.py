@@ -23,7 +23,7 @@ home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
 
 # Denavit-Hartenberg parameters
 d = [0.02, 0.0, 0.0, 0.0, 0.0]
-a = [0.0, 0.09, 0.097, 0.053, 0.08]
+a = [0.0, 0.09, 0.097, 0.06, 0.085]
 alpha = [math.pi/2, 0.0, 0.0, -math.pi/2, 0.0]
 
 def forward_kinematics(q):
@@ -65,13 +65,13 @@ def forward_kinematics(q):
 
     return T_0E
 
-def analyticalIK(position):
+def analyticalIK_lock4(position):
     # inverse kinematics for robot arm
     # input: pose (x,y,z) in base_link frame
     # output: joint angles q1, q2, q3, q4, q5
 
     # lock q4 and q5
-    q4 = -math.pi/4
+    q4 = -math.pi/2
     q5 = 0.0
 
     x = position[0]
@@ -84,14 +84,52 @@ def analyticalIK(position):
     # compute q3 and q2
     l1 = 0.09
     l2 = 0.097
-    l3 = 0.053
-    l4 = 0.08
+    l3 = 0.06
+    l4 = 0.085
 
-    l2_eff = l2**2 + (l3+l4)**2 - 2*l2*(l3+l4)*math.cos(q4)
+    l2_eff = math.sqrt(l2**2 + (l3+l4)**2 - 2*l2*(l3+l4)*math.cos(math.pi-abs(q4)))
+    print(l2_eff)
 
     print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q3 = -math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q2 = -math.atan2(x, z) - math.atan2(l2_eff*math.sin(q3), l1 + l2_eff*math.cos(q3))
+
+    q = [q1, q2, q3, q4, q5]
+
+    print(q)
+    
+    return q
+
+def analyticalIK_lock3(position):
+    # inverse kinematics for robot arm
+    # input: pose (x,y,z) in base_link frame
+    # output: joint angles q1, q2, q3, q4, q5
+
+    q = list(joint_states.position)
+    # lock q3 and q5
+    q3 = q[2]
+    q5 = 0.0
+
+    x = position[0]
+    y = position[1]
+    z = position[2]
+
+    # rotate arm towards object
+    q1 = math.atan2(y, x)
+
+    # compute q3 and q2
+    l1 = 0.09
+    l2 = 0.097
+    l3 = 0.06
+    l4 = 0.085
+
+    l1_eff = math.sqrt(l1**2 + l2**2 - 2*l1*l2*math.cos(math.pi-abs(q3)))
+    l3_eff = l3 + l4
+
+    print((x**2 + z**2 - (l1_eff**2 + l3_eff**2))/(2*l1_eff*l3_eff))
+
+    q4 = -math.acos((x**2 + z**2 - (l1_eff**2 + l3_eff**2))/(2*l1_eff*l3_eff))
+    q2 = -math.atan2(x, z) - math.atan2(l3_eff*math.sin(q3), l1_eff + l3_eff*math.cos(q3))
 
     q = [q1, q2, q3, q4, q5]
 
@@ -118,25 +156,24 @@ def pose_callback(msg: PoseStamped):
     print("current_pos: ",current_pos)
     
     home_xyz = [9.59826451e-02, 1.78091279e-18, 4.90845130e-02]
-    p_des = [20.59826451e-02, 1.78091279e-18, 6.90845130e-02]
     # go to home position
     q_home = home
     q_home[3] = -math.pi/4
     print(q_home)
-    q_home_analytical = analyticalIK(home_xyz)
-    q_des = analyticalIK(p_des)
-    q_des[3] = -1.3
-    des = [1.66157497e-01, -3.45509508e-18, -5.64259847e-02]
-    q_des = analyticalIK(des)
-    q_des[3] = -1.3
+    # q_home_analytical = analyticalIK(home_xyz)
+    # q_des = analyticalIK(p_des)
+    # q_des[3] = -1.3
+    # des = [1.66157497e-01, -3.45509508e-18, -5.64259847e-02]
+    # q_des = analyticalIK(des)
+    # q_des[3] = -1.3
 
     # go to hover position
-    pos_hover = [pose_base.position.x, pose_base.position.y, 0.05]
-    q_hover = analyticalIK(pos_hover)
+    pos_hover = [pose_base.position.x, pose_base.position.y, 0.1]
+    q_hover = analyticalIK_lock4(pos_hover)
 
     # go to desired position
     pos_pick = [pose_base.position.x, pose_base.position.y, pose_base.position.z]
-    q_pick = analyticalIK(pos_pick)
+    q_pick = analyticalIK_lock3(pos_pick)
 
     #positions = [q_home, q_hover, q_pick]
 
@@ -149,9 +186,9 @@ def pose_callback(msg: PoseStamped):
     goal = FollowJointTrajectoryGoal()
     goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
     # goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(5.0)),
-    #                           JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(10.0)),]
+    #                           JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(10.0))]
     
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(5.0))]
+    goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
 
     print("Sending goal")
     client.send_goal(goal)
@@ -186,9 +223,9 @@ if __name__ == "__main__":
     test_pose = PoseStamped()
     test_pose.header.frame_id = "arm_base"
     test_pose.header.stamp = rospy.Time.now()
-    test_pose.pose.position.x = 0.2
+    test_pose.pose.position.x = 0.23
     test_pose.pose.position.y = 0.0
-    test_pose.pose.position.z = 0.05
+    test_pose.pose.position.z = 0.02
     test_pose.pose.orientation.x = 0.0
     test_pose.pose.orientation.y = 0.0
     test_pose.pose.orientation.z = 0.0
@@ -208,7 +245,7 @@ if __name__ == "__main__":
     # exit()
 
     # q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
-    # q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
+    # #q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
     # q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
     # #client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
     # print("wait for server")
@@ -216,8 +253,7 @@ if __name__ == "__main__":
     # print("Connected to server")
     # goal = FollowJointTrajectoryGoal()
     # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    # goal.trajectory.points = [JointTrajectoryPoint(positions=q_des, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
-    #                           JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(6.0)),]
+    # goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
 
     # print("Sending goal")
     # client.send_goal(goal)
