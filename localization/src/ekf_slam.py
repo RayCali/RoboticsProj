@@ -22,7 +22,7 @@ listener = None
 R = np.identity(3)*0.01
 Q = np.identity(2)*0.01
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
-landmarks = 1
+landmarks = 3
 mu_slam = np.zeros(3+2*landmarks)
 P_up = np.zeros([3,3+2*landmarks])
 p_downleft = np.zeros([2*landmarks,3])
@@ -31,7 +31,7 @@ p_down = np.concatenate((p_downleft,p_downright),axis=1)
 P = np.concatenate((P_up,p_down),axis=0)
 Fxmapcols = np.zeros([3,2*landmarks])
 Fxposcols = np.identity(3)
-Fx = np.concatenate((Fxmapcols,Fxposcols),axis=1)
+Fx = np.concatenate((Fxposcols,Fxmapcols),axis=1)
 G = np.zeros([3+2*landmarks,3+2*landmarks])
 G[3:3+2*landmarks,3:3+2*landmarks]=np.identity(2*landmarks)
 latestupdate = None
@@ -70,7 +70,7 @@ def updaterviz():
         (eigvals, eigvecs) = np.linalg.eig(P[landmark.order*2+3:landmark.order*2+5,landmark.order*2+3:landmark.order*2+5])
         marker.scale.x = eigvals[0]*2
         marker.scale.y = eigvals[1]*2
-        marker.scale.z = 0
+        marker.scale.z = 0.1
         marker.color.a = 0.5
         marker.color.r = 0.0
         marker.color.g = 0.0
@@ -90,7 +90,7 @@ def updaterviz():
     (eigvals, eigvecs) = np.linalg.eig(P[0:2,0:2])
     marker.scale.x = eigvals[0]*2
     marker.scale.y = eigvals[1]*2
-    marker.scale.z = 0
+    marker.scale.z = 0.1
     marker.color.a = 0.5
     marker.color.r = 0.0
     marker.color.g = 0.0
@@ -98,6 +98,32 @@ def updaterviz():
     marker.id = 400
     markerarray.markers.append(marker)
     marker_pub.publish(markerarray)
+    rate.sleep()
+def updatervizpos():
+    global mu_slam, P, br, landmarks, Landmarklist
+    rate = rospy.Rate(10)
+    markerArray = MarkerArray()
+    marker = Marker()
+    marker.header.frame_id = "map"
+    marker.header.stamp = rospy.Time.now()
+    marker.ns = "covariance"
+    marker.type = marker.SPHERE
+    marker.action = marker.ADD
+    marker.pose.position.x = mu_slam[0]
+    marker.pose.position.y = mu_slam[1]
+    marker.pose.position.z = 0.0
+
+    (eigvals, eigvecs) = np.linalg.eig(P[0:2,0:2])
+    marker.scale.x = eigvals[0]*2
+    marker.scale.y = eigvals[1]*2
+    marker.scale.z = 0.1
+    marker.color.a = 0.5
+    marker.color.r = 0.0
+    marker.color.g = 0.0
+    marker.color.b = 1.0
+    marker.id = 400
+    markerArray.markers.append(marker)
+    marker_pub.publish(markerArray)
     rate.sleep()
 
     
@@ -118,7 +144,7 @@ def predict_callback(msg:Twist):
     Gx = np.array([[1,0,-v*dt*math.sin(yaw)],[0,1,v*dt*math.cos(yaw)],[0,0,1]])
     G[0:3,0:3]=Gx
     P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
-    updaterviz()
+    updatervizpos()
 # find the transform between bas and map, set that to mu_slam calculate G from the message
 
 
@@ -224,22 +250,23 @@ def update_callback(msg: MarkerArray):
 
                 latestupdate = rospy.Time.now()
                 P = np.matmul(np.identity(3+2*landmarks)-np.matmul(K,Hj),P)
-                marktransform = TransformStamped()
-                marktransform.header.frame_id = "map"
-                marktransform.child_frame_id = "arucolandmark"
-                marktransform.header.stamp = msg.header.stamp
-                marktransform.transform.translation.x = mu_slam[currentorder*2 + 3]
-                marktransform.transform.translation.y = mu_slam[currentorder*2 + 4]
-                marktransform.transform.translation.z = markerpose.pose.position.z
-                marktransform.transform.rotation.x =  0      #markerpose.pose.orientation.x
-                marktransform.transform.rotation.y =  0      #markerpose.pose.orientation.y
-                marktransform.transform.rotation.z =  0      #markerpose.pose.orientation.z
-                marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
-                br.sendTransform(marktransform)
+                for landmark in Landmarklist:
+                    marktransform = TransformStamped()
+                    marktransform.header.frame_id = "map"
+                    marktransform.child_frame_id = "arucolandmark" + str(landmark.id)
+                    marktransform.header.stamp = msg.header.stamp
+                    marktransform.transform.translation.x = mu_slam[landmark.order*2 + 3]
+                    marktransform.transform.translation.y = mu_slam[landmark.order*2 + 4]
+                    marktransform.transform.translation.z = markerpose.pose.position.z
+                    marktransform.transform.rotation.x =  0      #markerpose.pose.orientation.x
+                    marktransform.transform.rotation.y =  0      #markerpose.pose.orientation.y
+                    marktransform.transform.rotation.z =  0      #markerpose.pose.orientation.z
+                    marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
+                    br.sendTransform(marktransform)
                 updaterviz()
                 rospy.loginfo("updated")
-            else:
-                P[0:3,0:3].fill(0)
+        else:
+            P[0:3,0:3].fill(0)
 
 
 if __name__ == '__main__':
