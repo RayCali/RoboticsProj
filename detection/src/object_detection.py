@@ -34,16 +34,14 @@ CENTERIMG_X = 640 # center of image in x direction
 def imageCB(msg: Image):
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
-    cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
-    color_converted = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
-    PIL_image = pil.fromarray(color_converted)
+    cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
     # PIL_image = pil.fromarray(np.uint8(np_image)).convert('RGB')
     im = pil.open("/home/robot/Downloads/frame0008.jpg") 
     # loginfo(PIL_image)
     # loginfo(im)
     
-    image = transforms.ToTensor()(PIL_image) # shape: (3,720,1280)
+    image = transforms.ToTensor()(cv_image) # shape: (3,720,1280)
     image = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )(image)
