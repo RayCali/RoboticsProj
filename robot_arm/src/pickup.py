@@ -3,326 +3,66 @@
 import rospy
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from sensor_msgs.msg import JointState
-from robp_msgs.msg import Encoders
-from std_msgs.msg import Float64
-from hiwonder_servo_msgs.msg import CommandDuration
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from std_msgs.msg import Bool
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs
-import numpy as np
-from math import sin, cos
-import math
-import actionlib
-from actionlib import GoalStatus
-from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
+from std_srvs.srv import Trigger
 
+
+pose_base = None
+pose_stamp = None
 joint_states = None
-
-# home position
-home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-gripper_open = -1.7802358066666664
-gripper_closed = -0.3
-
-
-# Denavit-Hartenberg parameters
-d = [0.015, 0.0, 0.0, 0.0, 0.0]
-a = [0.0, 0.1, 0.096, 0.055, 0.085]
-alpha = [math.pi/2, 0.0, 0.0, -math.pi/2, 0.0]
-
-def forward_kinematics(q):
-    # forward kinematics for robot arm
-    # input: joint angles q1, q2, q3, q4, q5
-    # output: transformation matrix T_0E and Jacobian
-    q[1] += math.pi/2
-    # transformation matrix 0TE for forward kinematics
-    T_0E = np.identity((4))
-    # and parameters for Jacobian computation
-    z = np.zeros((3,5))
-    p = np.zeros((3,5))
-    pe = np.zeros((3,1))
-
-    z[:,0] = np.transpose(np.array([0, 0, 1]))
-    for i in range(5):
-        Rot_thetai = np.array([[cos(q[i]), -sin(q[i]), 0, 0], [sin(q[i]), cos(q[i]), 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        Rot_alphai = np.array([[1, 0, 0, 0], [0, cos(alpha[i]), -sin(alpha[i]), 0], [0, sin(alpha[i]), cos(alpha[i]), 0], [0, 0, 0, 1]])
-        Trans_di = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, d[i]], [0, 0, 0, 1]])
-        Trans_ai = np.array([[1, 0, 0, a[i]], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-
-        T_i = np.matmul(Trans_di, Rot_thetai)
-        T_i = np.matmul(T_i, Trans_ai)
-        T_i = np.matmul(T_i, Rot_alphai)
-
-        T_0E = np.matmul(T_0E, T_i)
-
-    #     if i < 4:
-    #         z[:,i+1] = T_0E[0:3, 2]
-    #         p[:,i+1] = T_0E[0:3, 3]
-
-    # pe = T_0E[0:3,3]
-
-    # # Computation of Jacobian
-    # Jac = np.zeros((6,5))
-    # for i in range(5):
-    #     Jac[0:3, i] = np.cross(z[:,i], pe-p[:,i])
-    #     Jac[3:, i] = z[:,i]
-
-    return T_0E
-
-def analyticalIK_lock4(position):
-    # inverse kinematics for robot arm
-    # input: pose (x,y,z) in base_link frame
-    # output: joint angles q1, q2, q3, q4, q5
-
-    # lock q4 and q5
-    q4 = -math.pi/2
-    q5 = 0.0
-
-    x = position[0]
-    y = position[1]
-    z = position[2]
-
-    # rotate arm towards object
-    q1 = math.atan2(y, x)
-
-    # compute q3 and q2
-    l0 = d[0]
-    l1 = a[1]
-    l2 = a[2]
-    l3 = a[3]
-    l4 = a[4]
-
-    z = z-l0 # subtract offset
-
-    l2_eff = math.sqrt(l2**2 + (l3+l4)**2 - 2*l2*(l3+l4)*math.cos(math.pi-abs(q4)))
-    print(l2_eff)
-
-    print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
-    q3_eff = -math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
-    q2 = -math.atan2(x, z) - math.atan2(l2_eff*math.sin(q3_eff), l1 + l2_eff*math.cos(q3_eff))
-
-    angle_offset = math.acos((l2_eff**2+l2**2-(l3+l4)**2)/(2*l2_eff*l2))
-    print("inner angle: ",angle_offset)
-    q3 = q3_eff + angle_offset
-    print("eff:", [q1, q2, q3_eff, q4, q5])
-    q = [q1, q2, q3, q4, q5]
-
-    x_ = -l1*math.sin(q2) - l2_eff*math.sin(q2+q3)
-    z_ = l1*math.cos(q2) + l2_eff*math.cos(q2+q3) + l0
-
-    print(q)
-    print([x_,z_])
-    
-    return q
-
-def analyticalIK_lock3(position):
-    # inverse kinematics for robot arm
-    # input: pose (x,y,z) in base_link frame
-    # output: joint angles q1, q2, q3, q4, q5
-
-    q = list(joint_states.position)
-    # lock q3 and q5
-    q3 = q[2]
-    q5 = 0.0
-
-    x = position[0]
-    y = position[1]
-    z = position[2]
-
-    # rotate arm towards object
-    q1 = math.atan2(y, x)
-
-    # compute q3 and q2
-    l0 = d[0]
-    l1 = a[1]
-    l2 = a[2]
-    l3 = a[3]
-    l4 = a[4]
-
-    z = z-l0 # subtract offset
-
-    l1_eff = math.sqrt(l1**2 + l2**2 - 2*l1*l2*math.cos(math.pi-abs(q3)))
-    l3_eff = l3 + l4
-
-    angle_offset = math.acos((l1_eff**2+l1**2-l2**2)/(2*l1_eff*l1))
-
-    print((x**2 + z**2 - (l1_eff**2 + l3_eff**2))/(2*l1_eff*l3_eff))
-
-    q4 = -math.acos((x**2 + z**2 - (l1_eff**2 + l3_eff**2))/(2*l1_eff*l3_eff))
-    q2 = -math.atan2(x, z) - math.atan2(l3_eff*math.sin(q3), l1_eff + l3_eff*math.cos(q3))
-
-    q2 = q2 + angle_offset
-
-    q = [q1, q2, q3, q4, q5]
-
-    print(q)
-    
-    return q
+joint_state_stamp = None
 
 def pose_callback(msg: PoseStamped):
-    stamp = msg.header.stamp
+    global pose_base, pose_stamp
+    pose_stamp = msg.header.stamp
     pose_base = msg.pose
 
-    # try:
-    #     tf_buffer.lookup_transform('arm_base', msg.header.frame_id, stamp, timeout=rospy.Duration(4.0))
-    #     pose_base = tf_buffer.transform(msg, 'arm_base')
-    # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-    #     rospy.logerr("Could not get transform")
-    #     return
-    
-    # forward kinematics to get current position of end effector
-    q = list(joint_states.position)
-    print(q)
-    T_0E = forward_kinematics(q)
-    current_pos = T_0E[0:3,3]
-    print("current_pos: ",current_pos)
-    
-    # home_xyz = [9.59826451e-02, 1.78091279e-18, 4.90845130e-02]
-    # # go to home position
-    # q_home = home
-    # q_home[3] = -math.pi/4
-    # print(q_home)
-    # q_home_analytical = analyticalIK(home_xyz)
-    # q_des = analyticalIK(p_des)
-    # q_des[3] = -1.3
-    # des = [1.66157497e-01, -3.45509508e-18, -5.64259847e-02]
-    # q_des = analyticalIK(des)
-    # q_des[3] = -1.3
-
-    # go to hover position
-    pos_hover = [pose_base.position.x - 0.02, pose_base.position.y, 0.0]
-    q_hover = analyticalIK_lock4(pos_hover)
-
-    # go to desired position
-    pos_pick = [pose_base.position.x + 0.02, pose_base.position.y, pose_base.position.z]
-    q_pick = analyticalIK_lock4(pos_pick)
-
-    #positions = [q_home, q_hover, q_pick]
-
-    #q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
-    q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    
-
-    print("wait for server")
-    client.wait_for_server()
-    print("Connected to server")
-    goal = FollowJointTrajectoryGoal()
-    goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
-                              JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(4.0))]
-    
-    # goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-
-    print("Sending goal")
-    client.send_goal(goal)
-
-    client.wait_for_result()
-    
-    if client.get_state() == GoalStatus.SUCCEEDED and True:
-        # pick up object
-        closeGripper = CommandDuration(duration=500.0)
-        closeGripper.data = gripper_closed
-        gripperPub.publish(closeGripper)
-
-        rospy.sleep(1.0)
-
-        # go to hover position
-        goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-        client.send_goal(goal)
-        client.wait_for_result()
-
-        # place object
-        pos_hover[1] += 0.05
-        q_hover = analyticalIK_lock4(pos_hover)
-        pos_pick[1] += 0.05
-        q_pick = analyticalIK_lock4(pos_pick)
-        goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(2.0)),
-                                  JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(4.0))]
-        client.send_goal(goal)
-        client.wait_for_result()
-
-        # open gripper
-        openGripper = CommandDuration(duration=500.0)
-        openGripper.data = gripper_open
-        gripperPub.publish(openGripper)
-
-        rospy.sleep(1.0)
-
-        # go to home position
-        goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-        client.send_goal(goal)
-        client.wait_for_result()
-
-        rospy.sleep(10.0)
-
-
 def joint_state_callback(msg: JointState):
-    global joint_states
+    global joint_states, joint_state_stamp
+    joint_state_stamp = msg.header.stamp
     joint_states = msg
 
 
-def joint1_callback(msg: CommandDuration):
-    print(msg)
+def call_pickup_callback(msg: Bool):
+    if msg.data == True:
+        print("Waiting for service 'pickup'...")
+        rospy.wait_for_service('/pickup')
+        pickup = rospy.ServiceProxy('/pickup', Trigger)
 
+        print("Try calling service...")
+        try: 
+            resp = pickup()
+            print(resp.message)
+            rospy.sleep(5.0)
+        except rospy.ServiceException as e:
+            print("Service call failed: %s"%e)
 
 if __name__ == "__main__":
-    rospy.init_node('pickup')
-    #poseSub = rospy.Subscriber('/detection/pose', PoseStamped, pose_callback)
-    gripperPub = rospy.Publisher('/r_joint_controller/command_duration', CommandDuration, queue_size=10)
-    joint1Sub = rospy.Subscriber('/joint1_controller/command_duration', CommandDuration, joint1_callback)
+    rospy.init_node('pickup_client')
+
+    poseSub = rospy.Subscriber('/detection/pose', PoseStamped, pose_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
-    arm_pub = rospy.Publisher('/arm_controller/command', JointTrajectory, queue_size=10)
-    client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-
-    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
-    tflistener = tf2_ros.TransformListener(tf_buffer)
-    tfbroadcaster = tf2_ros.TransformBroadcaster()
-    rate = rospy.Rate(1000) # 10hz
-
-    test_pose = PoseStamped()
-    test_pose.header.frame_id = "arm_base"
-    test_pose.header.stamp = rospy.Time.now()
-    test_pose.pose.position.x = 0.17
-    test_pose.pose.position.y = 0.0
-    test_pose.pose.position.z = -0.095
-    test_pose.pose.orientation.x = 0.0
-    test_pose.pose.orientation.y = 0.0
-    test_pose.pose.orientation.z = 0.0
-    test_pose.pose.orientation.w = 1.0
-
-
-    # rospy.sleep(1)
-    # msg = CommandDuration()
-    # msg.duration = 1000.0
-    # msg.data = 2.0
-    # joint1Pub.publish(msg)
-    # rospy.sleep(1)
-    # msg.duration = 500.0
-    # msg.data = 0.0
-    # joint1Pub.publish(msg)
-    # rospy.spin()
-    # exit()
-
-    # q_des = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0, -1.7802358066666664]
-    # #q_des = [0.0, 0.0, 0.0, 0.0, 0.0]
-    # q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-    # #client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
-    # print("wait for server")
-    # client.wait_for_server()
-    # print("Connected to server")
-    # goal = FollowJointTrajectoryGoal()
-    # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-    # goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-
-    # print("Sending goal")
-    # client.send_goal(goal)
-
-    # client.wait_for_result()
-    # print(client.get_result())
-    # #return client.get_result()
-    # exit()
+    callPickupSub = rospy.Subscriber('/call_pickup', Bool, call_pickup_callback)
+    callPickupPub = rospy.Publisher('/call_pickup', Bool, queue_size=10)
+    posePub = rospy.Publisher('/detection/pose', PoseStamped, queue_size=10)
 
     while not rospy.is_shutdown():
-        if joint_states is not None:
-            pose_callback(test_pose)
-            rospy.sleep(5)
+        test_pose = PoseStamped()
+        test_pose.header.frame_id = "base_link"
+        test_pose.header.stamp = rospy.Time.now()
+        test_pose.pose.position.x = 0.08
+        test_pose.pose.position.y = 0.0
+        test_pose.pose.position.z = -0.035
+        test_pose.pose.orientation.x = 0.0
+        test_pose.pose.orientation.y = 0.0
+        test_pose.pose.orientation.z = 0.0
+        test_pose.pose.orientation.w = 1.0
+        posePub.publish(test_pose)
+
+        # if we have a pose (and later are in position), send command to pickup
+        if pose_base:
+            callPickupPub.publish(Bool(data=True))
+        rospy.sleep(0.1)

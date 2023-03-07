@@ -3,11 +3,9 @@
 <include file="$(find robp_phidgets)/launch/hardware.launch"></include>
 <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="filters" value="pointcloud"/>
-    <arg name="enable_infra1" value="true"/>
-    <arg name="enable_infra2" value="true"/>
 </include>
 
-<node pkg="tf2_ros" type="static_transform_publisher" name="arm_base_publisher" args="-0.105 -0.05 0.056 0 0 0 1 base_link arm_base" />
+<node pkg="tf2_ros" type="static_transform_publisher" name="arm_base_publisher" args="-0.085 -0.05 0.059 0 0 0 1 base_link arm_base" />
 
 </launch>
 
