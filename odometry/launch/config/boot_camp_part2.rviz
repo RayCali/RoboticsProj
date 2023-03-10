@@ -6,8 +6,11 @@ Panels:
       Expanded:
         - /Global Options1
         - /Image1
+        - /TF1
+        - /TF1/Frames1
         - /Image2
         - /Marker1
+        - /MarkerArray1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 224
   - Class: rviz/Selection
@@ -102,10 +105,18 @@ Visualization Manager:
           Value: true
         camera_bottom_screw_frame:
           Value: false
+        camera_color_frame:
+          Value: false
+        camera_color_optical_frame:
+          Value: false
+        camera_depth_frame:
+          Value: false
+        camera_depth_optical_frame:
+          Value: false
         camera_link:
           Value: false
         imu_link:
-          Value: true
+          Value: false
         map:
           Value: true
         odom:
@@ -122,7 +133,12 @@ Visualization Manager:
             base_link:
               camera_bottom_screw_frame:
                 camera_link:
-                  {}
+                  camera_color_frame:
+                    camera_color_optical_frame:
+                      {}
+                  camera_depth_frame:
+                    camera_depth_optical_frame:
+                      {}
             imu_link:
               {}
       Update Interval: 0
@@ -186,6 +202,14 @@ Visualization Manager:
       Name: Marker
       Namespaces:
         {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /covariances
+      Name: MarkerArray
+      Namespaces:
+        covariance: true
       Queue Size: 100
       Value: true
   Enabled: true

@@ -20,7 +20,7 @@
 		
 		<param name="image_is_rectified" value="True"/>
 		<!-- <param name="marker_size"        value="0.157"/>  -->
-		<param name="marker_size"        value="0.175"/> 
+		<param name="marker_size"        value="0.06"/> 
 		<param name="reference_frame"    value="camera_link"/>  
 		<param name="camera_frame"       value="camera_color_optical_frame"/>
 	</node>

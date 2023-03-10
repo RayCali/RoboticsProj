@@ -78,24 +78,24 @@ def aruco_callback(mesg):
     global markers, listener, tf_buffer,br,firsttime,first_pose,t3, st, marker_pub, latestupdate,angvel
     markers =mesg.markers
     #r=r=rospy.Rate(10)
-    if firsttime:
-        t = TransformStamped()
-        t.header.frame_id = "map"
-        t.child_frame_id = "odom"
-        t.header.stamp = mesg.header.stamp
-        t.transform.translation.x = 0
-        t.transform.translation.y = 0
-        t.transform.translation.z = 0
-        t.transform.rotation.x = 0
-        t.transform.rotation.y = 0
-        t.transform.rotation.z = 0
-        t.transform.rotation.w = 1
-        latestupdate=mesg.header.stamp
-        br.sendTransform(t)
     
     for mark in markers:
         
         if mark.id == 500:
+            if firsttime:
+                t = TransformStamped()
+                t.header.frame_id = "map"
+                t.child_frame_id = "odom"
+                t.header.stamp = mesg.header.stamp
+                t.transform.translation.x = 0
+                t.transform.translation.y = 0
+                t.transform.translation.z = 0
+                t.transform.rotation.x = 0
+                t.transform.rotation.y = 0
+                t.transform.rotation.z = 0
+                t.transform.rotation.w = 1
+                latestupdate=mesg.header.stamp
+                br.sendTransform(t)
             arucopose = PoseStamped()
             arucopose.header.frame_id="/camera_link"
             arucopose.header.stamp=mesg.header.stamp
@@ -210,10 +210,12 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         now = rospy.Time.now()
         if (t3.header.stamp.to_sec() - now.to_sec()<= -1):
+            t3 = tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
             t3.header.stamp = now
             br.sendTransform(t3)
             rospy.loginfo("send transform")
         elif (t3.header.stamp.to_nsec()*10**(-9) - now.to_nsec()*10**(-9) <= -0.1):
+            t3 = tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
             t3.header.stamp = now
             br.sendTransform(t3)
         continue
