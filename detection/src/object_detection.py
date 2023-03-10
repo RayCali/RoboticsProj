@@ -81,7 +81,6 @@ def imageCB(msg: Image):
 
 
 def cloudCB(msg):
-    return
     # Convert ROS -> Open3D
     cloud = o3drh.rospc_to_o3dpc(msg)
 
@@ -175,15 +174,15 @@ if __name__=="__main__":
     rospy.init_node("detection")
 
 
-    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/all_models/ObjectDetection_pretty-mountain-43.pt", device="cuda")
-    detectionModel.eval()
+    # detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/all_models/ObjectDetection_pretty-mountain-43.pt", device="cuda")
+    # detectionModel.eval()
 
-    im = pil.open("/home/robot/Downloads/frame0008.jpg") 
+    # im = pil.open("/home/robot/Downloads/frame0008.jpg") 
 
 
-    bridge = CvBridge()
+    # bridge = CvBridge()
 
-    imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
+    # imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
     cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
