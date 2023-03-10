@@ -64,9 +64,8 @@ While the robot is on the IoT network, it should have a static ip. The last know
 1. set "export ROS_MASTER_URI=http://*robot inet address*:11311"
 2. find the *ssd inet address*
 3. set "export ROS_IP=*ssd inet address*"
-4. launch rviz on the SSD with a config file using 
-"rosrun rviz rviz -d /home/robot/dd2419_ws/src/robp_boot_camp_launc/config/boot_camp_part2.rviz"
-
+4. launch rviz on the SSD with a config file using "rosrun rviz rviz -d (path_to_config_file)"
+   (the config file can be found on the google drive)
 ## How to fix Rosbag
 1. rosbag fix (bag_name) (new_bagname) if it asks for it
 2. rosbag reindex (bag_name)

@@ -53,6 +53,7 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     points = []
     with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace.tsv", "r") as f:
         for line in f:
+            line = line.strip("\n")
             l = line.split("\t")
             points.append(l)
     
@@ -63,8 +64,8 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     polygon.id = mark.id
     polygon.type = Marker.LINE_STRIP
     for i in range(1,len(points)):
-        polygon.points.append(Point(float(points[i][0]),float(points[i][1]), -t.transform.translation.z))
-    polygon.points.append(Point(float(points[1][0]), float(points[1][1]),-t.transform.translation.z))
+        polygon.points.append(Point(float(points[i][0])-4.02,float(points[i][1])-1.21, -t.transform.translation.z))
+    polygon.points.append(Point(float(points[1][0])-4.02, float(points[1][1])-1.21,-t.transform.translation.z))
     polygon.scale.x = 0.03
     polygon.color.a = 1.0
     polygon.color.r = 1.0
@@ -94,7 +95,7 @@ def aruco_callback(mesg):
     
     for mark in markers:
         
-        if mark.id == 2:
+        if mark.id == 500:
             arucopose = PoseStamped()
             arucopose.header.frame_id="/camera_link"
             arucopose.header.stamp=mesg.header.stamp
