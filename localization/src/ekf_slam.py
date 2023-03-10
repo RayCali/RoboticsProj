@@ -20,7 +20,7 @@ br= None
 tfBuffer = None
 listener = None
 R = np.identity(3)*0.01
-Q = np.identity(2)*0.01
+Q = np.identity(2)*0.0000001
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
 landmarks = 3
 mu_slam = np.zeros(3+2*landmarks)
@@ -217,7 +217,7 @@ def update_callback(msg: MarkerArray):
                     dontupdate = True
             
             if not dontupdate:
-                if rospy.Time.now().to_sec()-latestupdate.to_sec()>0.5:
+                if rospy.Time.now().to_sec()-latestupdate.to_sec()>0.1:
                     addon = np.zeros([2,3+2*landmarks])
                     addon[0, 3+2*currentorder] = 1
                     addon[1, 4+2*currentorder] = 1
@@ -225,20 +225,23 @@ def update_callback(msg: MarkerArray):
                     
                     
                     #range bearing part
-                    delta = np.array([mu_slam[currentorder*2 + 3]-mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
-                    q = np.matmul(np.transpose(delta),delta)
-                    anglepred = math.atan2(delta[1],delta[0])
-                    anglepred = (anglepred+math.pi)%2*math.pi-math.pi
-                    zpredict = np.array([math.sqrt(q),anglepred-mu_slam[2]])
-                    H = 1/q*np.array([[-math.sqrt(q)*delta[0],-math.sqrt(q)*delta[1],0,math.sqrt(q)*delta[0],math.sqrt(q)*delta[1]],[delta[1],-delta[0],-q,-delta[1],delta[0]]])
-                    transformb = tfBuffer.lookup_transform('base_link', 'camera_link', time, rospy.Duration(1.0))
-                    markerposeb = tf2_geometry_msgs.do_transform_pose(mark.pose, transformb)
-                    delta = np.array([markerposeb.pose.position.x,markerposeb.pose.position.y])
-                    q = np.matmul(np.transpose(delta),delta)
-                    angle = math.atan2(delta[1],delta[0])
-                    angle = (angle+math.pi)%2*math.pi-math.pi
-                    z = np.array([math.sqrt(q),angle])
+                    # delta = np.array([mu_slam[currentorder*2 + 3]-mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
+                    # q = np.matmul(np.transpose(delta),delta)
+                    # anglepred = math.atan2(delta[1],delta[0])
+                    # anglepred = (anglepred+math.pi)%2*math.pi-math.pi
+                    # zpredict = np.array([math.sqrt(q),anglepred-mu_slam[2]])
+                    # H = 1/q*np.array([[-math.sqrt(q)*delta[0],-math.sqrt(q)*delta[1],0,math.sqrt(q)*delta[0],math.sqrt(q)*delta[1]],[delta[1],-delta[0],-q,-delta[1],delta[0]]])
+                    # transformb = tfBuffer.lookup_transform('base_link', 'camera_link', time, rospy.Duration(1.0))
+                    # markerposeb = tf2_geometry_msgs.do_transform_pose(mark.pose, transformb)
+                    # delta = np.array([markerposeb.pose.position.x,markerposeb.pose.position.y])
+                    # q = np.matmul(np.transpose(delta),delta)
+                    # angle = math.atan2(delta[1],delta[0])
+                    # angle = (angle+math.pi)%2*math.pi-math.pi
+                    # z = np.array([math.sqrt(q),angle])
+                    H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
                     Hj = np.matmul(H,Fxj)
+                    z = np.array([markerpose.pose.position.x-mu_slam[0],markerpose.pose.position.y-mu_slam[1]])
+                    zpredict = np.array([mu_slam[currentorder*2 + 3] - mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
                     
                     
                     
@@ -289,6 +292,8 @@ def update_callback(msg: MarkerArray):
                         marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
                         br.sendTransform(marktransform)
                     updaterviz()
+                    rospy.loginfo(zpredict)
+                    rospy.loginfo(z)
                     rospy.loginfo("updated")
         else:
             P[0:3,0:3].fill(0)
