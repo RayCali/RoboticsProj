@@ -69,7 +69,7 @@ def imageCB(msg: Image):
         # overlay box on image
         #X = np.arange(x, x+width)
         #Y = np.arange(y, y-height, step=-1)
-        box = torch.tensor([x,y-height,x+width,y], dtype=torch.int).unsqueeze(0)
+        box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
         image = draw_bounding_boxes(image, box, width=5,
                           colors="green", 
                           fill=True)
@@ -174,17 +174,17 @@ if __name__=="__main__":
     rospy.init_node("detection")
 
 
-    # detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/all_models/ObjectDetection_pretty-mountain-43.pt", device="cuda")
-    # detectionModel.eval()
+    detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
+    detectionModel.eval()
 
-    # im = pil.open("/home/robot/Downloads/frame0008.jpg") 
+    im = pil.open("/home/robot/Downloads/frame0008.jpg") 
 
 
-    # bridge = CvBridge()
+    bridge = CvBridge()
 
-    # imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB)
-    cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
-    pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
+    imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB,queue_size=10, buff_size=2**24)
+    # cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
+    # pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
     errPub = rospy.Publisher("/detection/bb_error", centerpointArray, queue_size=10)

@@ -11,6 +11,8 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import models, transforms
 from torchvision.models import MobileNet_V2_Weights
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 class BoundingBox(TypedDict):
     """Bounding box dictionary.
@@ -56,8 +58,8 @@ class Detector(nn.Module):
         self.out_cells_x = 20
         self.out_cells_y = 15
         # size of input images
-        self.img_height = 720.0
-        self.img_width = 1280.0
+        self.img_height = 480.0
+        self.img_width = 640.0
 
     def forward(self, inp: torch.Tensor) -> torch.Tensor:
         """Forward pass.
@@ -164,6 +166,13 @@ class Detector(nn.Module):
                     Shape (5, self.out_cells_y, self.out_cells_x).
         """
         # Convert PIL.Image to torch.Tensor
+        bbs = [[ann["bbox"][0], ann["bbox"][1], ann["bbox"][2], ann["bbox"][3], "idk"] for ann in anns]
+        transform = A.Compose([
+          A.Resize(height=480, width=640),
+            ], bbox_params=A.BboxParams(format='coco', min_area=1024, min_visibility=0.1))
+        transformed = transform(image=np.asarray(image), bboxes=bbs)
+        image = transformed["image"]
+        bbs = transformed["bboxes"]
         image = transforms.ToTensor()(image)
         image = transforms.Normalize(
             mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -178,11 +187,11 @@ class Detector(nn.Module):
         # If there is no bb, the first 4 channels will not influence the loss
         # -> can be any number (will be kept at 0)
         target = torch.zeros(5, self.out_cells_y, self.out_cells_x)
-        for ann in anns:
-            x = ann["bbox"][0]
-            y = ann["bbox"][1]
-            width = ann["bbox"][2]
-            height = ann["bbox"][3]
+        for bbx in bbs:
+            x = bbx[0] 
+            y = bbx[1] 
+            width = bbx[2] 
+            height = bbx[3]
 
             x_center = x + width / 2.0
             y_center = y + height / 2.0
