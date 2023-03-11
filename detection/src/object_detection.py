@@ -30,6 +30,7 @@ BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
 BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
 CENTERIMG_X = 640 # center of image in x direction
+DEVICE = "cuda"
 
 def imageCB(msg: Image):
     #imgPub.publish(msg)
@@ -45,12 +46,12 @@ def imageCB(msg: Image):
     image = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )(image)
-
+    image = image.to(DEVICE)
     
     image = image.unsqueeze(0)
     #loginfo(image)
-    
-    inference = detectionModel(image).cpu() # size: (15,20,5)
+    with torch.no_grad():
+        inference = detectionModel(image).cpu() # size: (15,20,5)
     
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
     image = torch.from_numpy(np_image).permute(2,0,1)
@@ -176,6 +177,7 @@ if __name__=="__main__":
 
     detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
     detectionModel.eval()
+    detectionModel = detectionModel.to(DEVICE)
 
     im = pil.open("/home/robot/Downloads/frame0008.jpg") 
 
