@@ -18,5 +18,6 @@ from gridmapping import Mapper
 
 if __name__=="__main__":
     
-    
-    Mapper()
+
+    m = Mapper()
+    m.doAnimate()
