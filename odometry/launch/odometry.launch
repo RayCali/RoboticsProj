@@ -14,13 +14,21 @@
 	<!-- <node name="marker_1" pkg="tf2_ros" type="static_transform_publisher" args="-1 -1 0.18 0 0 0 map aruco/marker1" />
 	<node name="marker_2" pkg="tf2_ros" type="static_transform_publisher" args="2 0 0.18 3.14159265359 0 0 map aruco/marker2" /> -->
 
-	<node name="aruco" pkg="aruco_ros" type="marker_publisher">
+	<node ns= "aruco_all" name="aruco" pkg="aruco_ros" type="marker_publisher">
 		<remap from="/camera_info" to="/camera/color/camera_info"/>
 		<remap from="/image" to="/camera/color/image_raw"/>
 		
 		<param name="image_is_rectified" value="True"/>
 		<!-- <param name="marker_size"        value="0.157"/>  -->
 		<param name="marker_size"        value="0.06"/> 
+		<param name="reference_frame"    value="camera_link"/>  
+		<param name="camera_frame"       value="camera_color_optical_frame"/>
+	</node>
+	<node ns="aruco_500" name="aruco" pkg="aruco_ros" type="marker_publisher">
+		<remap from="/camera_info" to="/camera/color/camera_info"/>
+		<remap from="/image" to="/camera/color/image_raw"/>
+		<param name="image_is_rectified" value="True"/>
+		<param name="marker_size"        value="0.175"/> 
 		<param name="reference_frame"    value="camera_link"/>  
 		<param name="camera_frame"       value="camera_color_optical_frame"/>
 	</node>

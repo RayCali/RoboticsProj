@@ -200,7 +200,7 @@ def aruco_callback(mesg):
 if __name__ == '__main__':
     rospy.init_node('aruco_node')
     first_pose.header.stamp=rospy.Time.now()
-    aruco_sub = rospy.Subscriber('/aruco/markers', MarkerArray, aruco_callback)
+    aruco_sub = rospy.Subscriber('/aruco_500/aruco/markers', MarkerArray, aruco_callback)
     vel_sub = rospy.Subscriber('/imu/data', Imu, vel_callback)
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     listener = tf2_ros.TransformListener(tf_buffer)

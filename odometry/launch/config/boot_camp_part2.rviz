@@ -8,6 +8,7 @@ Panels:
         - /Image1
         - /TF1
         - /TF1/Frames1
+        - /ArUco1
         - /Image2
         - /Marker1
         - /MarkerArray1
@@ -98,9 +99,11 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
-      Frame Timeout: 15
+      Frame Timeout: 120
       Frames:
         All Enabled: false
+        arucolandmark3:
+          Value: true
         base_link:
           Value: true
         camera_bottom_screw_frame:
@@ -129,6 +132,8 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
+          arucolandmark3:
+            {}
           odom:
             base_link:
               camera_bottom_screw_frame:
@@ -174,7 +179,7 @@ Visualization Manager:
       Visual Enabled: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /aruco/result
+      Image Topic: /aruco_all/aruco/result
       Max Value: 1
       Median window: 5
       Min Value: 0

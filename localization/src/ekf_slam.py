@@ -212,12 +212,11 @@ def update_callback(msg: MarkerArray):
                     marktransform.transform.rotation.w =  q[3]      
                     br.sendTransform(marktransform)
                     firsttime0 = False
-                    latestupdate = rospy.Time.now()
                 else:
                     dontupdate = True
             
             if not dontupdate:
-                if rospy.Time.now().to_sec()-latestupdate.to_sec()>0.1:
+                if rospy.Time.now().to_sec()-latestupdate.to_sec()>5:
                     addon = np.zeros([2,3+2*landmarks])
                     addon[0, 3+2*currentorder] = 1
                     addon[1, 4+2*currentorder] = 1
@@ -257,9 +256,8 @@ def update_callback(msg: MarkerArray):
                     transformod = tfBuffer.lookup_transform('map', 'odom', time, rospy.Duration(1.0))
                     anglelist = [transformod.transform.rotation.x, transformod.transform.rotation.y, transformod.transform.rotation.z,transformod.transform.rotation.w]
                     roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
-                    #yawnew = yaw2 + diff[2] 
                     yawnew = yaw2 + np.matmul(K,z-zpredict)[2]
-                    q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw2)
+                    q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yawnew)
                     newodom = TransformStamped()
                     newodom.header.frame_id = "map"
                     newodom.child_frame_id = "odom"
@@ -302,7 +300,7 @@ def update_callback(msg: MarkerArray):
 if __name__ == '__main__':
     rospy.init_node('ekf_slam')
     sub_goal = rospy.Subscriber('/predictedvel', Twist, predict_callback, queue_size=15)
-    update = rospy.Subscriber('/aruco/markers', ArucoMarkerArray, update_callback, queue_size=15)
+    update = rospy.Subscriber('/aruco_all/aruco/markers', ArucoMarkerArray, update_callback, queue_size=25)
     tfBuffer = tf2_ros.Buffer(rospy.Duration(12000.0))
     listener = tf2_ros.TransformListener(tfBuffer)
     br = tf2_ros.TransformBroadcaster()
