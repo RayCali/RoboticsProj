@@ -31,6 +31,7 @@ if __name__ == "__main__":
 
     m = Mapper()
     m.doAnimate()
+    exit()
     tfBuffer = tf2_ros.Buffer(rospy.Duration(1.0))
     tflistener = tf2_ros.TransformListener(tfBuffer)
     while not rospy.is_shutdown():
