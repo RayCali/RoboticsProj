@@ -20,7 +20,7 @@ br= None
 tfBuffer = None
 listener = None
 R = np.identity(3)*0.01
-Q = np.identity(2)*0.000001
+Q = np.identity(2)*0.0001
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
 landmarks = 4
 mu_slam = np.zeros(3+2*landmarks)
@@ -290,6 +290,7 @@ def update_anchor_callback(msg:ArucoMarkerArray):
                     break
             if not hasbeenseen:
                 if len(Landmarklist)<landmarks:
+                    P[0:3,0:3].fill(0)
                     Landmarklist.append(Landmark(mark.id,len(Landmarklist)))
                     currentorder = len(Landmarklist)-1
                     currentid = mark.id
