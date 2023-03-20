@@ -20,7 +20,7 @@ br= None
 tfBuffer = None
 listener = None
 R = np.identity(3)*0.01
-Q = np.identity(2)*0.01
+Q = np.identity(2)*0.000001
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
 landmarks = 4
 mu_slam = np.zeros(3+2*landmarks)
@@ -216,43 +216,21 @@ def update_callback(msg: MarkerArray):
                     dontupdate = True
             
             if not dontupdate:
-                if rospy.Time.now().to_sec()-latestupdate.to_sec()>5:
+                if rospy.Time.now().to_sec()-latestupdate.to_sec()>0.5:
                     addon = np.zeros([2,3+2*landmarks])
                     addon[0, 3+2*currentorder] = 1
                     addon[1, 4+2*currentorder] = 1
                     Fxj = np.concatenate((Fx,addon),axis=0)
-                    
-                    #range bearing part
-                    # delta = np.array([mu_slam[currentorder*2 + 3]-mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
-                    # q = np.matmul(np.transpose(delta),delta)
-                    # anglepred = math.atan2(delta[1],delta[0])
-                    # anglepred = (anglepred+math.pi)%2*math.pi-math.pi
-                    # zpredict = np.array([math.sqrt(q),anglepred-mu_slam[2]])
-                    # H = 1/q*np.array([[-math.sqrt(q)*delta[0],-math.sqrt(q)*delta[1],0,math.sqrt(q)*delta[0],math.sqrt(q)*delta[1]],[delta[1],-delta[0],-q,-delta[1],delta[0]]])
-                    # transformb = tfBuffer.lookup_transform('base_link', 'camera_link', time, rospy.Duration(1.0))
-                    # markerposeb = tf2_geometry_msgs.do_transform_pose(mark.pose, transformb)
-                    # delta = np.array([markerposeb.pose.position.x,markerposeb.pose.position.y])
-                    # q = np.matmul(np.transpose(delta),delta)
-                    # angle = math.atan2(delta[1],delta[0])
-                    # angle = (angle+math.pi)%2*math.pi-math.pi
-                    # z = np.array([math.sqrt(q),angle])
                     H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
                     rospy.loginfo(H)
                     Hj = np.matmul(H,Fxj)
                     z = np.array([markerpose.pose.position.x-mu_slam[0],markerpose.pose.position.y-mu_slam[1]]).transpose()
                     zpredict = np.array([mu_slam[currentorder*2 + 3] - mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]]).transpose()
-                    
-                    
-                    
                     K = np.matmul(np.matmul(P,np.transpose(Hj)),np.linalg.inv(np.matmul(np.matmul(Hj,P),np.transpose(Hj))+Q))
-
                     mu_slam = mu_slam + np.matmul(K,z-zpredict)
                     #rospy.loginfo(np.matmul(K,z-zpredict))
                     #rospy.loginfo(np.matmul(K,Hj))
-
-
-
-
+                    
                     transformod = tfBuffer.lookup_transform('map', 'odom', time, rospy.Duration(1.0))
                     anglelist = [transformod.transform.rotation.x, transformod.transform.rotation.y, transformod.transform.rotation.z,transformod.transform.rotation.w]
                     roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
@@ -270,17 +248,17 @@ def update_callback(msg: MarkerArray):
                     newodom.transform.rotation.z =  q[2]
                     newodom.transform.rotation.w =  q[3]
                     br.sendTransform(newodom)
-
-
-
-
                     latestupdate = rospy.Time.now()
+                    
                     Khj = np.matmul(K,Hj)
                     P = np.matmul(np.identity(Khj.shape[0])-Khj,P)
                     for landmark in Landmarklist:
                         marktransform = TransformStamped()
                         marktransform.header.frame_id = "map"
-                        marktransform.child_frame_id = "arucolandmark" + str(landmark.id)
+                        if landmark.id == 500:
+                            marktransform.child_frame_id = "arucoanchor"
+                        else:
+                            marktransform.child_frame_id = "arucolandmark" + str(landmark.id)
                         marktransform.header.stamp = msg.header.stamp
                         marktransform.transform.translation.x = mu_slam[landmark.order*2 + 3]
                         marktransform.transform.translation.y = mu_slam[landmark.order*2 + 4]
@@ -293,14 +271,111 @@ def update_callback(msg: MarkerArray):
                     #rospy.loginfo(zpredict)
                     #rospy.loginfo(z)
                     rospy.loginfo("updated")
-        else:
-            P[0:3,0:3].fill(0)
+def update_anchor_callback(msg:ArucoMarkerArray):
+    global yaw,Fx,mu_slam,P,G, tfBuffer, listener, firsttime0, firsttime1, firsttime2,R,br,latestupdate,Landmarklist,landmarks
+    for mark in msg.markers:
+        if mark.id == 500:
+            time = rospy.Time(0)
+            hasbeenseen=False
+            transform = tfBuffer.lookup_transform('map', 'camera_link', time, rospy.Duration(1.0))
+            markerpose = tf2_geometry_msgs.do_transform_pose(mark.pose, transform)
+            currentid = 1000000
+            currentorder = 1000000
+            dontupdate = False
+            for landmark in Landmarklist:
+                if landmark.id == mark.id:
+                    hasbeenseen=True
+                    currentid = landmark.id
+                    currentorder = landmark.order
+                    break
+            if not hasbeenseen:
+                if len(Landmarklist)<landmarks:
+                    Landmarklist.append(Landmark(mark.id,len(Landmarklist)))
+                    currentorder = len(Landmarklist)-1
+                    currentid = mark.id
+                    mu_slam[currentorder*2 + 3],mu_slam[currentorder*2 + 4]=markerpose.pose.position.x,markerpose.pose.position.y
+                    # P[currentorder*2 + 3:currentorder*2 + 5,currentorder*2 + 3:currentorder*2 + 5]= P[0:2,0:2]
+                    marktransform = TransformStamped()
+                    marktransform.header.frame_id = "map"
+                    marktransform.child_frame_id = "arucoanchor"
+                    marktransform.header.stamp = msg.header.stamp
+                    marktransform.transform.translation.x = markerpose.pose.position.x
+                    marktransform.transform.translation.y = markerpose.pose.position.y
+                    marktransform.transform.translation.z = 0
+                    anglelist = [markerpose.pose.orientation.x, markerpose.pose.orientation.y, markerpose.pose.orientation.z,markerpose.pose.orientation.w]
+                    roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
+                    roll = roll - math.pi/2
+                    yaw2 = yaw2 - math.pi/2
+                    q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw2)
+                    marktransform.transform.rotation.x =  q[0]
+                    marktransform.transform.rotation.y =  q[1]     
+                    marktransform.transform.rotation.z =  q[2]      
+                    marktransform.transform.rotation.w =  q[3]      
+                    br.sendTransform(marktransform)
+                    firsttime0 = False
+                else:
+                    dontupdate = True
+            
+            if not dontupdate:
+                if rospy.Time.now().to_sec()-latestupdate.to_sec()>5:
+                    addon = np.zeros([2,3+2*landmarks])
+                    addon[0, 3+2*currentorder] = 1
+                    addon[1, 4+2*currentorder] = 1
+                    Fxj = np.concatenate((Fx,addon),axis=0)
+                    H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
+                    rospy.loginfo(H)
+                    Hj = np.matmul(H,Fxj)
+                    z = np.array([markerpose.pose.position.x-mu_slam[0],markerpose.pose.position.y-mu_slam[1]]).transpose()
+                    zpredict = np.array([mu_slam[currentorder*2 + 3] - mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]]).transpose()
+                    K = np.matmul(np.matmul(P,np.transpose(Hj)),np.linalg.inv(np.matmul(np.matmul(Hj,P),np.transpose(Hj))+Q))
+                    mu_slam = mu_slam + np.matmul(K,z-zpredict)
+                    
+                    transformod = tfBuffer.lookup_transform('map', 'odom', time, rospy.Duration(1.0))
+                    anglelist = [transformod.transform.rotation.x, transformod.transform.rotation.y, transformod.transform.rotation.z,transformod.transform.rotation.w]
+                    roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
+                    yawnew = yaw2 + np.matmul(K,z-zpredict)[2]
+                    q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yawnew)
+                    newodom = TransformStamped()
+                    newodom.header.frame_id = "map"
+                    newodom.child_frame_id = "odom"
+                    newodom.header.stamp = msg.header.stamp
+                    newodom.transform.translation.x = np.matmul(K,z-zpredict)[0] + transformod.transform.translation.x
+                    newodom.transform.translation.y = np.matmul(K,z-zpredict)[1] + transformod.transform.translation.y
+                    newodom.transform.translation.z = 0
+                    newodom.transform.rotation.x =  q[0]
+                    newodom.transform.rotation.y =  q[1]
+                    newodom.transform.rotation.z =  q[2]
+                    newodom.transform.rotation.w =  q[3]
+                    br.sendTransform(newodom)
+                    latestupdate = rospy.Time.now()
+                    
+                    Khj = np.matmul(K,Hj)
+                    P = np.matmul(np.identity(Khj.shape[0])-Khj,P)
+                    for landmark in Landmarklist:
+                        marktransform = TransformStamped()
+                        marktransform.header.frame_id = "map"
+                        if landmark.id == 500:
+                            marktransform.child_frame_id = "arucoanchor"
+                        else:
+                            marktransform.child_frame_id = "arucolandmark" + str(landmark.id)
+                        marktransform.header.stamp = msg.header.stamp
+                        marktransform.transform.translation.x = mu_slam[landmark.order*2 + 3]
+                        marktransform.transform.translation.y = mu_slam[landmark.order*2 + 4]
+                        marktransform.transform.rotation.x =  0      #markerpose.pose.orientation.x
+                        marktransform.transform.rotation.y =  0      #markerpose.pose.orientation.y
+                        marktransform.transform.rotation.z =  0      #markerpose.pose.orientation.z
+                        marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
+                        br.sendTransform(marktransform)
+                    updaterviz()
+                    rospy.loginfo("updated")
+
 
 
 if __name__ == '__main__':
     rospy.init_node('ekf_slam')
     sub_goal = rospy.Subscriber('/predictedvel', Twist, predict_callback, queue_size=15)
     update = rospy.Subscriber('/aruco_all/aruco/markers', ArucoMarkerArray, update_callback, queue_size=25)
+    update_anchor = rospy.Subscriber('/aruco_500/aruco/markers', ArucoMarkerArray, update_anchor_callback, queue_size=25)
     tfBuffer = tf2_ros.Buffer(rospy.Duration(12000.0))
     listener = tf2_ros.TransformListener(tfBuffer)
     br = tf2_ros.TransformBroadcaster()

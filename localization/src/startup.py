@@ -96,34 +96,26 @@ def aruco_callback(mesg):
                 t.transform.rotation.w = 1
                 latestupdate=mesg.header.stamp
                 br.sendTransform(t)
-            arucopose = PoseStamped()
-            arucopose.header.frame_id="/camera_link"
-            arucopose.header.stamp=mesg.header.stamp
-            arucopose.pose.position.x = mark.pose.pose.position.x 
-            arucopose.pose.position.y = mark.pose.pose.position.y 
-            arucopose.pose.position.z = mark.pose.pose.position.z 
-            arucopose.pose.orientation = mark.pose.pose.orientation
-            rate = rospy.Rate(10.0)
-            try:
-                transform = tf_buffer.lookup_transform("map", "camera_link", latestupdate, rospy.Duration(2))
-                new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                rospy.loginfo(e)
-                continue
-            # transform = tf_buffer.lookup_transform("map", "camera/depth/color/points", mesg.header.stamp, rospy.Duration(1.0))
-            # new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-            anglelist = [new_aruco_pose.pose.orientation.x, new_aruco_pose.pose.orientation.y, new_aruco_pose.pose.orientation.z,new_aruco_pose.pose.orientation.w]
-            roll,pitch,yaw = tf_conversions.transformations.euler_from_quaternion(anglelist)
-            yaw = yaw - math.pi/2
-            q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw)
-            
-            
-            
-           
-            
-            
-            
-            if firsttime:
+                arucopose = PoseStamped()
+                arucopose.header.frame_id="/camera_link"
+                arucopose.header.stamp=mesg.header.stamp
+                arucopose.pose.position.x = mark.pose.pose.position.x 
+                arucopose.pose.position.y = mark.pose.pose.position.y 
+                arucopose.pose.position.z = mark.pose.pose.position.z 
+                arucopose.pose.orientation = mark.pose.pose.orientation
+                rate = rospy.Rate(10.0)
+                try:
+                    transform = tf_buffer.lookup_transform("map", "camera_link", latestupdate, rospy.Duration(2))
+                    new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+                    rospy.loginfo(e)
+                    continue
+                # transform = tf_buffer.lookup_transform("map", "camera/depth/color/points", mesg.header.stamp, rospy.Duration(1.0))
+                # new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
+                anglelist = [new_aruco_pose.pose.orientation.x, new_aruco_pose.pose.orientation.y, new_aruco_pose.pose.orientation.z,new_aruco_pose.pose.orientation.w]
+                roll,pitch,yaw = tf_conversions.transformations.euler_from_quaternion(anglelist)
+                yaw = yaw - math.pi/2
+                q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw)
                 #if it sees origin for the first time create a static transform for the origin and save its pose for future updates of odom
                 statictransform = TransformStamped()
                 statictransform.header.frame_id = "map"
@@ -147,53 +139,7 @@ def aruco_callback(mesg):
                 first_pose.pose.orientation.w = q[3]
                 firsttime=False
                 createWorkspace(statictransform, mesg,mark)
-                
-
-                #r.sleep()
-            else:
-                # if it sees the origin again compare where in the map we see the marker to where its first pose was in the map, the difference is the odom offset
-                # should be done only with no angular movement
-                if (angvel<0.1 and angvel>-0.1):
-                    diffpose = PoseStamped()
-                    diffpose.header.frame_id = "map"
-                    diffpose.header.stamp = mesg.header.stamp
-                    # diffpose.pose.position.x =  new_aruco_pose.pose.position.x - first_pose.pose.position.x
-                    # diffpose.pose.position.y = new_aruco_pose.pose.position.y - first_pose.pose.position.y
-                    # diffpose.pose.position.z = new_aruco_pose.pose.position.z - first_pose.pose.position.z
-                    anglelist2 = [first_pose.pose.orientation.x, first_pose.pose.orientation.y, first_pose.pose.orientation.z,first_pose.pose.orientation.w]
-                    roll2,pitch2,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist2)
-                    yaw = yaw - yaw2
-                    try:
-                        transform2 = tf_buffer.lookup_transform("map", "odom", latestupdate, rospy.Duration(2))
-                    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                        rospy.loginfo(e)
-                        continue
-                    t3.header.frame_id = "map"
-                    t3.child_frame_id = "odom"
-                    t3.header.stamp = mesg.header.stamp
-                    t3.transform.translation.x = transform2.transform.translation.x
-                    t3.transform.translation.y = transform2.transform.translation.y 
-                    t3.transform.translation.z = transform2.transform.translation.z
-                    anglelist3 = [transform2.transform.rotation.x, transform2.transform.rotation.y, transform2.transform.rotation.z,transform2.transform.rotation.w]
-                    roll3,pitch3,yaw3 = tf_conversions.transformations.euler_from_quaternion(anglelist3)
-                    yaw3 = yaw3 - yaw
-                    q3 = tf_conversions.transformations.quaternion_from_euler(roll3, pitch3, yaw3)
-                    t3.transform.rotation.x = q3[0]
-                    t3.transform.rotation.y = q3[1]
-                    t3.transform.rotation.z = q3[2]
-                    t3.transform.rotation.w = q3[3]
-                    #br.sendTransform(t3)
-                    transform = tf_buffer.lookup_transform("odom", "camera_link", latestupdate, rospy.Duration(2))
-                    new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-                    new_aruco_pose = tf2_geometry_msgs.do_transform_pose(new_aruco_pose, t3)
-                    diffpose.pose.position.x =  new_aruco_pose.pose.position.x - first_pose.pose.position.x
-                    diffpose.pose.position.y = new_aruco_pose.pose.position.y - first_pose.pose.position.y
-                    diffpose.pose.position.z = new_aruco_pose.pose.position.z - first_pose.pose.position.z
-                    t3.transform.translation.x = transform2.transform.translation.x - diffpose.pose.position.x
-                    t3.transform.translation.y = transform2.transform.translation.y - diffpose.pose.position.y
-                    t3.transform.translation.z = transform2.transform.translation.z - diffpose.pose.position.z
-                    br.sendTransform(t3)
-                    latestupdate = mesg.header.stamp
+    
 
 
 
@@ -209,14 +155,12 @@ if __name__ == '__main__':
     #The while loop is necessary to so that global variables are not reset. then we have to continuouslty publish teh transform between map and odom so the point cloud works, a better way could be to use a static transform.
     while not rospy.is_shutdown():
         now = rospy.Time.now()
-        if (t3.header.stamp.to_sec() - now.to_sec()<= -1):
-            t3 = tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
-            t3.header.stamp = now
-            br.sendTransform(t3)
-            rospy.loginfo("send transform")
-        elif (t3.header.stamp.to_nsec()*10**(-9) - now.to_nsec()*10**(-9) <= -0.1):
-            t3 = tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
-            t3.header.stamp = now
-            br.sendTransform(t3)
+        if (t3.header.stamp.to_sec() - now.to_sec()<= -0.1):
+            currenttransform = tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
+            if t3.transform.translation.x != currenttransform.transform.translation.x or t3.transform.translation.y != currenttransform.transform.translation.y or t3.transform.translation.z != currenttransform.transform.translation.z or t3.transform.rotation.x != currenttransform.transform.rotation.x or t3.transform.rotation.y != currenttransform.transform.rotation.y or t3.transform.rotation.z != currenttransform.transform.rotation.z or t3.transform.rotation.w != currenttransform.transform.rotation.w:
+                t3 = currenttransform
+                t3.header.stamp = now
+                st.sendTransform(t3)
+                rospy.loginfo("send transform")
         continue
     rospy.spin()
