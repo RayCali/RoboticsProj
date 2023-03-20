@@ -1,5 +1,4 @@
 """Baseline detector model.
-
 Inspired by
 You only look once: Unified, real-time object detection, Redmon, 2016.
 """
@@ -14,9 +13,9 @@ from torchvision.models import MobileNet_V2_Weights
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
+
 class BoundingBox(TypedDict):
     """Bounding box dictionary.
-
     Attributes:
         x: Top-left corner column
         y: Top-left corner row
@@ -39,15 +38,15 @@ class Detector(nn.Module):
 
     def __init__(self) -> None:
         """Create the module.
-
         Define all trainable layers.
         """
         super(Detector, self).__init__()
 
         self.features = models.mobilenet_v2(weights=MobileNet_V2_Weights.IMAGENET1K_V1).features
-        # output of mobilenet_v2 will be 1280x15x20 for 480x640 input images
+        # output of mobilenet_v2 will be 1280x23x40 for 720x1280 input images
+        # output of mobilenet_v2 will be 1280x15x20 for 480x640 input images 
 
-        self.head = nn.Conv2d(in_channels=1280, out_channels=5, kernel_size=1)
+        self.head = nn.Conv2d(in_channels=1280, out_channels=13, kernel_size=1)
         # 1x1 Convolution to reduce channels to out_channels without changing H and W
 
         # 1280x15x20 -> 5x15x20, where each element 5 channel tuple corresponds to
@@ -55,26 +54,22 @@ class Detector(nn.Module):
         # Where rel_x_offset, rel_y_offset is relative offset from cell_center
         # Where rel_x_width, rel_y_width is relative to image size
         # Where confidence is predicted IOU * probability of object center in this cell
-        self.out_cells_x = 20
-        self.out_cells_y = 15
-        # size of input images
-        self.img_height = 480.0
-        self.img_width = 640.0
+        self.out_cells_x = 20# 20 #40
+        self.out_cells_y = 15# 15 #23
+        self.img_height = 480#720#480.0
+        self.img_width = 640#1280#640.0
 
     def forward(self, inp: torch.Tensor) -> torch.Tensor:
         """Forward pass.
-
         Compute output of neural network from input.
-
         Args:
             inp: The input images. Shape (N, 3, H, W).
-
         Returns:
             The output tensor encoding the predicted bounding boxes.
             Shape (N, 5, self.out_cells_y, self.out_cells_y).
         """
         features = self.features(inp)
-        out = self.head(features)  # Linear (i.e., no) activation
+        out = self.head(features)  # Linear (i.e. no activation)
 
         return out
 
@@ -82,7 +77,6 @@ class Detector(nn.Module):
         self, out: torch.Tensor, threshold: Optional[float] = None, topk: int = 100
     ) -> List[List[BoundingBox]]:
         """Convert output to list of bounding boxes.
-
         Args:
             out (torch.tensor):
                 The output tensor encoding the predicted bounding boxes.
@@ -98,7 +92,6 @@ class Detector(nn.Module):
                 If None, the topk bounding boxes will be returned.
             topk (int):
                 Number of returned bounding boxes if threshold is None.
-
         Returns:
             List containing N lists of detected bounding boxes in the respective images.
         """
@@ -133,6 +126,29 @@ class Detector(nn.Module):
                     - width / 2.0
                 ).item()
 
+                bb_class = ""
+                maxProbIdx = torch.argmax(o[5:13, bb_index[0], bb_index[1]])
+                # print(o[5:13, bb_index[0], bb_index[1]])
+                # print(o[5:13, bb_index[0], bb_index[1]].size)
+                # print(maxProbIdx)
+
+                if maxProbIdx == 0:
+                    bb_class = "Binky"
+                elif maxProbIdx == 1:
+                    bb_class = "Hugo"
+                elif maxProbIdx == 2:
+                    bb_class = "Slush"
+                elif maxProbIdx == 3:
+                    bb_class = "Muddles"
+                elif maxProbIdx == 4:
+                    bb_class = "Kiki"
+                elif maxProbIdx == 5:
+                    bb_class = "Oakie"
+                elif maxProbIdx == 6:
+                    bb_class = "cube"
+                elif maxProbIdx == 7:
+                    bb_class = "ball"
+
                 img_bbs.append(
                     {
                         "width": width,
@@ -140,24 +156,23 @@ class Detector(nn.Module):
                         "x": x,
                         "y": y,
                         "score": o[4, bb_index[0], bb_index[1]].item(),
+                        "category": bb_class
                     }
                 )
+                
             bbs.append(img_bbs)
 
         return bbs
-
+    
     def input_transform(self, image: Image, anns: List) -> Tuple[torch.Tensor]:
-        """Prepare image and targets on loading.
-
+      """Prepare image and targets on loading.
         This function is called before an image is added to a batch.
         Must be passed as transforms function to dataset.
-
         Args:
             image:
                 The image loaded from the dataset.
             anns:
                 List of annotations in COCO format.
-
         Returns:
             Tuple:
                 image: The image. Shape (3, H, W).
@@ -165,52 +180,62 @@ class Detector(nn.Module):
                     The network target encoding the bounding box.
                     Shape (5, self.out_cells_y, self.out_cells_x).
         """
-        # Convert PIL.Image to torch.Tensor
-        bbs = [[ann["bbox"][0], ann["bbox"][1], ann["bbox"][2], ann["bbox"][3], "idk"] for ann in anns]
-        transform = A.Compose([
+      bbs = [[ann["bbox"][0], ann["bbox"][1], ann["bbox"][2], ann["bbox"][3], ann["category_id"]] for ann in anns]
+      transform = A.Compose([
           A.Resize(height=480, width=640),
             ], bbox_params=A.BboxParams(format='coco', min_area=1024, min_visibility=0.1))
-        transformed = transform(image=np.asarray(image), bboxes=bbs)
-        image = transformed["image"]
-        bbs = transformed["bboxes"]
-        image = transforms.ToTensor()(image)
-        image = transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )(image)
+      transformed = transform(image=np.asarray(image), bboxes=bbs)
+      image = transformed["image"]
+      bbs = transformed["bboxes"]
+      image = transforms.ToTensor()(image)
+      image = transforms.Normalize(
+          mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+          )(image)
+     
+      target = torch.zeros(13, self.out_cells_y, self.out_cells_x)
+      for bbx in bbs:
+        x = bbx[0]
+        y = bbx[1]
+        width = bbx[2]
+        height = bbx[3]
+        label = bbx[4]
+        x_center = x + width / 2.0
+        y_center = y + height / 2.0
+        x_center_rel = x_center / self.img_width * self.out_cells_x
+        y_center_rel = y_center / self.img_height * self.out_cells_y
+        x_ind = int(x_center_rel)
+        y_ind = int(y_center_rel)
+        x_cell_pos = x_center_rel - x_ind
+        y_cell_pos = y_center_rel - y_ind
+        rel_width = width / self.img_width
+        rel_height = height / self.img_height
 
-        # Convert bounding boxes to target format
+        # channels, rows (y cells), cols (x cells)
+        target[4, y_ind, x_ind] = 1
 
-        # First two channels contain relativ x and y offset of bounding box center
-        # Channel 3 & 4 contain relative width and height, respectively
-        # Last channel is 1 for cell with bounding box center and 0 without
+        # bb size
+        target[0, y_ind, x_ind] = x_cell_pos
+        target[1, y_ind, x_ind] = y_cell_pos
+        target[2, y_ind, x_ind] = rel_width
+        target[3, y_ind, x_ind] = rel_height
 
-        # If there is no bb, the first 4 channels will not influence the loss
-        # -> can be any number (will be kept at 0)
-        target = torch.zeros(5, self.out_cells_y, self.out_cells_x)
-        for bbx in bbs:
-            x = bbx[0] 
-            y = bbx[1] 
-            width = bbx[2] 
-            height = bbx[3]
+        # one-hot encoding for classifiaction
+        if label == 0:
+            target[5, y_ind, x_ind] = 1 # "Binky"
+        elif label == 1:
+            target[6, y_ind, x_ind] = 1 # "Hugo"
+        elif label == 2:
+            target[7, y_ind, x_ind] = 1 # "Slush"
+        elif label == 3:
+            target[8, y_ind, x_ind] = 1 # "Muddles"
+        elif label == 4:
+            target[9, y_ind, x_ind] =  1 # "Kiki"
+        elif label == 5:
+            target[10, y_ind, x_ind] = 1 # "Oakie"
+        elif label == 6:
+            target[11, y_ind, x_ind] = 1 # cube
+        elif label == 7:
+            target[12, y_ind, x_ind] = 1 # ball
 
-            x_center = x + width / 2.0
-            y_center = y + height / 2.0
-            x_center_rel = x_center / self.img_width * self.out_cells_x
-            y_center_rel = y_center / self.img_height * self.out_cells_y
-            x_ind = int(x_center_rel)
-            y_ind = int(y_center_rel)
-            x_cell_pos = x_center_rel - x_ind
-            y_cell_pos = y_center_rel - y_ind
-            rel_width = width / self.img_width
-            rel_height = height / self.img_height
-
-            # channels, rows (y cells), cols (x cells)
-            target[4, y_ind, x_ind] = 1
-
-            # bb size
-            target[0, y_ind, x_ind] = x_cell_pos
-            target[1, y_ind, x_ind] = y_cell_pos
-            target[2, y_ind, x_ind] = rel_width
-            target[3, y_ind, x_ind] = rel_height
-
-        return image, target
+      return image, target
+    

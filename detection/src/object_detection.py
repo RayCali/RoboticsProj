@@ -56,8 +56,12 @@ def imageCB(msg: Image):
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
     image = torch.from_numpy(np_image).permute(2,0,1)
     errors = centerpointArray()
+    boxes = []
+    labels = []
+    scores = []
     for bbx in bbs:
-        x, y, width, height, score = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"]
+        # label=[]
+        x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
         centerbbx_x = x+int(width/2)
         error_x = centerbbx_x - CENTERIMG_X
@@ -71,9 +75,37 @@ def imageCB(msg: Image):
         #X = np.arange(x, x+width)
         #Y = np.arange(y, y-height, step=-1)
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
-        image = draw_bounding_boxes(image, box, width=5,
-                          colors="green", 
-                          fill=True)
+        # print(box)
+        box_float = torch.tensor(box, dtype=torch.float)
+        # print(torch.linalg.matrix_norm(box_float))
+        for i in range(len(boxes)):
+            boxi_float = torch.tensor(boxes[i], dtype=torch.float)
+            print(torch.linalg.matrix_norm(boxi_float-box_float))
+            if torch.linalg.matrix_norm(boxi_float-box_float) < 50:
+                if scores[i] > score:
+                    continue
+                else:
+                    boxes.pop(i)
+                    labels.pop(i)
+                    scores.pop(i)
+                    scores.append(score)
+                    labels.append(label)
+                    boxes.append(box)
+                    break
+            else:
+                boxes.append(box)
+                labels.append(label)
+                scores.append(score)
+        
+        if len(boxes) == 0:
+            boxes.append(box)
+            labels.append(label)
+            scores.append(score)
+       
+    boxes = torch.cat(boxes)
+    image = draw_bounding_boxes(image, boxes, width=5,
+                          colors="green",labels=labels,
+                          fill=True,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=20)
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
