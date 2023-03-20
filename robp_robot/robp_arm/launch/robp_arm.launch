@@ -1,0 +1,7 @@
+<launch>
+
+<node pkg="robot_arm" type="pickup.py" name="pickup_client"/>
+<node pkg="robot_arm" type="pickup_srv.py" name="pickup_service"/>
+
+</launch>
+

@@ -1,6 +1,7 @@
 <launch>
 <include file="$(find robp_phidgets)/launch/software.launch"></include>
 <include file="$(find robp_phidgets)/launch/hardware.launch"></include>
+<include file="$(find robp_arm)/launch/robp_arm.launch"></include>
 <include file="$(find realsense2_camera)/launch/rs_camera.launch">
     <arg name="filters" value="pointcloud"/>
 </include>
