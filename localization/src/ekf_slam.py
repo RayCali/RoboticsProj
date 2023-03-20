@@ -20,9 +20,9 @@ br= None
 tfBuffer = None
 listener = None
 R = np.identity(3)*0.01
-Q = np.identity(2)*0.0000001
+Q = np.identity(2)*0.01
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
-landmarks = 3
+landmarks = 4
 mu_slam = np.zeros(3+2*landmarks)
 P_up = np.zeros([3,3+2*landmarks])
 p_downleft = np.zeros([2*landmarks,3])
@@ -193,14 +193,14 @@ def update_callback(msg: MarkerArray):
                     currentorder = len(Landmarklist)-1
                     currentid = mark.id
                     mu_slam[currentorder*2 + 3],mu_slam[currentorder*2 + 4]=markerpose.pose.position.x,markerpose.pose.position.y
-                    P[currentorder*2 + 3:currentorder*2 + 5,currentorder*2 + 3:currentorder*2 + 5]= P[0:2,0:2]
+                    # P[currentorder*2 + 3:currentorder*2 + 5,currentorder*2 + 3:currentorder*2 + 5]= P[0:2,0:2]
                     marktransform = TransformStamped()
                     marktransform.header.frame_id = "map"
                     marktransform.child_frame_id = "arucolandmark" + str(mark.id)
                     marktransform.header.stamp = msg.header.stamp
                     marktransform.transform.translation.x = markerpose.pose.position.x
                     marktransform.transform.translation.y = markerpose.pose.position.y
-                    marktransform.transform.translation.z = markerpose.pose.position.z
+                    marktransform.transform.translation.z = 0
                     anglelist = [markerpose.pose.orientation.x, markerpose.pose.orientation.y, markerpose.pose.orientation.z,markerpose.pose.orientation.w]
                     roll,pitch,yaw2 = tf_conversions.transformations.euler_from_quaternion(anglelist)
                     roll = roll - math.pi/2
@@ -222,7 +222,6 @@ def update_callback(msg: MarkerArray):
                     addon[1, 4+2*currentorder] = 1
                     Fxj = np.concatenate((Fx,addon),axis=0)
                     
-                    
                     #range bearing part
                     # delta = np.array([mu_slam[currentorder*2 + 3]-mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
                     # q = np.matmul(np.transpose(delta),delta)
@@ -238,17 +237,18 @@ def update_callback(msg: MarkerArray):
                     # angle = (angle+math.pi)%2*math.pi-math.pi
                     # z = np.array([math.sqrt(q),angle])
                     H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
+                    rospy.loginfo(H)
                     Hj = np.matmul(H,Fxj)
-                    z = np.array([markerpose.pose.position.x-mu_slam[0],markerpose.pose.position.y-mu_slam[1]])
-                    zpredict = np.array([mu_slam[currentorder*2 + 3] - mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]])
+                    z = np.array([markerpose.pose.position.x-mu_slam[0],markerpose.pose.position.y-mu_slam[1]]).transpose()
+                    zpredict = np.array([mu_slam[currentorder*2 + 3] - mu_slam[0],mu_slam[currentorder*2 + 4]-mu_slam[1]]).transpose()
                     
                     
                     
                     K = np.matmul(np.matmul(P,np.transpose(Hj)),np.linalg.inv(np.matmul(np.matmul(Hj,P),np.transpose(Hj))+Q))
 
                     mu_slam = mu_slam + np.matmul(K,z-zpredict)
-                    rospy.loginfo(np.matmul(K,z-zpredict))
-                    
+                    #rospy.loginfo(np.matmul(K,z-zpredict))
+                    #rospy.loginfo(np.matmul(K,Hj))
 
 
 
@@ -275,7 +275,8 @@ def update_callback(msg: MarkerArray):
 
 
                     latestupdate = rospy.Time.now()
-                    P = np.matmul(np.identity(3+2*landmarks)-np.matmul(K,Hj),P)
+                    Khj = np.matmul(K,Hj)
+                    P = np.matmul(np.identity(Khj.shape[0])-Khj,P)
                     for landmark in Landmarklist:
                         marktransform = TransformStamped()
                         marktransform.header.frame_id = "map"
@@ -283,15 +284,14 @@ def update_callback(msg: MarkerArray):
                         marktransform.header.stamp = msg.header.stamp
                         marktransform.transform.translation.x = mu_slam[landmark.order*2 + 3]
                         marktransform.transform.translation.y = mu_slam[landmark.order*2 + 4]
-                        marktransform.transform.translation.z = markerpose.pose.position.z
                         marktransform.transform.rotation.x =  0      #markerpose.pose.orientation.x
                         marktransform.transform.rotation.y =  0      #markerpose.pose.orientation.y
                         marktransform.transform.rotation.z =  0      #markerpose.pose.orientation.z
                         marktransform.transform.rotation.w =  1      #markerpose.pose.orientation.w
                         br.sendTransform(marktransform)
                     updaterviz()
-                    rospy.loginfo(zpredict)
-                    rospy.loginfo(z)
+                    #rospy.loginfo(zpredict)
+                    #rospy.loginfo(z)
                     rospy.loginfo("updated")
         else:
             P[0:3,0:3].fill(0)
