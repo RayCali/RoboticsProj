@@ -10,6 +10,7 @@
         "/home/robot/armpi_fpv/devel/include/**",
         "/opt/ros/noetic/include/**",
         "/home/robot/armpi_fpv/src/hiwonder_servo_driver/include/**",
+        "/opt/ros/noetic/include/**",
         "/home/robot/dd2419_ws/src/robp_robot/robp_phidgets/include/**",
         "/home/robot/dd2419_ws/src/teleop_twist_joy/include/**",
         "/home/robot/dd2419_ws/src/usb_cam/include/**",

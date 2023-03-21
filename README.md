@@ -49,6 +49,9 @@ roslaunch robp_phidgets phidgetsrosplayer.launch
    roslaunch robp_phidgets phidgetsrosplayer.launch 
 
 # How to use RVIZ on another computer
+## STATIC IP
+While the robot is on the IoT network, it should have a static ip. The last known is:
+192.168.128.111
 ## On the robot
 1. find the *robot inet address* by using the ifconfig command. You know it is the right command if you are able to ssh into the robot with this address.
 
