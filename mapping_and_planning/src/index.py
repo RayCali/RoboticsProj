@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image as pil
 from gridmapping import Mapper
 import yaml
+from gridmapping_new import Map
 
 # This is just so that it is easier to read the code
 def doOneUpdate():
@@ -29,11 +30,9 @@ def doOneUpdate():
 
 if __name__ == "__main__":
 
-    m = Mapper()
-    # m.makeoccupancygrid()
+    
+    m = Map(plot=True, height=1000, width=1000, resolution=0.01)
+    print(m.map.data.shape)
     m.doAnimate()
-    exit()
-    tfBuffer = tf2_ros.Buffer(rospy.Duration(1.0))
-    tflistener = tf2_ros.TransformListener(tfBuffer)
-    while not rospy.is_shutdown():
-        doOneUpdate()
+    print(m.map.data)
+    
