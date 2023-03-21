@@ -22,7 +22,7 @@ class path(object):
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         # ROS Subscribers
-        self.goal = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.tracker)
+        self.goal = rospy.Subscriber("/detection/pose", PoseStamped, self.tracker)
         
         self.done_once = False
         self.rate = rospy.Rate(20)
