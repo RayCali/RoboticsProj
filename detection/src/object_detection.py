@@ -45,7 +45,6 @@ def get_object_position(depthImg, center_x, center_y):
     # get depth value at center of bounding box
     # print(center_x)
     depth = np_depthImg[center_y,center_x]
-    print(depth)
     # calculate distance to object
     # dist = (FOCAL_LENGTH * BASELINE) / depth
     z = depth*0.001 # depth in m
@@ -54,6 +53,7 @@ def get_object_position(depthImg, center_x, center_y):
     y = z * center_y / FOCAL_LENGTH
 
     object_position = np.array([x,y,z])
+    print(object_position)
     return object_position
 
 
@@ -67,8 +67,7 @@ def imageCB(msg: Image):
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
     cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")
-    np_image = rnp.numpify(msg) # shape: (720,1280,3)
-    print(np_image.shape)
+    np_image = rnp.numpify(msg) # shape: (480, 640, 3)
     
     image = transforms.ToTensor()(cv_image) # shape: (3,720,1280)
     image = transforms.Normalize(
@@ -158,10 +157,49 @@ def imageCB(msg: Image):
                           colors="green",labels=labels,
                           fill=True,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=100)
         
-
+    i = 1
     # transform and publish poses
     for pos in positions:
-        pass
+        pose = PoseStamped()
+        pose.header.frame_id = "camera_color_optical_frame"
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = pos[0]
+        pose.pose.position.y = pos[1]
+        pose.pose.position.z = pos[2]
+        try:
+            transform = tf_buffer.lookup_transform("map", pose.header.frame_id, pose.header.stamp, rospy.Duration(2))
+            pose_out = tf2_geometry_msgs.do_transform_pose(pose, transform)
+            rospy.loginfo("Publishing pose")
+            posePub.publish(pose_out)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+            return
+        
+        # publish transform
+        t = TransformStamped()
+        t.header = msg.header
+        t.header.frame_id = "map"
+        t.child_frame_id = "detection"+str(i)
+
+        t.transform.translation = pose_out.pose.position
+        try:
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, timeout=rospy.Duration(2))
+            rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
+            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
+            yaw = yaw + math.pi
+            quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
+            t.transform.rotation.x = quat[0]
+            t.transform.rotation.y = quat[1]
+            t.transform.rotation.z = quat[2]
+            t.transform.rotation.w = quat[3]
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+            t.transform.rotation.w = 1
+        
+        tfbroadcaster.sendTransform(t)
+
+        i+=1
+
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
