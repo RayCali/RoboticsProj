@@ -31,17 +31,44 @@ BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
 BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
 CENTERIMG_X = 640 # center of image in x direction
+CENTERIMG_Y = 360 # center of image in y direction
+PLUSHIE_HEIGHT = 0.09 # height of plushie in m
+PLUSHIE_WIDTH = 0.035 # width of plushie in m
+PLUSHIE_DEPTH = 0.06 # depth of plushie in m
+CUBE_SIDELENGTH = 0.03 # side length of cube in m
+BALL_DIAMETER = 0.04 # diameter of ball in m
 DEVICE = "cuda"
 
+def get_object_position(depthImg, center_x, center_y):
+    # depthImg is of type Image, convert to torch tensor
+    np_depthImg = np_image = rnp.numpify(depthImg) # shape: (720,1280,1)
+    # get depth value at center of bounding box
+    # print(center_x)
+    depth = np_depthImg[center_y,center_x]
+    print(depth)
+    # calculate distance to object
+    # dist = (FOCAL_LENGTH * BASELINE) / depth
+    z = depth*0.001 # depth in m
+    # calculate x and y position of object
+    x = z * center_x / FOCAL_LENGTH
+    y = z * center_y / FOCAL_LENGTH
+
+    object_position = np.array([x,y,z])
+    return object_position
+
+
 def imageCB(msg: Image):
+    depthImg_rcvd = False
+    try:
+        depthImg = rospy.wait_for_message("/camera/aligned_depth_to_color/image_raw", Image, timeout=0.1)
+        depthImg_rcvd = True
+    except rospy.ROSInterruptException:
+        rospy.loginfo("No depth image received")
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
     cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")
     np_image = rnp.numpify(msg) # shape: (720,1280,3)
-    # PIL_image = pil.fromarray(np.uint8(np_image)).convert('RGB')
-    im = pil.open("/home/robot/Downloads/frame0008.jpg") 
-    # loginfo(PIL_image)
-    # loginfo(im)
+    print(np_image.shape)
     
     image = transforms.ToTensor()(cv_image) # shape: (3,720,1280)
     image = transforms.Normalize(
@@ -56,40 +83,49 @@ def imageCB(msg: Image):
     
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
     image = torch.from_numpy(np_image).permute(2,0,1)
+    image_width = image.shape[2]
+    image_height = image.shape[1]
     errors = centerpointArray()
     boxes = []
     labels = []
     scores = []
+    positions = []
     for bbx in bbs:
         # label=[]
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
-        centerbbx_x = x+int(width/2)
-        error_x = centerbbx_x - CENTERIMG_X
+        centerbbx_x = int(x+int(width/2))
+        centerbbx_y = int(y+int(height/2))
+        error_x = centerbbx_x - image_width/2
         v3s = Vector3Stamped()
         v3s.vector.x = error_x
         errors.objects_in_view.append(v3s)
         
+        if depthImg_rcvd:
+            object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y)
+
         # deviation of bounding box from center (only in x)
-        
         # overlay box on image
         #X = np.arange(x, x+width)
         #Y = np.arange(y, y-height, step=-1)
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
-        corners = [[box[0],box[1]], [box[2],box[1]], [box[0],box[3]], [box[2],box[3]]]
+        corners = [[int(box[0,0]),int(box[0,1])], [int(box[0,2]),int(box[0,1])],
+                    [int(box[0,2]),int(box[0,3])], [int(box[0,0]),int(box[0,3])]]
+        # print(corners)
         polygon = Polygon(corners)
         # print(box)
         # box_float = torch.tensor(box, dtype=torch.float)
         # print(torch.linalg.matrix_norm(box_float))
         for i in range(len(boxes)):
             # boxi_float = torch.tensor(boxes[i], dtype=torch.float)
-            corners_i = [[boxes[i][0],boxes[i][1]], [boxes[i][2],boxes[i][1]], [boxes[i][0],boxes[i][3]], [boxes[i][2],boxes[i][3]]]
+            corners_i = [[int(boxes[i][0,0]),int(boxes[i][0,1])], [int(boxes[i][0,2]),int(boxes[i][0,1])],
+                          [int(boxes[i][0,2]),int(boxes[i][0,3])], [int(boxes[i][0,0]),int(boxes[i][0,3])]]
             # print(torch.linalg.matrix_norm(boxi_float-box_float))
             polygon_i = Polygon(corners_i)
             overlap = polygon.intersection(polygon_i).area / polygon.union(polygon_i).area
-            if overlap < 0.8:
+            if overlap > 0.3:
                 if scores[i] > score:
-                    continue
+                    break
                 else:
                     boxes.pop(i)
                     labels.pop(i)
@@ -97,21 +133,35 @@ def imageCB(msg: Image):
                     scores.append(score)
                     labels.append(label)
                     boxes.append(box)
+                    if depthImg_rcvd:
+                        positions.pop(i)
+                        positions.append(object_position)
                     break
             else:
-                boxes.append(box)
-                labels.append(label)
-                scores.append(score)
+                if score > 0.8:
+                    boxes.append(box)
+                    labels.append(label)
+                    scores.append(score)
+                    if depthImg_rcvd:
+                        positions.append(object_position)
         
-        if len(boxes) == 0:
+        if len(boxes) == 0 and score > 0.8:
             boxes.append(box)
             labels.append(label)
             scores.append(score)
-       
-    boxes = torch.cat(boxes)
-    image = draw_bounding_boxes(image, boxes, width=5,
+            if depthImg_rcvd:
+                positions.append(object_position)
+
+    if len(boxes) > 0:   
+        boxes = torch.cat(boxes)
+        image = draw_bounding_boxes(image, boxes, width=5,
                           colors="green",labels=labels,
-                          fill=True,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=20)
+                          fill=True,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=100)
+        
+
+    # transform and publish poses
+    for pos in positions:
+        pass
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
