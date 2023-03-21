@@ -217,8 +217,8 @@ if __name__=="__main__":
     bridge = CvBridge()
 
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB,queue_size=10, buff_size=2**24)
-    # cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
-    # pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
+    cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
+    pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     posePub = rospy.Publisher("/detection/pose", PoseStamped, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
     errPub = rospy.Publisher("/detection/bb_error", centerpointArray, queue_size=10)
