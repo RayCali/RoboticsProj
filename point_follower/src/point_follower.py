@@ -46,7 +46,7 @@ class path(object):
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logerr("Failed to transform point from odom frame to base_link frame")
                 pass
-
+            
             self.rotation = self.goal_pose.pose.orientation.z
             self.inc_x = self.goal_pose.pose.position.x
             self.inc_y = self.goal_pose.pose.position.y
