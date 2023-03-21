@@ -24,6 +24,7 @@ import matplotlib.patches as patches
 from rospy import loginfo
 from cv_bridge import CvBridge
 import cv2
+from shapely.geometry import Polygon
 
 FOCAL_LENGTH = 1.93/1000 # focal lenth in m
 BASELINE = 50/1000 # baseline in m (distance between the two infrared cams)
@@ -75,13 +76,18 @@ def imageCB(msg: Image):
         #X = np.arange(x, x+width)
         #Y = np.arange(y, y-height, step=-1)
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
+        corners = [[box[0],box[1]], [box[2],box[1]], [box[0],box[3]], [box[2],box[3]]]
+        polygon = Polygon(corners)
         # print(box)
-        box_float = torch.tensor(box, dtype=torch.float)
+        # box_float = torch.tensor(box, dtype=torch.float)
         # print(torch.linalg.matrix_norm(box_float))
         for i in range(len(boxes)):
-            boxi_float = torch.tensor(boxes[i], dtype=torch.float)
-            print(torch.linalg.matrix_norm(boxi_float-box_float))
-            if torch.linalg.matrix_norm(boxi_float-box_float) < 50:
+            # boxi_float = torch.tensor(boxes[i], dtype=torch.float)
+            corners_i = [[boxes[i][0],boxes[i][1]], [boxes[i][2],boxes[i][1]], [boxes[i][0],boxes[i][3]], [boxes[i][2],boxes[i][3]]]
+            # print(torch.linalg.matrix_norm(boxi_float-box_float))
+            polygon_i = Polygon(corners_i)
+            overlap = polygon.intersection(polygon_i).area / polygon.union(polygon_i).area
+            if overlap < 0.8:
                 if scores[i] > score:
                     continue
                 else:
