@@ -41,7 +41,7 @@ def encoder_callback(msg):
     #DTheta=(r/b)*(K*msg.delta_encoder_right - K*msg.delta_encoder_left)
     #x=x+D*math.cos(yaw)
     #y=y+D*math.sin(yaw)
-    t.header.stamp=rospy.Time.now()
+    t.header.stamp=msg.header.stamp
     t.transform.translation.x = x
     t.transform.translation.y = y
     rospy.loginfo("x= %f" % x)

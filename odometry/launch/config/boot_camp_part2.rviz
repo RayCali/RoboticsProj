@@ -4,8 +4,10 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /Image1
         - /Image2
+        - /Marker1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 224
   - Class: rviz/Selection
@@ -100,14 +102,6 @@ Visualization Manager:
           Value: true
         camera_bottom_screw_frame:
           Value: false
-        camera_color_frame:
-          Value: true
-        camera_color_optical_frame:
-          Value: true
-        camera_depth_frame:
-          Value: true
-        camera_depth_optical_frame:
-          Value: true
         camera_link:
           Value: false
         imu_link:
@@ -128,12 +122,7 @@ Visualization Manager:
             base_link:
               camera_bottom_screw_frame:
                 camera_link:
-                  camera_color_frame:
-                    camera_color_optical_frame:
-                      {}
-                  camera_depth_frame:
-                    camera_depth_optical_frame:
-                      {}
+                  {}
             imu_link:
               {}
       Update Interval: 0
@@ -191,11 +180,19 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /boundaries
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
     Default Light: true
-    Fixed Frame: odom
+    Fixed Frame: map
     Frame Rate: 30
   Name: root
   Tools:
