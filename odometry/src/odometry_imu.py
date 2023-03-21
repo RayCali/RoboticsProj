@@ -10,10 +10,9 @@ x=0.0
 y=0.0
 yaw = 0.0
 
-def imu_callback(msg: Imu):
+def imu_callback(msg:Imu):
     global x,y,yaw
     rospy.loginfo('New encoder received:\n%s', msg)
-
     br = tf2_ros.TransformBroadcaster()
 
     t = TransformStamped()
@@ -24,8 +23,14 @@ def imu_callback(msg: Imu):
     r= 0.04921
     dt=1/90.9
     b=0.3
-    wx= msg.linear_acceleration.x #linear acceleration in x axis this is the vw_1 and vw_2
-    vz = msg.angular_velocity.z #rotation around z axis
+    if (msg.linear_acceleration.y>0.6):
+        wx= msg.linear_acceleration.y #linear acceleration in x axis this is the vw_1 and vw_2
+    else:
+        wx=0
+    if(msg.angular_velocity.z>0.6):
+        vz = msg.angular_velocity.z #rotation around z axis
+    else:
+        vz=0
     v = wx
     w= (vz)/(b)
     diffx=v*dt*math.cos(yaw)
@@ -54,6 +59,6 @@ def imu_callback(msg: Imu):
 
 rospy.init_node('odometry_imu')
 # sub_goal = rospy.Subscriber('/motor/encoders', Encoders, encoder_callback)
-sub_imu = rospy.Subscriber('/imu', Imu, imu_callback)
+sub_imu = rospy.Subscriber('/imu/data', Imu, imu_callback)
 if __name__ == '__main__':
     rospy.spin()
