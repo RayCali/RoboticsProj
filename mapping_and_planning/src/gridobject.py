@@ -21,7 +21,6 @@ class GridObject:
         for i in range(500,600,1):
             for ii in range(500,600,1):
                 l.append([i,ii])
-                #self.__ir[i,ii] = (1,0,0,0)
         self.doPlace(positions = l, id="OBS")
 
         l = []
