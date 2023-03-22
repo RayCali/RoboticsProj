@@ -28,5 +28,5 @@ class Mapper:
             ]
         self.go.doPlace(positions=positions, id = id)
     
-    def keyLogged(self, key: str) -> bool:
+    def getKeyLogged(self, key: str) -> bool:
         return self.frames_dict_keys[key] is not None
