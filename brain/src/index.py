@@ -10,7 +10,9 @@ if __name__=="__main__":
     root = Root(
         And([
             ifAnchorDetected(),
-            Or([ifFoundMatchingToyAndBox(), doExplore()])
+            Or([
+                ifFoundMatchingToyAndBox(),
+                doExplore()])
         ])
     )
     while True:

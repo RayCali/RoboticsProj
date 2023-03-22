@@ -29,8 +29,13 @@ class Action(Leaf):
     # In classical robotics this is called and execution node
     def __init__(self) -> None:
         super().__init__()
-    def tick(self) -> int:
-        return RUNNING
+    def tick(self):
+        try:
+            res: SetBool = self.service()
+        except ServiceException as e:
+            loginfo(e)
+            return FAILURE
+        return self.getStatusFromNum(res.message)
 
 class Condition(Leaf):
     # In classical robotics this is called and execution node
