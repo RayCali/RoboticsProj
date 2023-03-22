@@ -34,12 +34,9 @@ if __name__ == "__main__":
     m = Map(plot=True, height=1000, width=1000, resolution=0.01)
     print(m.map.data.shape)
     m.doAnimate()
-<<<<<<< HEAD
     print(m.map.data)
     
-=======
     tfBuffer = tf2_ros.Buffer(rospy.Duration(1.0))
     tflistener = tf2_ros.TransformListener(tfBuffer)
     while not rospy.is_shutdown():
         doOneUpdate()
->>>>>>> 8c26916838cea979a3b6191a3c8ef3a18e8fb4a0
