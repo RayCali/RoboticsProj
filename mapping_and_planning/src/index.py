@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image as pil
 from gridmapping import Mapper
 import yaml
+from detection.msg import objectPoseStamped
 
 # This is just so that it is easier to read the code
 def doOneUpdate():
@@ -26,12 +27,13 @@ def doOneUpdate():
                 frames_dict[key], "/map", t)
             m.doInterpreteMSG(msg=ts, id="UNK")
 
+def doUpdate(msg: objectPoseStamped):
+    loginfo(msg)
+
 
 if __name__ == "__main__":
-
+    rospy.init_node("mapping_and_planning")
     m = Mapper()
-    m.doAnimate()
-    tfBuffer = tf2_ros.Buffer(rospy.Duration(1.0))
-    tflistener = tf2_ros.TransformListener(tfBuffer)
-    while not rospy.is_shutdown():
-        doOneUpdate()
+    #m.doAnimate()
+    imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
+    rospy.spin()
