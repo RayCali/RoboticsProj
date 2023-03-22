@@ -54,6 +54,7 @@ add_message_files(
    centerpointArray.msg
    boundingboxArray.msg
    boundingboxMsg.msg
+   objectPoseStamped.msg
  )
 
 ## Generate services in the 'srv' folder

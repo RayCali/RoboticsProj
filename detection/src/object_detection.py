@@ -17,7 +17,7 @@ from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
-from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg
+from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStamped
 from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -32,12 +32,10 @@ BASELINE_1 = 65/1000 # distance in m between color cam and right infrared cam
 BASELINE_2 = 15/1000 # distance in m between color cam and left infrared cam
 CENTERIMG_X = 640 # center of image in x direction
 CENTERIMG_Y = 360 # center of image in y direction
-PLUSHIE_HEIGHT = 0.09 # height of plushie in m
-PLUSHIE_WIDTH = 0.035 # width of plushie in m
-PLUSHIE_DEPTH = 0.06 # depth of plushie in m
-CUBE_SIDELENGTH = 0.03 # side length of cube in m
-BALL_DIAMETER = 0.04 # diameter of ball in m
 DEVICE = "cuda"
+
+def pixel2m(pixel_coord):
+    return 0.00001 * 0.2645833333 * pixel_coord
 
 def get_object_position(depthImg, center_x, center_y):
     # depthImg is of type Image, convert to torch tensor
@@ -48,9 +46,11 @@ def get_object_position(depthImg, center_x, center_y):
     # calculate distance to object
     # dist = (FOCAL_LENGTH * BASELINE) / depth
     z = depth*0.001 # depth in m
+    center_x_m = pixel2m(center_x)
+    center_y_m = pixel2m(center_y)
     # calculate x and y position of object
-    x = z * center_x / FOCAL_LENGTH
-    y = z * center_y / FOCAL_LENGTH
+    x = z * center_x_m / FOCAL_LENGTH
+    y = z * center_y_m / FOCAL_LENGTH
 
     object_position = np.array([x,y,z])
     print(object_position)
@@ -155,7 +155,7 @@ def imageCB(msg: Image):
         boxes = torch.cat(boxes)
         image = draw_bounding_boxes(image, boxes, width=5,
                           colors="green",labels=labels,
-                          fill=True,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=100)
+                          fill=False,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=50)
         
     i = 1
     # transform and publish poses
@@ -167,9 +167,9 @@ def imageCB(msg: Image):
         pose.pose.position.y = pos[1]
         pose.pose.position.z = pos[2]
         try:
-            transform = tf_buffer.lookup_transform("map", pose.header.frame_id, pose.header.stamp, rospy.Duration(2))
+            transform = tf_buffer.lookup_transform("map", pose.header.frame_id, msg.header.stamp, rospy.Duration(2))
             pose_out = tf2_geometry_msgs.do_transform_pose(pose, transform)
-            rospy.loginfo("Publishing pose")
+            # rospy.loginfo("Publishing pose")
             posePub.publish(pose_out)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
@@ -216,7 +216,7 @@ def cloudCB(msg):
 
     # Convert Open3D -> NumPy
     points = np.asarray(ds_cloud.points)
-    print("Points size: ",points.shape)
+    # print("Points size: ",points.shape)
     colors = np.asarray(ds_cloud.colors)
 
     # sample color of ground
@@ -299,6 +299,7 @@ def cloudCB(msg):
 
 if __name__=="__main__":
     rospy.init_node("detection")
+    objectPoseStamped()
 
 
     detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
