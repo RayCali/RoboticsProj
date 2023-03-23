@@ -9,7 +9,13 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
+import tf_conversions
 from copy import deepcopy
+
+tf_buffer = None #tf buffer length
+listener = None
+br = None
+st = None
 
 class Map:
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.05):
@@ -31,6 +37,7 @@ class Map:
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+       
         
         if plot:
             self.__doDrawBox()
@@ -62,21 +69,21 @@ class Map:
 
 
     def __doScanCallback(self, msg: LaserScan):
-            rate = rospy.Rate(10.0)
-            latestupdate = msg.header.stamp
-            
-            # try:
-            #     transform = tf_buffer.lookup_transform("map", "laser", latestupdate, rospy.Duration(2))
-            #     new_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-            # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            #     rospy.loginfo(e)
+            global tf_buffer
+            latestupdate = rospy.Time(0)
+            try:
+                transform = tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+                rospy.loginfo(e)
+
+            anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
         #look up transform from laser to map
         # TODO: ask Rayan what happens here below
         #addera x och y med robotens position och robotens yaw
             for i in range(len(msg.ranges)):
                 if msg.ranges[i] < 3.0:
-                    x = msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment)
-                    y = msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment)
+                    x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                    y = transform.tranform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.grid.data[y_ind * self.grid.info.width + x_ind] = 100

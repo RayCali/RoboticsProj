@@ -34,7 +34,8 @@ def doUpdate(msg: objectPoseStamped):
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
-    m = Map(True, 100, 100)        
+    m = Map(True, 100, 100)
+            
     while True:
         rospy.sleep(1)
         m.doPublish()
