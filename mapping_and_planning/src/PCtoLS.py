@@ -23,9 +23,9 @@ def cloud_callback(msg: PointCloud2):
     rate.sleep()
     
 rospy.init_node('PCtoLS')
-sub_goal = rospy.Subscriber('/camera/depth/color/points', PointCloud2, cloud_callback)
+sub_goal = rospy.Subscriber('/camera/depth/image_rect_raw', PointCloud2, cloud_callback)
 
-pub = rospy.Publisher('cloud_in', PointCloud2, queue_size=1)
+pub = rospy.Publisher('image', PointCloud2, queue_size=1)
 pub_tf = rospy.Publisher("/tf", tf2_msgs.msg.TFMessage, queue_size=1)
 
 if __name__ == '__main__':
