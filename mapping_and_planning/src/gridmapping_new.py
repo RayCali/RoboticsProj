@@ -18,7 +18,7 @@ br = None
 st = None
 
 class Map:
-    def __init__(self, plot=False, width=1000, height=1000, resolution=0.05):
+    def __init__(self, plot=False, width=1000, height=1000, resolution=0.01):
         global tf_buffer, listener, br, st
         tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         listener = tf2_ros.TransformListener(tf_buffer)
@@ -90,7 +90,7 @@ class Map:
                     y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-                    self.grid.data[y_ind * self.grid.info.width + x_ind] = 100
+                    self.matrix[y_ind * self.grid.info.width, x_ind] = 100
                 
 
             self.grid.header.stamp = rospy.Time.now()
