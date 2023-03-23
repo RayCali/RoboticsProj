@@ -7,6 +7,7 @@ class Mapper:
     def __init__(self) -> None:
         self.__setGridObject()
         self.frames_dict_keys = []
+        self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
     
     def __setGridObject(self, resolution: int = 0.01) -> GridObject:
         self.go = GridObject(resolution)
@@ -30,3 +31,5 @@ class Mapper:
     
     def getKeyLogged(self, key: str) -> bool:
         return self.frames_dict_keys[key] is not None
+    
+    
