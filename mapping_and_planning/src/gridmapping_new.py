@@ -20,22 +20,26 @@ class Map(object):
         self.naming_convention = {
             "unknown": 0,
             "free": 1,
-            "occupied": 2
+            "occupied": 2,
+            "toys": 3,
+            "boxes": 4
         }
         self.map.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
         self.map.data = np.zeros((self.map.info.width, self.map.info.height), dtype=np.int8)
-        # self.map_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
+        self.map_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
         self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)#Should be point cloud PointCloud2
         if plot:
             self.__doDrawBox()
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
-            try:
-                transform = tf_buffer.lookup_transform("map", "camera_link", latestupdate, rospy.Duration(2))
-                new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                rospy.loginfo(e)
+            latestupdate = msg.header.stamp
+            
+            # try:
+            #     transform = tf_buffer.lookup_transform("map", "laser", latestupdate, rospy.Duration(2))
+            #     new_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
+            # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            #     rospy.loginfo(e)
         #look up transform from laser to map
         #addera x och y med robotens position och robotens yaw
             for i in range(len(msg.ranges)):
