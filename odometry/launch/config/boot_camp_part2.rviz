@@ -8,6 +8,7 @@ Panels:
         - /Image1
         - /Image2
         - /Marker1
+        - /Map1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 267
   - Class: rviz/Selection
@@ -232,6 +233,16 @@ Visualization Manager:
       Namespaces:
         {}
       Queue Size: 100
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: ""
+      Unreliable: false
+      Use Timestamp: false
       Value: true
   Enabled: true
   Global Options:

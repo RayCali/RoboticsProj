@@ -7,7 +7,7 @@ import tf2_geometry_msgs
 from nav_msgs.msg import OccupancyGrid, MapMetaData
 from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, PoseStamped
 import matplotlib.pyplot as plt
 import tf_conversions
 
@@ -17,14 +17,16 @@ br = None
 st = None
 
 class Map:
-    def __init__(self, plot=False, width=1000, height=1000, resolution=0.01):
+    def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
+        width = int(width/resolution)
+        height = int(height/resolution)
         global tf_buffer, listener, br, st
         tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         listener = tf2_ros.TransformListener(tf_buffer)
         br = tf2_ros.TransformBroadcaster()
         st = tf2_ros.StaticTransformBroadcaster()
         
-        self.matrix = np.zeros((int(width/resolution), int(height/resolution)), dtype=np.int8)
+        self.matrix = np.zeros((width, height), dtype=np.int8)+1
         
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
@@ -38,18 +40,19 @@ class Map:
             "toy": 3,
             "box": 4
         }
-        self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        self.grid.info.origin = Pose(Point(-5.0, -5.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.doScanCallback)
+        # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = []
-        for i in range(int(self.grid.info.width/self.grid.info.resolution)):
-            for ii in range(int(self.grid.info.height/self.grid.info.resolution)):
+        for i in range(self.grid.info.width):
+            for ii in range(self.grid.info.height):
                 self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
@@ -66,11 +69,13 @@ class Map:
         if x == 1: # a bit grey
             return 10
         if x == 2:
-            return 100
+            return 100 # black(obstacles)
         if x == 3:
             return 50
         if x == 4:
             return 90
+        else:
+            raise Exception("None value in matrix")
 
 
     def doScanCallback(self, msg: LaserScan):
@@ -93,7 +98,7 @@ class Map:
                     
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-                    #self.matrix[y_ind, x_ind] = 100
+                    self.matrix[y_ind, x_ind] = 2
                     print(x,y)
                     print(x_ind, y_ind)
                     print(self.matrix.shape)
@@ -104,6 +109,8 @@ class Map:
 
             self.grid.header.stamp = rospy.Time.now()
         # self.map_pub.publish(self.map)
+    # def doDetectCallback(self, msg: PoseStamped):
+
     
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 
