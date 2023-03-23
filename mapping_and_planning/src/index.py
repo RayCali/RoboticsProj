@@ -36,5 +36,10 @@ if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
     m = Mapper()
     #m.doAnimate()
-    imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
+
+    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+    listener = tf2_ros.TransformListener(tf_buffer)
+    br = tf2_ros.TransformBroadcaster()
+    st = tf2_ros.StaticTransformBroadcaster()
+    map = Map()
     rospy.spin()
