@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 class Map:
-    def __init__(self, plot=False, width=10, height=10, resolution=0.05):
+    def __init__(self, plot=False, width=1000, height=1000, resolution=0.05):
         self.matrix = np.zeros((width, height), dtype=np.uint8)
         
         self.grid = OccupancyGrid()
@@ -29,10 +29,9 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/randomtopic", OccupancyGrid, queue_size=1000, latch=True)
-        #self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-        # self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
-
+        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
@@ -47,7 +46,6 @@ class Map:
         og = self.__getOccupancyGridObject()
         rospy.loginfo(og)
         self.grid_pub.publish(og)
-        
         rate.sleep()
 
     def __getProbabilityFromMatrixValue(self, x: int) -> int:
@@ -61,7 +59,6 @@ class Map:
             return 50
         if x == 4:
             return 90
-
 
 
     def __doScanCallback(self, msg: LaserScan):
@@ -89,12 +86,12 @@ class Map:
         # self.map_pub.publish(self.map)
     
     def __doDrawBox(self):
-        boxSize = 100
-        lower = 100
-        upper = 200
+        boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 
+        lower = int(min(self.grid.info.width, self.grid.info.height) / 10)
+        
         for i in range(lower, lower + boxSize, 1):
             for ii in range(lower, lower + boxSize, 1):
-                self.grid.data[i, ii] = 1
+                self.matrix[i, ii] = 1
     
     def __getImage(self) -> np.array:
         image = np.array([[(255, 255, 255) for i in range(self.grid.info.width)] for i in range(self.grid.info.height)], dtype=np.uint8)
