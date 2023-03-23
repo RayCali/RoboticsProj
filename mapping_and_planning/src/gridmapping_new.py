@@ -9,9 +9,13 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class Map:
     def __init__(self, plot=False, width=100, height=100, resolution=0.05):
+        self.matrix = np.zeros((width, height), dtype=np.uint8)
+        
+        self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
         self.grid.info.width = width
@@ -24,7 +28,7 @@ class Map:
             "box": 4
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
-        self.grid.data = np.zeros((self.grid.info.width, self.grid.info.height), dtype=np.uint8)
+        self.grid.data = None
         self.grid_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
         self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
@@ -32,8 +36,25 @@ class Map:
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
-        og = OccupancyGrid
-        return og
+        self.grid.data = []
+        for i in range(self.grid.info.width):
+            for ii in range(self.grid.info.height):
+                self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
+        return self.grid
+    
+    def __getProbabilityFromMatrixValue(x: int) -> int:
+        if x == 0: # unknown 
+            return 0
+        if x == 1: # a bit grey
+            return 10
+        if x == 2:
+            return 100
+        if x == 3:
+            return 50
+        if x == 4:
+            return 90
+
+
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)

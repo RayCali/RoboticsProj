@@ -34,7 +34,7 @@ def doUpdate(msg: objectPoseStamped):
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
-    m = Mapper()
+    m = Map()
     #m.doAnimate()
 
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
