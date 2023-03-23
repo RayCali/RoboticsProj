@@ -10,33 +10,40 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
 
-class Map(object):
+class Map:
     def __init__(self, plot=False, width=100, height=100, resolution=0.05):
-        self.map = OccupancyGrid()
-        self.map.header.frame_id = "map"
-        self.map.info.resolution = resolution
-        self.map.info.width = width
-        self.map.info.height = height
-        self.naming_convention = {
+        self.grid = OccupancyGrid()
+        self.grid.header.frame_id = "map"
+        self.grid.info.resolution = resolution
+        self.grid.info.width = width
+        self.grid.info.height = height
+        self.grid_naming_convention = {
             "unknown": 0,
             "free": 1,
-            "occupied": 2
+            "occupied": 2,
+            "toy": 3,
+            "box": 4
         }
-        self.map.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
-        self.map.data = np.zeros((self.map.info.width, self.map.info.height), dtype=np.int8)
-        # self.map_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
-        self.scan_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)#Should be point cloud PointCloud2
+        self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
+        self.grid.data = np.zeros((self.grid.map.info.width, self.grid.map.info.height), dtype=np.uint8)
+        self.grid_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.grid.__doScanCallback)#Should be point cloud PointCloud2
+        self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
+
         if plot:
-            self.__doDrawBox()
+            self.grid.__doDrawBox()
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
-            try:
-                transform = tf_buffer.lookup_transform("map", "camera_link", latestupdate, rospy.Duration(2))
-                new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                rospy.loginfo(e)
+            latestupdate = msg.header.stamp
+            
+            # try:
+            #     transform = tf_buffer.lookup_transform("map", "laser", latestupdate, rospy.Duration(2))
+            #     new_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
+            # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            #     rospy.loginfo(e)
         #look up transform from laser to map
+        # TODO: ask Rayan what happens here below
         #addera x och y med robotens position och robotens yaw
             for i in range(len(msg.ranges)):
                 if msg.ranges[i] < 3.0:
@@ -76,17 +83,5 @@ class Map(object):
         plt.imshow(self.__getImage())
         plt.show()
     
-    def main(self):
-        rospy.spin()
 
-    
-if __name__ == "__main__":
-    print("Starting map node")
-    rospy.init_node("map")
-    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
-    listener = tf2_ros.TransformListener(tf_buffer)
-    br = tf2_ros.TransformBroadcaster()
-    st = tf2_ros.StaticTransformBroadcaster()
-    map = Map()
-    map.main()
   
