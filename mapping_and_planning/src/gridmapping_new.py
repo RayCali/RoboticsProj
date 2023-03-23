@@ -11,17 +11,6 @@ from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
 
 class Map:
-<<<<<<< HEAD
-    def __init__(self.grid, plot=False, width=100, height=100, resolution=0.05):
-        self.grid.map = OccupancyGrid()
-        self.frame_id = "map"
-        self.resolution = resolution
-        self.grid.map.info.width = width
-        self.width = width
-        self.grid.map.info.height = height
-        self.height = height
-        self.grid.naming_convention = {
-=======
     def __init__(self, plot=False, width=100, height=100, resolution=0.05):
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
@@ -29,7 +18,6 @@ class Map:
         self.grid.info.width = width
         self.grid.info.height = height
         self.grid_naming_convention = {
->>>>>>> abe2155e8eff656d56236d3f1a9654baf9021c8b
             "unknown": 0,
             "free": 1,
             "occupied": 2,
