@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 class Map:
     def __init__(self, plot=False, width=100, height=100, resolution=0.05):
-        self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
         self.grid.info.width = width
@@ -32,6 +31,9 @@ class Map:
 
         if plot:
             self.__doDrawBox()
+    def __getOccupancyGridObject(self) -> OccupancyGrid:
+        og = OccupancyGrid
+        return og
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
