@@ -19,6 +19,7 @@ st = None
 
 class Map:
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.05):
+        global tf_buffer, listener, br, st
         tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         listener = tf2_ros.TransformListener(tf_buffer)
         br = tf2_ros.TransformBroadcaster()
@@ -54,7 +55,7 @@ class Map:
     def doPublish(self):
         rate = rospy.Rate(10.0)
         og = self.__getOccupancyGridObject()
-        rospy.loginfo(og)
+        # rospy.loginfo(og)
         self.grid_pub.publish(og)
         rate.sleep()
 
@@ -86,7 +87,7 @@ class Map:
             for i in range(len(msg.ranges)):
                 if msg.ranges[i] < 3.0:
                     x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
-                    y = transform.tranform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                    y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.grid.data[y_ind * self.grid.info.width + x_ind] = 100
