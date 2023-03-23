@@ -13,10 +13,12 @@ import matplotlib.pyplot as plt
 class Map:
     def __init__(self.grid, plot=False, width=100, height=100, resolution=0.05):
         self.grid.map = OccupancyGrid()
-        self.grid.map.header.frame_id = "map"
-        self.grid.map.info.resolution = resolution
+        self.frame_id = "map"
+        self.resolution = resolution
         self.grid.map.info.width = width
+        self.width = width
         self.grid.map.info.height = height
+        self.height = height
         self.grid.naming_convention = {
             "unknown": 0,
             "free": 1,
@@ -32,6 +34,12 @@ class Map:
 
         if plot:
             self.grid.__doDrawBox()
+    def __fromMap2Message(self) -> OccupancyGrid:
+        og = OccupancyGrid()
+        og.header.frame_id = "map"
+        og.info.resolution = self.resolution
+        
+    
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
@@ -76,6 +84,8 @@ class Map:
                 elif self.map.data[i,ii] == 3:
                     image[i,ii] = (0, 255, 0)
         return image
+        
+        
     def doAnimate(self):
         
         plt.imshow(self.__getImage())
