@@ -18,20 +18,6 @@ import yaml
 from detection.msg import objectPoseStamped
 from gridmapping_new import Map
 
-# This is just so that it is easier to read the code
-def doOneUpdate():
-    frames_dict = yaml.safe_load(tfBuffer.all_frames_as_yaml())
-    for key in frames_dict.keys():
-        if not m.keyLogged(key):
-            t = tflistener.getLatestCommonTime(frames_dict[key], "/map")
-            ts: TransformStamped = tfBuffer.lookupTransform(
-                frames_dict[key], "/map", t)
-            m.doInterpreteMSG(msg=ts, id="UNK")
-
-def doUpdate(msg: objectPoseStamped):
-    loginfo(msg)
-
-
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
     m = Map(True, 100, 100)

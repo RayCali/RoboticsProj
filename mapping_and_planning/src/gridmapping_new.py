@@ -19,6 +19,10 @@ st = None
 
 class Map:
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.05):
+        tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+        listener = tf2_ros.TransformListener(tf_buffer)
+        br = tf2_ros.TransformBroadcaster()
+        st = tf2_ros.StaticTransformBroadcaster()
         self.matrix = np.zeros((width, height), dtype=np.uint8)
         
         self.grid = OccupancyGrid()
@@ -35,9 +39,8 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
+        self.grid_pub = rospy.Publisher("/occupation_grid", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-       
         
         if plot:
             self.__doDrawBox()
