@@ -26,7 +26,7 @@ class Map:
         br = tf2_ros.TransformBroadcaster()
         st = tf2_ros.StaticTransformBroadcaster()
         
-        self.matrix = np.zeros((width, height), dtype=np.int8)+1
+        self.matrix = np.zeros((width, height), dtype=np.int8)
         
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
