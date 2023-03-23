@@ -10,5 +10,5 @@
   <node pkg="localization" type="startup.py" name="aruco_node" output="screen"/>
   <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/>
   
-  
-</launch>
+  <include file="$(find odometry)/launch/odometry.launch"></include>
+  </launch>

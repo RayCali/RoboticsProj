@@ -1,7 +1,8 @@
 <launch>
 <include file="$(find robp_phidgets)/launch/software.launch"></include>
 <include file="$(find robp_phidgets)/launch/hardware.launch"></include>
-<include file="$(find realsense2_camera)/launch/rs_camera.launch">
+<include file="$(find realsense2_camera)/launch/rs_aligned_depth.launch">
     <arg name="filters" value="pointcloud"/>
+    <arg name="align_depth" value="True"/>
 </include>
 </launch>
