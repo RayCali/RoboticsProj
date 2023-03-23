@@ -43,7 +43,7 @@ class Map:
         self.grid.info.origin = Pose(Point(-5.0, -5.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.doScanCallback)
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
@@ -78,7 +78,7 @@ class Map:
             raise Exception("None value in matrix")
 
 
-    def doScanCallback(self, msg: LaserScan):
+    def __doScanCallback(self, msg: LaserScan):
             global tf_buffer
             latestupdate = rospy.Time(0)
             try:
