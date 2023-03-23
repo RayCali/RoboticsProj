@@ -9,9 +9,12 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 class Map:
-    def __init__(self, plot=False, width=100, height=100, resolution=0.05):
+    def __init__(self, plot=False, width=10, height=10, resolution=0.05):
+        self.matrix = np.zeros((width, height), dtype=np.uint8)
+        
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -25,13 +28,41 @@ class Map:
             "box": 4
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
-        self.grid.data = np.zeros((self.grid.info.width, self.grid.info.height), dtype=np.uint8)
-        self.grid_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-        self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
+        self.grid.data = None
+        self.grid_pub = rospy.Publisher("/randomtopic", OccupancyGrid, queue_size=1000, latch=True)
+        #self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        # self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
 
         if plot:
             self.__doDrawBox()
+    def __getOccupancyGridObject(self) -> OccupancyGrid:
+        self.grid.data = []
+        for i in range(self.grid.info.width):
+            for ii in range(self.grid.info.height):
+                self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
+        return self.grid
+    
+    def doPublish(self):
+        rate = rospy.Rate(10.0)
+        og = self.__getOccupancyGridObject()
+        rospy.loginfo(og)
+        self.grid_pub.publish(og)
+        
+        rate.sleep()
+
+    def __getProbabilityFromMatrixValue(self, x: int) -> int:
+        if x == 0: # unknown 
+            return 0
+        if x == 1: # a bit grey
+            return 10
+        if x == 2:
+            return 100
+        if x == 3:
+            return 50
+        if x == 4:
+            return 90
+
+
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
@@ -78,6 +109,8 @@ class Map:
                 elif self.grid.data[i,ii] == 3:
                     image[i,ii] = (0, 255, 0)
         return image
+        
+        
     def doAnimate(self):
         
         plt.imshow(self.__getImage())
