@@ -10,7 +10,6 @@ from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped
 import matplotlib.pyplot as plt
 import tf_conversions
-from copy import deepcopy
 
 tf_buffer = None #tf buffer length
 listener = None
@@ -24,7 +23,8 @@ class Map:
         listener = tf2_ros.TransformListener(tf_buffer)
         br = tf2_ros.TransformBroadcaster()
         st = tf2_ros.StaticTransformBroadcaster()
-        self.matrix = np.zeros((width, height), dtype=np.uint8)
+        
+        self.matrix = np.zeros((int(width/resolution), int(height/resolution)), dtype=np.int8)
         
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
@@ -40,15 +40,16 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/occupation_grid", OccupancyGrid, queue_size=1000, latch=True)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.doScanCallback)
+    
         
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = []
-        for i in range(self.grid.info.width):
-            for ii in range(self.grid.info.height):
+        for i in range(int(self.grid.info.width/self.grid.info.resolution)):
+            for ii in range(int(self.grid.info.height/self.grid.info.resolution)):
                 self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
@@ -72,7 +73,7 @@ class Map:
             return 90
 
 
-    def __doScanCallback(self, msg: LaserScan):
+    def doScanCallback(self, msg: LaserScan):
             global tf_buffer
             latestupdate = rospy.Time(0)
             try:
@@ -86,11 +87,19 @@ class Map:
         #addera x och y med robotens position och robotens yaw
             for i in range(len(msg.ranges)):
                 if msg.ranges[i] < 3.0:
+                    
                     x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                    
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-                    self.matrix[y_ind * self.grid.info.width, x_ind] = 100
+                    #self.matrix[y_ind, x_ind] = 100
+                    print(x,y)
+                    print(x_ind, y_ind)
+                    print(self.matrix.shape)
+                    print(self.matrix[y_ind, x_ind])
+                    print()
+
                 
 
             self.grid.header.stamp = rospy.Time.now()

@@ -17,10 +17,12 @@ from gridmapping import Mapper
 import yaml
 from detection.msg import objectPoseStamped
 from gridmapping_new import Map
+from sensor_msgs.msg import LaserScan
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
-    m = Map(True, 100, 100)
+    m = Map(True, 10, 10)
+        
             
     while True:
         rospy.sleep(1)
