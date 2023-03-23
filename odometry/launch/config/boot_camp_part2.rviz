@@ -240,7 +240,7 @@ Visualization Manager:
       Draw Behind: false
       Enabled: true
       Name: Map
-      Topic: ""
+      Topic: /topic
       Unreliable: false
       Use Timestamp: false
       Value: true

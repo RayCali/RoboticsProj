@@ -65,9 +65,9 @@ class Map:
 
     def __getProbabilityFromMatrixValue(self, x: int) -> int:
         if x == 0: # unknown 
-            return 0
+            return 20
         if x == 1: # a bit grey
-            return 10
+            return 0
         if x == 2:
             return 100 # black(obstacles)
         if x == 3:
