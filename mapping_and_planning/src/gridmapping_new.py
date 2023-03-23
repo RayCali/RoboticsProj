@@ -29,8 +29,9 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
+        self.grid_pub = rospy.Publisher("/occupation_grid", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+
         
         if plot:
             self.__doDrawBox()
