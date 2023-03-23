@@ -24,20 +24,14 @@ class Map:
             "toy": 3,
             "box": 4
         }
-        self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
-        self.grid.data = np.zeros((self.grid.map.info.width, self.grid.map.info.height), dtype=np.uint8)
+        self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        self.grid.data = np.zeros((self.grid.info.width, self.grid.info.height), dtype=np.uint8)
         self.grid_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.grid.__doScanCallback)#Should be point cloud PointCloud2
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
         self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
 
         if plot:
-            self.grid.__doDrawBox()
-    def __fromMap2Message(self) -> OccupancyGrid:
-        og = OccupancyGrid()
-        og.header.frame_id = "map"
-        og.info.resolution = self.resolution
-        
-    
+            self.__doDrawBox()
 
     def __doScanCallback(self, msg: LaserScan):
             rate = rospy.Rate(10.0)
@@ -55,12 +49,12 @@ class Map:
                 if msg.ranges[i] < 3.0:
                     x = msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment)
                     y = msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment)
-                    x_ind = int((x - self.map.info.origin.position.x) / self.map.info.resolution)
-                    y_ind = int((y - self.map.info.origin.position.y) / self.map.info.resolution)
-                    self.map.data[y_ind * self.map.info.width + x_ind] = 100
+                    x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                    y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                    self.grid.data[y_ind * self.grid.info.width + x_ind] = 100
                 
 
-            self.map.header.stamp = rospy.Time.now()
+            self.grid.header.stamp = rospy.Time.now()
         # self.map_pub.publish(self.map)
     
     def __doDrawBox(self):
@@ -69,19 +63,19 @@ class Map:
         upper = 200
         for i in range(lower, lower + boxSize, 1):
             for ii in range(lower, lower + boxSize, 1):
-                self.map.data[i, ii] = 1
+                self.grid.data[i, ii] = 1
     
     def __getImage(self) -> np.array:
-        image = np.array([[(255, 255, 255) for i in range(self.map.info.width)] for i in range(self.map.info.height)], dtype=np.uint8)
-        for i in range(self.map.info.width):
-            for ii in range(self.map.info.height):
-                if self.map.data[i,ii] == 0:
+        image = np.array([[(255, 255, 255) for i in range(self.grid.info.width)] for i in range(self.grid.info.height)], dtype=np.uint8)
+        for i in range(self.grid.info.width):
+            for ii in range(self.grid.info.height):
+                if self.grid.data[i,ii] == 0:
                     image[i,ii] = (255, 255, 255)
-                elif self.map.data[i,ii] == 1:
+                elif self.grid.data[i,ii] == 1:
                     image[i,ii] = (0, 0, 0)
-                elif self.map.data[i,ii] == 2:
+                elif self.grid.data[i,ii] == 2:
                     image[i,ii] = (0, 0, 255)
-                elif self.map.data[i,ii] == 3:
+                elif self.grid.data[i,ii] == 3:
                     image[i,ii] = (0, 255, 0)
         return image
         
