@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 
 class Map:
-    def __init__(self, plot=False, width=100, height=100, resolution=0.05):
+    def __init__(self, plot=False, width=10, height=10, resolution=0.05):
         self.matrix = np.zeros((width, height), dtype=np.uint8)
         
         self.grid = OccupancyGrid()
@@ -29,9 +29,9 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-2.5, -2.5, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/map", OccupancyGrid, queue_size=1)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-        self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
+        self.grid_pub = rospy.Publisher("/randomtopic", OccupancyGrid, queue_size=1000, latch=True)
+        #self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        # self.imageSub = rospy.Subscriber("/detection/pose", objectPoseStamped, doUpdate)
 
         if plot:
             self.__doDrawBox()
@@ -42,7 +42,15 @@ class Map:
                 self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
-    def __getProbabilityFromMatrixValue(x: int) -> int:
+    def doPublish(self):
+        rate = rospy.Rate(10.0)
+        og = self.__getOccupancyGridObject()
+        rospy.loginfo(og)
+        self.grid_pub.publish(og)
+        
+        rate.sleep()
+
+    def __getProbabilityFromMatrixValue(self, x: int) -> int:
         if x == 0: # unknown 
             return 0
         if x == 1: # a bit grey
