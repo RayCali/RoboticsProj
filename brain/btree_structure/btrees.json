@@ -1,0 +1,17 @@
+{
+    "actions": {
+      "doLocalize()": "Do localisation, i.e. reduce the uncertainty of the robot's position.",
+      "doExplore()": "During exploration Grumpy goes trhough the workspace looking for objects and boxes until he has found at least one object and its corresponding box.",
+      "doMoveToGoal(goal)": "Move to the goal position (pickup or box for dropoff).",
+      "doPickup()": "Pick the object up with the arm (here the robot is stationary and only the arm is moving).",
+      "doPlace()": "Place the object in the box."
+    },
+    "conditions": {
+      "isLocalized": {},
+      "isExplored": {},
+      "isValidPath": "Check if there is a valid path between current position and goal position.",
+      "isPicked": "Check to see if the object was actually picked up.",
+      "isPlaced": "Check to see if the object was actually placed.",
+      "isDone": "Check if all objects have been picked up."
+    }
+  }
