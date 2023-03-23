@@ -12,7 +12,8 @@ if __name__=="__main__":
             ifAnchorDetected(),
             Or([
                 ifFoundMatchingToyAndBox(),
-                doExplore()])
+                doExplore()],
+                )
         ])
     )
     while True:

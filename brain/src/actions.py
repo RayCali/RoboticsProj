@@ -7,4 +7,4 @@ from std_srvs.srv import SetBool
 class doExplore(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("Explore/src", SetBool)
+        self.service = rospy.ServiceProxy("Explore/srv", SetBool)

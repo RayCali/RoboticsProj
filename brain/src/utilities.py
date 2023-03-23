@@ -39,6 +39,11 @@ class IsListException(Exception):
         super().__init__(message)
         self.message = message
 
+class ServiceReturnedRunningException(Exception):
+    def __init__(self, message) -> None:
+        super().__init__(message)
+        self.message = message
+
 class Root:
     def __init__(self, child) -> None:
         self.child = child

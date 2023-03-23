@@ -4,6 +4,7 @@ from typing import List
 from config import *
 from rospy import loginfo, ServiceException
 from std_srvs.srv import SetBool
+from utilities import ServiceReturnedRunningException
 
 
 class Leaf:
@@ -47,4 +48,7 @@ class Condition(Leaf):
         except ServiceException as e:
             loginfo(e)
             return FAILURE
+        if self.getStatusFromNum(res.message)==RUNNING:
+            raise ServiceReturnedRunningException("Service returned a RUNNING state to a condition node. This is not allowed.")
+        
         return self.getStatusFromNum(res.message)
