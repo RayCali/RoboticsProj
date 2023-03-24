@@ -101,15 +101,15 @@ class Map:
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.matrix[y_ind, x_ind] = 2
-                    # self.__doDrawFreespace(
-                    #     r=msg.ranges[i], 
-                    #     x0 = transform.transform.translation.x,
-                    #     y0 = transform.transform.translation.y,
-                    #     x1 = x,
-                    #     y1 = y,
-                    #     x_1_ind=x_ind,
-                    #     y_1_ind=y_ind 
-                    #     )
+                    self.__doDrawFreespace(
+                        r=msg.ranges[i], 
+                        x0 = transform.transform.translation.x,
+                        y0 = transform.transform.translation.y,
+                        x1 = x,
+                        y1 = y,
+                        x_1_ind=x_ind,
+                        y_1_ind=y_ind 
+                        )
                     print(x,y)
                     print(x_ind, y_ind)
                     print(self.matrix.shape)
@@ -119,14 +119,16 @@ class Map:
                 
             self.grid.header.stamp = rospy.Time.now()
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
-        N = 100
+        R = int(r / self.grid.info.resolution)
         indices = []
-        for i in range(N):
-            delta = i * self.grid.info.resolution
-            xi = x0 + i * (x1 - x0)
-            yi = y0 + i * (y1 - y0)
+        for i in range(R):
+            delta_x = i * self.grid.info.resolution
+            delta_y = i * self.grid.info.resolution
+            xi = x0 + delta_x 
+            yi = y0 + delta_y
             x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
-            y_i_ind = int((xi - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            y_i_ind = int((yi - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            print(x0, x1, delta_x, x_i_ind)
             if x_i_ind != x_1_ind and y_i_ind != y_1_ind:
                 indices.append((x_i_ind, y_i_ind))
         
@@ -136,8 +138,10 @@ class Map:
     
     def __doCheckForFreeSpaceAndInsert(self, x:int, y:int):
         cell = self.matrix[y,x]
+        print("x %s y %s cell %s" % (x,y,cell))
         if cell == 0 or cell == 1 or cell == 2: #painting over, UNK,OBS and FRE to FRE
-            self.matrix[y,x] == 1
+            self.matrix[y,x] = 1
+            print("  painting over, UNK,OBS and FRE to FRE. New cell value is %s" % self.matrix[y,x])
         elif cell == 3 or cell == 4: # TOY or BOX found between us and the obstacle
             pass
         else:
