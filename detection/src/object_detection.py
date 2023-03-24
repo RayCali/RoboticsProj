@@ -12,12 +12,12 @@ from torchvision import transforms
 from torchvision.utils import draw_bounding_boxes
 from torchvision.io import read_image
 from scipy.ndimage import binary_erosion, binary_dilation
-from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs.msg import Image
 from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
-from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
+from geometry_msgs.msg import PoseStamped, TransformStamped
 import utils, detector
-from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStampedLst
+from detection.msg import objectPoseStampedLst
 from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -27,14 +27,12 @@ import cv2
 from shapely.geometry import Polygon
 
 FOCAL_LENGTH = 605.9197387695312
-CENTERIMG_X = 320 # center of image in x direction
-CENTERIMG_Y = 240 # center of image in y direction
 DEVICE = "cuda"
 
 
 def get_object_position(depthImg, center_x, center_y, img_center_x, img_center_y):
     # depthImg is of type Image, convert to torch tensor
-    np_depthImg = np_image = rnp.numpify(depthImg) # shape: (720,1280,1)
+    np_depthImg = rnp.numpify(depthImg) # shape: (480,640,1)
     # get depth value at center of bounding box
     center_x_offset = center_x-img_center_x
     center_y_offset = img_center_y-center_y
@@ -61,20 +59,20 @@ def get_map_pose(position,msg_frame,msg_stamp):
     # object_poses.object_class.append(label)
     # classes.append(label)
     try:
-        transform = tf_buffer.lookup_transform("map", pose.header.frame_id, msg_stamp, rospy.Duration(2))
+        transform = tf_buffer.lookup_transform("map", msg_frame, msg_stamp, rospy.Duration(2))
         map_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
         map_pose.pose.position.z = 0.0
         # fix orientation facing the robot
         try:
-            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg.header.stamp, timeout=rospy.Duration(2))
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
             rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
             roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
             yaw = yaw + math.pi
             quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
-            pose.pose.orientation.x = quat[0]
-            pose.pose.orientation.y = quat[1]
-            pose.pose.orientation.z = quat[2]
-            pose.pose.orientation.w = quat[3]
+            map_pose.pose.orientation.x = quat[0]
+            map_pose.pose.orientation.y = quat[1]
+            map_pose.pose.orientation.z = quat[2]
+            map_pose.pose.orientation.w = quat[3]
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
             rospy.loginfo("Couldn't fix orientation of object facing the robot, using (0,0,0,1) orientation wrt map.")
@@ -86,6 +84,8 @@ def get_map_pose(position,msg_frame,msg_stamp):
 
 
 def imageCB(msg: Image):
+    image_frame_id  = msg.header.frame_id
+    image_stamp = msg.header.stamp
     depthImg_rcvd = False
     try:
         depthImg = rospy.wait_for_message("/camera/aligned_depth_to_color/image_raw", Image, timeout=0.1)
@@ -183,25 +183,25 @@ def imageCB(msg: Image):
     # classes = []
     for pos, label in zip(positions,labels):
         try:
-            map_pose = get_map_pose(pos,msg.header.frame_id,msg.header.stamp)
+            map_pose = get_map_pose(pos,image_frame_id,image_stamp)
             object_poses.PoseStamped.append(map_pose)
             object_poses.object_class.append(label)
+
+            # publish transform
+            t = TransformStamped()
+            t.header.stamp = image_stamp
+            t.header.frame_id = "map"
+            t.child_frame_id = "detection_"+label+str(i)
+
+            t.transform.translation = map_pose.pose.position
+            t.transform.rotation = map_pose.pose.orientation
+            
+            tfbroadcaster.sendTransform(t)
+            i+=1
         except:
             loginfo("Failed to get map pose")
-            return
+            continue
         
-        # publish transform
-        t = TransformStamped()
-        t.header = msg.header
-        t.header.frame_id = "map"
-        t.child_frame_id = "detection_"+label+str(i)
-
-        t.transform.translation = map_pose.pose.position
-        t.transform.rotation = map_pose.pose.orientation
-        
-        tfbroadcaster.sendTransform(t)
-
-        i+=1
 
     # object_poses.object_class = classes
     posesPub.publish(object_poses)
