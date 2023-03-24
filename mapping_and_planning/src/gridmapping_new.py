@@ -122,6 +122,7 @@ class Map:
         N = 100
         indices = []
         for i in range(N):
+            delta = i * self.grid.info.resolution
             xi = x0 + i * (x1 - x0)
             yi = y0 + i * (y1 - y0)
             x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
