@@ -1,29 +1,18 @@
 #!/usr/bin/python3
-import rospy
-import numpy as np
-import tf2_ros
-import tf2_msgs.msg
-import tf2_geometry_msgs
-from nav_msgs.msg import OccupancyGrid, MapMetaData
-from geometry_msgs.msg import Pose, Point, Quaternion
-from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import TransformStamped, PoseStamped
-from visualization_msgs.msg import Marker
-import matplotlib.pyplot as plt
-import tf_conversions
-import tf2_geometry_msgs
-import math
-tf_buffer = None #tf buffer length
-listener = None
-br = None
-st = None
-ifseenanchor = False
-
-
-N = 10
+from gridmapping import *
+# https://cs231n.github.io/convolutional-networks/
+F = 10  # receptive field
+S = 10   # stride
+P = 0   # padding
 mask: np.array = (
-    [[2 for i in range(N)] for i in range(N)]
+    [[2 for i in range(F)] for i in range(F)]
 )
 
-def getValues(m: Map):
-    return 
+def getValues(m: Map) -> np.array:
+    W = m.grid.info.width
+    H = m.grid.info.height
+    for w in range(0, W - mask.shape[1], S):
+        for h in range(H - mask.shape[1], S):
+            area = m[w:w+F,h:h+F]
+            print(area)
+    return mask

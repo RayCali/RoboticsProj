@@ -11,14 +11,12 @@ import tf_conversions
 # from torchvision import transforms
 from detection.msg import objectPoseStampedLst
 from gridmapping import Map
-from sensor_msgs.msg import LaserScan
-from visualization_msgs.msg import Marker
+from global_explorer import getValues
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
     m = Map(True, 11, 11)
-        
-            
     while True:
         rospy.sleep(1)
         m.doPublish()
+        getValues(m)
