@@ -121,11 +121,11 @@ class Map:
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []
+        delta_x = x1 - x0
+        delta_y = y1 - y0
         for i in range(R):
-            delta_x = i * self.grid.info.resolution
-            delta_y = i * self.grid.info.resolution
-            xi = x0 + delta_x 
-            yi = y0 + delta_y
+            xi = x0 + delta_x * i / R 
+            yi = y0 + delta_y * i / R
             x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
             y_i_ind = int((yi - self.grid.info.origin.position.y) / self.grid.info.resolution)
             print(x0, x1, delta_x, x_i_ind)
