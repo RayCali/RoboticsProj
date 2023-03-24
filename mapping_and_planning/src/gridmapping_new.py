@@ -108,9 +108,6 @@ class Map:
                 
 
             self.grid.header.stamp = rospy.Time.now()
-        # self.map_pub.publish(self.map)
-    # def doDetectCallback(self, msg: PoseStamped):
-
     
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 

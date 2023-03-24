@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 from PIL import Image as pil
 from gridmapping import Mapper
 import yaml
-from detection.msg import objectPoseStamped
+from detection.msg import objectPoseStampedLst
 from gridmapping_new import Map
 from sensor_msgs.msg import LaserScan
 
