@@ -17,7 +17,7 @@ from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
-from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStamped
+from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStampedLst
 from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -215,7 +215,7 @@ if __name__=="__main__":
 
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB,queue_size=10, buff_size=2**24)
 
-    posePub = rospy.Publisher("/detection/pose", objectPoseStamped, queue_size=10)
+    posePub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     cloudPub = rospy.Publisher("/detection/pointcloud", PointCloud2, queue_size=10)
     pointCloudSub = rospy.Subscriber("/camera/depth/color/points", PointCloud2, cloudCB)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
