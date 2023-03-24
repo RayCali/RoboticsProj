@@ -22,7 +22,7 @@ from visualization_msgs.msg import Marker
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
-    m = Map(True, 10, 10)
+    m = Map(True, 11, 11)
         
             
     while True:
