@@ -45,7 +45,7 @@ class Map:
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-        self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
+        # self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
@@ -101,15 +101,15 @@ class Map:
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.matrix[y_ind, x_ind] = 2
-                    self.__doDrawFreespace(
-                        r=msg.ranges[i], 
-                        x0 = transform.transform.translation.x,
-                        y0 = transform.transform.translation.y,
-                        x1 = x,
-                        y1 = y,
-                        x_1_ind=x_ind,
-                        y_1_ind=y_ind 
-                        )
+                    # self.__doDrawFreespace(
+                    #     r=msg.ranges[i], 
+                    #     x0 = transform.transform.translation.x,
+                    #     y0 = transform.transform.translation.y,
+                    #     x1 = x,
+                    #     y1 = y,
+                    #     x_1_ind=x_ind,
+                    #     y_1_ind=y_ind 
+                    #     )
                     print(x,y)
                     print(x_ind, y_ind)
                     print(self.matrix.shape)
@@ -130,7 +130,7 @@ class Map:
                 indices.append((x_i_ind, y_i_ind))
         
         for x,y in indices:
-            self.__doCheckForFreeSpaceAndInsert(self, x, y)
+            self.__doCheckForFreeSpaceAndInsert(x, y)
         
     
     def __doCheckForFreeSpaceAndInsert(self, x:int, y:int):
