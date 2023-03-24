@@ -10,7 +10,7 @@ import tf_conversions
 # import torch
 # from torchvision import transforms
 from detection.msg import objectPoseStampedLst
-from gridmapping_new import Map
+from gridmapping import Map
 from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker
 
