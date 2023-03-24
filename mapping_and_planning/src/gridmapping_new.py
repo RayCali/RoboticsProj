@@ -12,11 +12,12 @@ from visualization_msgs.msg import Marker
 import matplotlib.pyplot as plt
 import tf_conversions
 import tf2_geometry_msgs
+import math
 tf_buffer = None #tf buffer length
 listener = None
 br = None
 st = None
-
+ifseenanchor = False
 class Map:
     mask: np.array = np.array(
         [[],
@@ -46,7 +47,8 @@ class Map:
             "toy": 3,
             "box": 4
         }
-        self.grid.info.origin = Pose(Point(-5.0, -5.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        
+        self.grid.info.origin = Pose(Point(-3.0, -9.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
@@ -86,41 +88,48 @@ class Map:
 
 
     def __doScanCallback(self, msg: LaserScan):
-            global tf_buffer
-            latestupdate = rospy.Time(0)
-            try:
-                transform = tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
-            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-                rospy.loginfo(e)
+        global tf_buffer
+        latestupdate = rospy.Time(0)
+        try:
+            transform = tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
 
-            anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
-        #look up transform from laser to map
-        # TODO: ask Rayan what happens here below
-        #addera x och y med robotens position och robotens yaw
-            for i in range(len(msg.ranges)):
-                if msg.ranges[i] < 3:
-                    
-                    x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
-                    y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
-                    
-                    x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-                    y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-                    self.__doDrawFreespace(
-                        r=msg.ranges[i], 
-                        x0 = transform.transform.translation.x,
-                        y0 = transform.transform.translation.y,
-                        x1 = x,
-                        y1 = y,
-                        x_1_ind=x_ind,
-                        y_1_ind=y_ind 
-                        )
+        anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
+    #look up transform from laser to map
+    # TODO: ask Rayan what happens here below
+    #addera x och y med robotens position och robotens yaw
+        for i in range(len(msg.ranges)):
+            if msg.ranges[i] < 3:
+                
+                x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                
+                x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                if x_ind>self.grid.info.height or y_ind>self.grid.info.width:
+                    print("FUCKUP!VERY BAD!!!")
+                    exit()
+                    continue
+                self.__doDrawFreespace(
+                    r=msg.ranges[i], 
+                    x0 = transform.transform.translation.x,
+                    y0 = transform.transform.translation.y,
+                    x1 = x,
+                    y1 = y,
+                    x_1_ind=x_ind,
+                    y_1_ind=y_ind 
+                    )
+                try:
                     self.matrix[y_ind, x_ind] = 2
-                    
-                    print(x,y)
-                    print(x_ind, y_ind)
-                    print(self.matrix.shape)
-                    print(self.matrix[y_ind, x_ind])
-                    print()
+                except(IndexError):
+                    print("Outside grid")
+                
+                # print(x,y)
+                # print(x_ind, y_ind)
+                # print(self.matrix.shape)
+                # print(self.matrix[y_ind, x_ind])
+                # print()
 
                 
             self.grid.header.stamp = rospy.Time.now()
@@ -155,17 +164,23 @@ class Map:
         pass
     
     def __doWorkspaceCallback(self, msg: Marker):
-        global tf_buffer, listener, br
-        workspace = msg.points[:-1]
-        index = 3
-        point = PoseStamped()
-        point.pose.position.x = workspace[index].x
-        point.pose.position.y = workspace[index].y
-        point.pose.orientation = Quaternion(0,0,0,1)
-        point.header.frame_id= "arucomap"
-        transform = tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
-        point =  tf2_geometry_msgs.do_transform_pose(point, transform)
-        self.grid.info.origin = Pose(Point(point.pose.position.x, point.pose.position.y, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
+        global tf_buffer, listener, br, ifseenanchor
+        # workspace = msg.points[:-1]
+        # index = 3
+        # point = PoseStamped()
+        # point.pose.position.x = workspace[index].x
+        # point.pose.position.y = workspace[index].y
+        # point.pose.orientation = Quaternion(0,0,0,1)
+        # point.header.frame_id= "arucomap"
+        # transform = tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
+        # point =  tf2_geometry_msgs.do_transform_pose(point, transform)
+        # roll,pitch,yaw = tf_conversions.transformations.euler_from_quaternion([0,0,0,1])
+        # yaw = yaw + math.pi/2
+        # q = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
+        # rospy.loginfo(q)
+        # # q = Quaternion(0,0,0,1)
+        # self.grid.info.origin = Pose(Point(point.pose.position.x, point.pose.position.y, 0.0), Quaternion(q[0],q[1],q[2],q[3]))
+        
         # for pose in msg.poses:
         #     x = pose.position.x
         #     y = pose.position.y
