@@ -99,6 +99,15 @@ class Map:
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.matrix[y_ind, x_ind] = 2
+                    self.__doDrawFreespace(
+                        r=msg.ranges[i], 
+                        x0 = transform.transform.translation.x,
+                        y0 = transform.transform.translation.y,
+                        x1 = x,
+                        y1 = y,
+                        x_1_ind=x_ind,
+                        y_1_ind=y_ind 
+                        )
                     print(x,y)
                     print(x_ind, y_ind)
                     print(self.matrix.shape)
