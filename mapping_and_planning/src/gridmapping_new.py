@@ -8,6 +8,7 @@ from nav_msgs.msg import OccupancyGrid, MapMetaData
 from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import TransformStamped, PoseStamped
+from visualization_msgs.msg import Marker
 import matplotlib.pyplot as plt
 import tf_conversions
 
@@ -44,6 +45,7 @@ class Map:
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
@@ -64,16 +66,16 @@ class Map:
         rate.sleep()
 
     def __getProbabilityFromMatrixValue(self, x: int) -> int:
-        if x == 0: # unknown 
-            return 20
-        if x == 1: # a bit grey
-            return 0
+        if x == 0:      
+            return 20   # unknown space
+        if x == 1:      
+            return 0    # free space
         if x == 2:
-            return 100 # black(obstacles)
+            return 100  # black(obstacles)
         if x == 3:
-            return 50
+            return 50   # toy or box
         if x == 4:
-            return 90
+            return 90   # toy or box
         else:
             raise Exception("None value in matrix")
 
@@ -99,15 +101,37 @@ class Map:
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.matrix[y_ind, x_ind] = 2
-                    print(x,y)
-                    print(x_ind, y_ind)
-                    print(self.matrix.shape)
-                    print(self.matrix[y_ind, x_ind])
-                    print()
+                    # print(x,y)
+                    # print(x_ind, y_ind)
+                    # print(self.matrix.shape)
+                    # print(self.matrix[y_ind, x_ind])
+                    # print()
 
                 
-
             self.grid.header.stamp = rospy.Time.now()
+
+    def __doWorkspaceCallback(self, msg: Marker):
+        global tf_buffer
+        latestupdate = rospy.Time(0)
+        try:
+            transform = tf_buffer.lookup_transform("map", "arucomap", latestupdate, rospy.Duration(2))
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+
+        anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
+        print(transform)
+        
+        
+        # for i in range(self.grid.info.width):
+        #     for ii in range(self.grid.info.height):
+        #         if msg.pose.position.x - 5 < i < msg.pose.position.x + 5 and msg.pose.position.y - 5 < ii < msg.pose.position.y + 5:
+        #             self.matrix[i,ii] = 2
+        #         else:
+        #                 self.matrix[i,ii] = 0
+
+        # self.doPublish()
+    
+
     
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 

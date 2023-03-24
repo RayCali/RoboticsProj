@@ -18,6 +18,7 @@ import yaml
 from detection.msg import objectPoseStampedLst
 from gridmapping_new import Map
 from sensor_msgs.msg import LaserScan
+from visualization_msgs.msg import Marker
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
