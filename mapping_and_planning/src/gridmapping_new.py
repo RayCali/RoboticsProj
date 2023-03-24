@@ -18,6 +18,11 @@ br = None
 st = None
 
 class Map:
+    mask: np.array = np.array(
+        [[],
+         [],
+         [],]
+    )
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         width = int(width/resolution)
         height = int(height/resolution)
@@ -189,8 +194,8 @@ class Map:
                 elif self.grid.data[i,ii] == 3:
                     image[i,ii] = (0, 255, 0)
         return image
-        
-        
+    
+    
     def doAnimate(self):
         
         plt.imshow(self.__getImage())
