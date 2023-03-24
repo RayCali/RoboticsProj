@@ -11,7 +11,7 @@ from geometry_msgs.msg import TransformStamped, PoseStamped
 from visualization_msgs.msg import Marker
 import matplotlib.pyplot as plt
 import tf_conversions
-
+import tf2_geometry_msgs
 tf_buffer = None #tf buffer length
 listener = None
 br = None
@@ -43,8 +43,8 @@ class Map:
         }
         self.grid.info.origin = Pose(Point(-5.0, -5.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
-        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
+        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
+        self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
@@ -93,14 +93,13 @@ class Map:
         # TODO: ask Rayan what happens here below
         #addera x och y med robotens position och robotens yaw
             for i in range(len(msg.ranges)):
-                if msg.ranges[i] < 3.0:
+                if msg.ranges[i] < 3:
                     
                     x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
                     
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-                    self.matrix[y_ind, x_ind] = 2
                     self.__doDrawFreespace(
                         r=msg.ranges[i], 
                         x0 = transform.transform.translation.x,
@@ -110,6 +109,8 @@ class Map:
                         x_1_ind=x_ind,
                         y_1_ind=y_ind 
                         )
+                    self.matrix[y_ind, x_ind] = 2
+                    
                     print(x,y)
                     print(x_ind, y_ind)
                     print(self.matrix.shape)
@@ -123,25 +124,24 @@ class Map:
         indices = []
         delta_x = x1 - x0
         delta_y = y1 - y0
-        for i in range(R):
+        for i in range(0, R, ):
             xi = x0 + delta_x * i / R 
             yi = y0 + delta_y * i / R
             x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
             y_i_ind = int((yi - self.grid.info.origin.position.y) / self.grid.info.resolution)
-            print(x0, x1, delta_x, x_i_ind)
+            # print(x0, x1, delta_x, x_1_ind, x_i_ind, "\t\t\t", y0, y1, delta_y, y_1_ind, y_i_ind)
             if x_i_ind != x_1_ind and y_i_ind != y_1_ind:
                 indices.append((x_i_ind, y_i_ind))
-        
+        # print()
+        # print()
         for x,y in indices:
-            self.__doCheckForFreeSpaceAndInsert(x, y)
+            self.__doCheckForFreeSpaceAndInsert(x, y, x_1_ind, y_1_ind)
         
     
-    def __doCheckForFreeSpaceAndInsert(self, x:int, y:int):
+    def __doCheckForFreeSpaceAndInsert(self, x:int, y:int, xmax:int, ymax:int):
         cell = self.matrix[y,x]
-        print("x %s y %s cell %s" % (x,y,cell))
         if cell == 0 or cell == 1 or cell == 2: #painting over, UNK,OBS and FRE to FRE
             self.matrix[y,x] = 1
-            print("  painting over, UNK,OBS and FRE to FRE. New cell value is %s" % self.matrix[y,x])
         elif cell == 3 or cell == 4: # TOY or BOX found between us and the obstacle
             pass
         else:
@@ -150,12 +150,23 @@ class Map:
         pass
     
     def __doWorkspaceCallback(self, msg: Marker):
-        for pose in msg.poses:
-            x = pose.position.x
-            y = pose.position.y
-            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-            self.matrix[y_ind, x_ind] = 2
+        global tf_buffer, listener, br
+        workspace = msg.points[:-1]
+        index = 3
+        point = PoseStamped()
+        point.pose.position.x = workspace[index].x
+        point.pose.position.y = workspace[index].y
+        point.pose.orientation = Quaternion(0,0,0,1)
+        point.header.frame_id= "arucomap"
+        transform = tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
+        point =  tf2_geometry_msgs.do_transform_pose(point, transform)
+        self.grid.info.origin = Pose(Point(point.pose.position.x, point.pose.position.y, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0))
+        # for pose in msg.poses:
+        #     x = pose.position.x
+        #     y = pose.position.y
+        #     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+        #     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+        #     self.matrix[y_ind, x_ind] = 2
 
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 
