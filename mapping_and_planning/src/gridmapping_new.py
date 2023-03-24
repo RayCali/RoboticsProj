@@ -159,7 +159,22 @@ class Map:
         pass
     
     def __doWorkspaceCallback(self, msg: Marker):
-        global tf_buffer, listener, br, ifseenanchor
+        global tf_buffer, listener, br
+        poly = msg.points[:-1]
+        for i in range(self.grid.info.width):
+            for j in range(self.grid.info.height):
+                transform = tf_buffer.lookup_transform("arucomap", "map", rospy.Time(0), rospy.Duration(2))
+                point = PoseStamped()
+                point.pose.position.x = -3 + self.grid.info.resolution*i
+                point.pose.position.y = -9 + self.grid.info.resolution*j
+                point.pose.orientation= Quaternion(0,0,0,1)
+                point.header.frame_id="map"
+                point =  tf2_geometry_msgs.do_transform_pose(point, transform)
+                inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
+                if not inside:
+                    self.matrix[j,i]=2
+            
+    
         # workspace = msg.points[:-1]
         # index = 3
         # point = PoseStamped()
@@ -190,6 +205,22 @@ class Map:
         for i in range(lower, lower + boxSize, 1):
             for ii in range(lower, lower + boxSize, 1):
                 self.matrix[i, ii] = 1
+    
+    def point_inside_polygon(self,x,y,poly):
+        n = len(poly)
+        inside =False
+        p1x,p1y = poly[0].x,poly[0].y
+        for i in range(n+1):
+            p2x,p2y = poly[i % n].x,poly[i % n].y
+            if y > min(p1y,p2y):
+                if y <= max(p1y,p2y):
+                    if x <= max(p1x,p2x):
+                        if p1y != p2y:
+                            xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
+                        if p1x == p2x or x <= xinters:
+                            inside = not inside
+            p1x,p1y = p2x,p2y
+        return inside
     
     def __getImage(self) -> np.array:
         image = np.array([[(255, 255, 255) for i in range(self.grid.info.width)] for i in range(self.grid.info.height)], dtype=np.uint8)
