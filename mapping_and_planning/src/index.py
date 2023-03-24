@@ -9,12 +9,6 @@ import tf2_geometry_msgs
 import tf_conversions
 # import torch
 # from torchvision import transforms
-from sensor_msgs.msg import Image, PointCloud2
-from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
-import matplotlib.pyplot as plt
-from PIL import Image as pil
-from gridmapping import Mapper
-import yaml
 from detection.msg import objectPoseStampedLst
 from gridmapping_new import Map
 from sensor_msgs.msg import LaserScan
