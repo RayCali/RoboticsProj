@@ -101,37 +101,54 @@ class Map:
                     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
                     self.matrix[y_ind, x_ind] = 2
-                    # print(x,y)
-                    # print(x_ind, y_ind)
-                    # print(self.matrix.shape)
-                    # print(self.matrix[y_ind, x_ind])
-                    # print()
+                    self.__doDrawFreespace(
+                        r=msg.ranges[i], 
+                        x0 = transform.transform.translation.x,
+                        y0 = transform.transform.translation.y,
+                        x1 = x,
+                        y1 = y,
+                        x_1_ind=x_ind,
+                        y_1_ind=y_ind 
+                        )
+                    print(x,y)
+                    print(x_ind, y_ind)
+                    print(self.matrix.shape)
+                    print(self.matrix[y_ind, x_ind])
+                    print()
 
                 
             self.grid.header.stamp = rospy.Time.now()
-
-    def __doWorkspaceCallback(self, msg: Marker):
-        global tf_buffer
-        latestupdate = rospy.Time(0)
-        try:
-            transform = tf_buffer.lookup_transform("map", "arucomap", latestupdate, rospy.Duration(2))
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
-            rospy.loginfo(e)
-
-        anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
-        print(transform)
+    def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
+        N = 100
+        indices = []
+        for i in range(N):
+            xi = x0 + i * (x1 - x0)
+            yi = y0 + i * (y1 - y0)
+            x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
+            y_i_ind = int((xi - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            if x_i_ind != x_1_ind and y_i_ind != y_1_ind:
+                indices.append((x_i_ind, y_i_ind))
         
+        for x,y in indices:
+            self.__doCheckForFreeSpaceAndInsert(self, x, y)
         
-        # for i in range(self.grid.info.width):
-        #     for ii in range(self.grid.info.height):
-        #         if msg.pose.position.x - 5 < i < msg.pose.position.x + 5 and msg.pose.position.y - 5 < ii < msg.pose.position.y + 5:
-        #             self.matrix[i,ii] = 2
-        #         else:
-        #                 self.matrix[i,ii] = 0
-
-        # self.doPublish()
     
+    def __doCheckForFreeSpaceAndInsert(self, x:int, y:int):
+        cell = self.matrix[y,x]
+        if cell == 0 or cell == 1 or cell == 2: #painting over, UNK,OBS and FRE to FRE
+            self.matrix[y,x] == 1
+        elif cell == 3 or cell == 4: # TOY or BOX found between us and the obstacle
+            pass
+        else:
+            rospy.loginfo("  INVALID VALUE FOUND IN THE GRID MATRIX")
+            raise Exception("INVALID VALUE FOUND IN THE GRID MATRIX") 
 
+        
+            
+
+
+
+        pass
     
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 
