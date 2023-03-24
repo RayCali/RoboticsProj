@@ -45,7 +45,7 @@ class Map:
         self.grid.data = None
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1000, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback)
-        # self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
+        self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
@@ -147,14 +147,16 @@ class Map:
         else:
             rospy.loginfo("  INVALID VALUE FOUND IN THE GRID MATRIX")
             raise Exception("INVALID VALUE FOUND IN THE GRID MATRIX") 
-
-        
-            
-
-
-
         pass
     
+    def __doWorkspaceCallback(self, msg: Marker):
+        for pose in msg.poses:
+            x = pose.position.x
+            y = pose.position.y
+            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            self.matrix[y_ind, x_ind] = 2
+
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 
         lower = int(min(self.grid.info.width, self.grid.info.height) / 10)
