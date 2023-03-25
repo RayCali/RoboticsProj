@@ -13,9 +13,13 @@ from detection.msg import objectPoseStampedLst
 from gridmapping import Map
 from global_explorer import getValues
 
+
 if __name__ == "__main__":
+
     rospy.init_node("mapping_and_planning")
     m = Map(True, 11, 11)
+    rospy.sleep(1)
+    m.doPublish()
     while True:
         rospy.sleep(1)
         m.doPublish()
