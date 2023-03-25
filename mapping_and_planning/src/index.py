@@ -11,7 +11,7 @@ import tf_conversions
 # from torchvision import transforms
 from detection.msg import objectPoseStampedLst
 from gridmapping import Map
-from global_explorer import getValues
+from global_explorer import getValues, getMostValuedCell
 
 if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
@@ -19,4 +19,4 @@ if __name__ == "__main__":
     while True:
         rospy.sleep(1)
         m.doPublish()
-        getValues(m)
+        getMostValuedCell()
