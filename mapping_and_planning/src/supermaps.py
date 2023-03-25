@@ -9,10 +9,12 @@ import matplotlib.pyplot as plt
 import tf_conversions
 
 class SuperMap:
-    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
     ifseenanchor = False
         
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+    
         width = int(width/resolution)
         height = int(height/resolution)
         
