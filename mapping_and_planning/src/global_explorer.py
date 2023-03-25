@@ -1,21 +1,59 @@
 #!/usr/bin/python3
-from gridmapping import *
+import numpy as np
 from typing import List
 # https://cs231n.github.io/convolutional-networks/
 F = 10  # receptive field
 S = 10   # stride
 P = 0   # padding
-mask: np.array = np.array(
-    [[2 for i in range(F)] for i in range(F)]
-)
 
-def getMostValuedCell(matrix: np.array, width: int, height: int) -> List[int, int]:
-    getHeuristicMap(matrix, width, height)
 
-def getHeuristicMap(matrix: np.array, W: int, H: int) -> np.array:
-    for h in range(H - F, S):
+# Leaving the mask here to illustrate how it looks, we can choose other values
+mask: np.array = np.array([ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+mask: np.array = np.array([[0 for i in range(F)] for i in range(F)])
+
+
+
+def h(mask_value: int, matrix_value: int) -> int:
+    if mask_value == matrix_value:
+        return 10
+    elif matrix_value != 2:
+        return 1
+    else:
+        return 0
+def heuristic(matrix: np.array, mask: np.array, width: int, height: int) -> int:
+    area_value = 0
+    for h in range(F):
+        for w in range(F):
+            area_value += h(mask[h,w], matrix[h,w])
+
+    return 1
+
+def getMostValuedCell(matrix: np.array, width: int, height: int) -> List[int]:
+    heuiristic_values = getHeuristicMap(matrix, mask, width, height)
+    most_valued_cell = [0, 0, 0]
+    for cell in heuiristic_values:
+        if cell[0] > most_valued_cell[0]:
+            most_valued_cell = cell
+    return most_valued_cell
+
+def getHeuristicMap(matrix: np.array, mask: np.array, W: int, H: int) -> np.array:
+    heuiristic_values = []
+    for h in range(0, H - F, S):
+        row = []
         for w in range(0, W - F, S):
-
-            area = matrix[w:w+F,h:h+F]
-            print(area)
-    return mask
+            m = matrix[h:h+F, w:w+F]
+            cell_value = heuristic(m, mask, W, H)
+            row.append([cell_value, h, w])
+        heuiristic_values.append(row)
+            
+    return heuiristic_values
