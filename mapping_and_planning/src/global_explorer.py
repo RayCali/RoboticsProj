@@ -4,7 +4,7 @@ from gridmapping import *
 F = 10  # receptive field
 S = 10   # stride
 P = 0   # padding
-mask: np.array = (
+mask: np.array = np.array(
     [[2 for i in range(F)] for i in range(F)]
 )
 
