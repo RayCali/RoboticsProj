@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 import tf_conversions
 
 class SuperMap:
-    ifseenanchor = False
         
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
+        self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
     
@@ -30,13 +30,14 @@ class SuperMap:
             "free": 1,
             "occupied": 2,
             "toy": 3,
-            "box": 4
+            "box": 4,
+            "outside of workspace": 5
         }
         
         self.grid.info.origin = Pose(Point(-3.0, -9.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
-        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
+        self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
@@ -63,11 +64,13 @@ class SuperMap:
         if x == 1:      
             return 0    # free space
         if x == 2:
-            return 100  # black(obstacles)
+            return 95  # black(obstacles)
         if x == 3:
             return 50   # toy or box
         if x == 4:
             return 90   # toy or box
+        if x== 5:
+            return 100
         else:
             raise Exception("None value in matrix")
 
@@ -101,7 +104,8 @@ class SuperMap:
                     y_1_ind=y_ind 
                     )
                 try:
-                    self.matrix[y_ind, x_ind] = 2
+                    if self.matrix[y_ind, x_ind] != 5:
+                        self.matrix[y_ind, x_ind] = 2
                 except IndexError:
                     print("Outside grid")
                     exit()
@@ -138,6 +142,8 @@ class SuperMap:
         if cell == 0 or cell == 1 or cell == 2: #painting over, UNK,OBS and FRE to FRE
             self.matrix[y,x] = 1
         elif cell == 3 or cell == 4: # TOY or BOX found between us and the obstacle
+            pass
+        elif cell == 5: # This area is outside of the workspace
             pass
         else:
             rospy.loginfo("  INVALID VALUE FOUND IN THE GRID MATRIX")

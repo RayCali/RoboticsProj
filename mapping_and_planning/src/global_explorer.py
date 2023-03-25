@@ -23,7 +23,7 @@ mask: np.array = np.array([[0 for i in range(F)] for i in range(F)])
 
 
 
-def h(mask_value: int, matrix_value: int) -> int:
+def f(mask_value: int, matrix_value: int) -> int:
     if mask_value == matrix_value:
         return 10
     elif matrix_value != 2:
@@ -34,12 +34,13 @@ def heuristic(matrix: np.array, mask: np.array, width: int, height: int) -> int:
     area_value = 0
     for h in range(F):
         for w in range(F):
-            area_value += h(mask[h,w], matrix[h,w])
+            area_value += f(mask[h,w], matrix[h,w])
 
-    return 1
+    return area_value
 
 def getMostValuedCell(matrix: np.array, width: int, height: int) -> List[int]:
     heuiristic_values = getHeuristicMap(matrix, mask, width, height)
+    print(heuiristic_values)
     most_valued_cell = [0, 0, 0]
     for cell in heuiristic_values:
         if cell[0] > most_valued_cell[0]:
@@ -49,11 +50,8 @@ def getMostValuedCell(matrix: np.array, width: int, height: int) -> List[int]:
 def getHeuristicMap(matrix: np.array, mask: np.array, W: int, H: int) -> np.array:
     heuiristic_values = []
     for h in range(0, H - F, S):
-        row = []
         for w in range(0, W - F, S):
             m = matrix[h:h+F, w:w+F]
             cell_value = heuristic(m, mask, W, H)
-            row.append([cell_value, h, w])
-        heuiristic_values.append(row)
-            
+            heuiristic_values.append([cell_value, h, w])            
     return heuiristic_values

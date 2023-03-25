@@ -20,9 +20,11 @@ class Map(SuperMap):
                 point =  tf2_geometry_msgs.do_transform_pose(point, transform)
                 inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
                 if not inside:
-                    self.matrix[j,i]=2
+                    self.matrix[j,i]=5
             
-    
+        self.anchordetected = True
+        
+        
         # workspace = msg.points[:-1]
         # index = 3
         # point = PoseStamped()

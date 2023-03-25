@@ -20,7 +20,6 @@ if __name__ == "__main__":
     m = Map(True, 11, 11)
     rospy.sleep(1)
     m.doPublish()
-    print(m.grid.info.width, m.grid.info.height)
     print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
     while True:
         rospy.sleep(1)
