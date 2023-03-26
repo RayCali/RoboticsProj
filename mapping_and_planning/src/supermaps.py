@@ -121,14 +121,13 @@ class SuperMap:
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []
-        delta_x = x1 - x0
-        delta_y = y1 - y0
-        for i in range(0, R, ):
-            xi = x0 + delta_x * i / R 
-            yi = y0 + delta_y * i / R
+        dx = x1 - x0
+        dy = y1 - y0
+        for i in range(0, R, 1):
+            xi = x0 + dx * i / R 
+            yi = y0 + dy * i / R
             x_i_ind = int((xi - self.grid.info.origin.position.x) / self.grid.info.resolution)
             y_i_ind = int((yi - self.grid.info.origin.position.y) / self.grid.info.resolution)
-            # print(x0, x1, delta_x, x_1_ind, x_i_ind, "\t\t\t", y0, y1, delta_y, y_1_ind, y_i_ind)
             if x_i_ind != x_1_ind and y_i_ind != y_1_ind:
                 indices.append((x_i_ind, y_i_ind))
         # print()
