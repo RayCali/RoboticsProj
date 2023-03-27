@@ -1,10 +1,11 @@
 ->
-
-|    (isAnchorSeen)
+|    ?
+|    |    (isLocalized)
+|    |    [doLocalize()]
 |    ?
 |    |    (isNotPair)
 |    |    ->
-|    |    |    ->
+|    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
 |    |    |    |    [doMoveToGoal(goal)]
@@ -16,6 +17,8 @@
 |    |    |    |    [doMoveToGoal(goal)]
 |    |    |    ?
 |    |    |    |    (isPlaced)
-|    |    |    |    [doPickup()]
+|    |    |    |    [doPlace()]
 |    |    |    (isNotPair)
-|    [doExplore()]
+|    ?
+|    |    (isExplored)
+|    |    [doExplore()]
