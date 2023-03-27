@@ -157,9 +157,11 @@ def imageCB(msg: Image):
         pose.pose.position.x = pos[0]
         pose.pose.position.y = pos[1]
         pose.pose.position.z = pos[2]
-        object_poses.PoseStamped.append(pose)
-        classes.append(label)
+        # I do not like that the pose is added before the transformation,
+        # in case the transformation fails, the pose is still added to the list
         try:
+            object_poses.PoseStamped.append(pose)
+            classes.append(label)
             transform = tf_buffer.lookup_transform("map", pose.header.frame_id, msg.header.stamp, rospy.Duration(2))
             map_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
             map_pose.pose.position.z = 0.0
@@ -195,7 +197,8 @@ def imageCB(msg: Image):
         i+=1
 
     object_poses.object_class = classes
-    posePub.publish(object_poses)
+    if len(object_poses.PoseStamped)>0:
+        posePub.publish(object_poses)
 
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')

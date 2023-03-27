@@ -66,9 +66,9 @@ class SuperMap:
         if x == 2:
             return 95  # black(obstacles)
         if x == 3:
-            return 50   # toy or box
+            return 50   # toy
         if x == 4:
-            return 90   # toy or box
+            return 75   # box
         if x== 5:
             return 100  # out
         else:
