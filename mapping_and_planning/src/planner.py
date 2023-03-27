@@ -21,7 +21,7 @@ class Node:
         )
     def setParent(self, node):
         self.parent = node
-        self.cost = self.getDistTo(self.parent)
+        self.cost = self.getDistTo(self.parent) + self.parent.cost
         
 
 class RRTStar:
@@ -73,7 +73,7 @@ class RRTStar:
 
         return    
     def setParentToSomeoneWithBetterCostPlusDistance(self, node: Node):
-        min_path_cost = node.cost + node.parent.cost
+        min_path_cost = node.cost
         for neighbor in self.neighbors:
             path_cost_through_neighbor = node.getDistTo(neighbor) + neighbor.cost
             if path_cost_through_neighbor < min_path_cost:
