@@ -1,0 +1,21 @@
+->
+
+|    (isAnchorSeen)
+|    ?
+|    |    (isNotPair)
+|    |    ->
+|    |    |    ->
+|    |    |    |    (isPicked)
+|    |    |    |    (isInFrontToy)
+|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    ?
+|    |    |    |    (isPicked)
+|    |    |    |    [doPickup()]
+|    |    |    ?
+|    |    |    |    (isInFrontBox)
+|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    ?
+|    |    |    |    (isPlaced)
+|    |    |    |    [doPickup()]
+|    |    |    (isNotPair)
+|    [doExplore()]
