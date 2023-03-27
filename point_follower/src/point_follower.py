@@ -7,6 +7,8 @@ from aruco_msgs.msg import MarkerArray
 from robp_msgs.msg import DutyCycles
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
+from detection.msg import objectPoseStampedLst
+from typing import List
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs
@@ -22,7 +24,7 @@ class path(object):
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         # ROS Subscribers
-        self.goal = rospy.Subscriber("/detection/pose", PoseStamped, self.tracker)
+        self.goal = rospy.Subscriber("detection/pose", objectPoseStampedLst, self.tracker)
         
         self.done_once = False
         self.rate = rospy.Rate(20)
