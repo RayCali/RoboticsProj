@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Image1
+        - /TF1
+        - /TF1/Frames1
         - /Image2
         - /Marker1
         - /Map1
@@ -102,37 +104,37 @@ Visualization Manager:
         base_link:
           Value: true
         camera_accel_frame:
-          Value: true
+          Value: false
         camera_accel_optical_frame:
-          Value: true
+          Value: false
         camera_aligned_depth_to_color_frame:
-          Value: true
+          Value: false
         camera_bottom_screw_frame:
           Value: false
         camera_color_frame:
-          Value: true
+          Value: false
         camera_color_optical_frame:
-          Value: true
+          Value: false
         camera_depth_frame:
-          Value: true
+          Value: false
         camera_depth_optical_frame:
-          Value: true
+          Value: false
         camera_gyro_frame:
-          Value: true
+          Value: false
         camera_gyro_optical_frame:
-          Value: true
+          Value: false
         camera_infra1_frame:
-          Value: true
+          Value: false
         camera_infra1_optical_frame:
-          Value: true
+          Value: false
         camera_infra2_frame:
-          Value: true
+          Value: false
         camera_infra2_optical_frame:
-          Value: true
+          Value: false
         camera_link:
           Value: false
         imu_link:
-          Value: true
+          Value: false
         map:
           Value: true
         odom:
@@ -145,6 +147,13 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
+
+          detection_Oakie1:
+            {}
+          detection_Oakie2:
+            {}
+          detection_Oakie3:
+            {}
           odom:
             base_link:
               camera_bottom_screw_frame:
@@ -272,7 +281,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 3.2615222930908203
+      Distance: 2.881754159927368
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -280,17 +289,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.11741483211517334
-        Y: -0.022481471300125122
-        Z: 0
+        X: 0.21926137804985046
+        Y: -0.7387983798980713
+        Z: 2.384185791015625e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6047976613044739
+      Pitch: 0.6147978901863098
       Target Frame: <Fixed Frame>
-      Yaw: 2.577242612838745
+      Yaw: 3.9372446537017822
     Saved: ~
 Window Geometry:
   ArUco:
