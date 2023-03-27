@@ -25,7 +25,7 @@ def callbackEncoder(data):
     Efeedback=data
 
 def listener():
-    rospy.Subscriber('/cmd_vel_proc',Twist, callbackTwist)
+    rospy.Subscriber('/cmd_vel',Twist, callbackTwist)
     rospy.Subscriber('/motor/encoders',Encoders, callbackEncoder)
     
 

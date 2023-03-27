@@ -6,8 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Image1
+        - /TF1
+        - /TF1/Frames1
+        - /ArUco1
         - /Image2
         - /Marker1
+        - /MarkerArray1
         - /Map1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 267
@@ -96,9 +100,11 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
-      Frame Timeout: 15
+      Frame Timeout: 120
       Frames:
         All Enabled: false
+        arucolandmark3:
+          Value: true
         base_link:
           Value: true
         camera_accel_frame:
@@ -145,18 +151,29 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
+          arucolandmark3:
+          detection_Oakie1:
+            {}
+          detection_Oakie2:
+            {}
+          detection_Oakie3:
+            {}
           odom:
             base_link:
               camera_bottom_screw_frame:
                 camera_link:
+                  camera_color_frame:
+                    camera_color_optical_frame:
+                      {}
+                  camera_depth_frame:
+                    camera_depth_optical_frame:
+                      {}
                   camera_accel_frame:
                     camera_accel_optical_frame:
                       {}
                   camera_aligned_depth_to_color_frame:
                     camera_color_optical_frame:
                       {}
-                  camera_color_frame:
-                    {}
                   camera_depth_frame:
                     camera_depth_optical_frame:
                       {}
@@ -204,7 +221,7 @@ Visualization Manager:
       Visual Enabled: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /aruco/result
+      Image Topic: /aruco_all/aruco/result
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -243,6 +260,13 @@ Visualization Manager:
       Topic: /topic
       Unreliable: false
       Use Timestamp: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /covariances
+      Name: MarkerArray
+      Namespaces:
+        covariance: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
