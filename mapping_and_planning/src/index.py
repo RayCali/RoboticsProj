@@ -22,6 +22,6 @@ if __name__ == "__main__":
     m.doPublish()
     # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
     while True:
-        rospy.sleep(1)
+        rospy.sleep(0.05)
         m.doPublish()
         

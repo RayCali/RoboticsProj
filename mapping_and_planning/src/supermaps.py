@@ -86,8 +86,10 @@ class SuperMap:
         anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
         for i in range(len(msg.ranges)):
             laserlist.append(msg.ranges[i])
+            obstacleorfree = 2
             if laserlist[i] > 2:
                 laserlist[i] = 2
+                obstacleorfree = 1
             if laserlist[i] <= 2:
                 
                 x = transform.transform.translation.x + laserlist[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
@@ -109,7 +111,7 @@ class SuperMap:
                     )
                 try:
                     if self.matrix[y_ind, x_ind] != 5:
-                        self.matrix[y_ind, x_ind] = 2
+                        self.matrix[y_ind, x_ind] = obstacleorfree
                 except IndexError:
                     print("Outside grid")
                     exit()
