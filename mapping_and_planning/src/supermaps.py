@@ -34,7 +34,7 @@ class SuperMap:
             "outside of workspace": 5
         }
         
-        self.grid.info.origin = Pose(Point(-3.0, -9.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
@@ -77,6 +77,8 @@ class SuperMap:
 
     def __doScanCallback(self, msg: LaserScan):
         latestupdate = rospy.Time(0)
+        rospy.loginfo(msg.angle_max)
+
         try:
             transform = self.tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
@@ -118,6 +120,9 @@ class SuperMap:
 
                 
             self.grid.header.stamp = rospy.Time.now()
+    def __doEmptyScanCallback(self):
+
+        return
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []

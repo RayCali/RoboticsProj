@@ -81,6 +81,9 @@ def imu_callback(msg:Imu):
         vel.angular.z = w
         pub_vel.publish(vel)
     else: 
+        t = TransformStamped()
+        t.header.frame_id = "odom"
+        t.child_frame_id = "base_link"
         t.header.stamp=msg.header.stamp
         t.transform.translation.x = 0
         t.transform.translation.y = 0
