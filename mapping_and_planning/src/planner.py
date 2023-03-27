@@ -8,12 +8,6 @@ class Node:
         self.x = pos[0]
         self.y = pos[1]
         self.parent: Node = None
-        # I have defined the cost as the euclidean distance to the parent.
-        # This I got from the medium article above.
-        # The code Kevin found defined it as the length of the path taken.
-        # While I cannot see where it would give different result
-        # this is the definition I am going for since I found a source
-        # that I could understand
         self.cost = 0.0
     def getDistTo(self, node):
         return np.sqrt(
@@ -21,7 +15,7 @@ class Node:
         )
     def setParent(self, node):
         self.parent = node
-        self.cost = self.getDistTo(self.parent)
+        self.cost = self.getDistTo(self.parent) + self.parent.cost
         
 
 class RRTStar:
@@ -73,7 +67,7 @@ class RRTStar:
 
         return    
     def setParentToSomeoneWithBetterCostPlusDistance(self, node: Node):
-        min_path_cost = node.cost + node.parent.cost
+        min_path_cost = node.cost
         for neighbor in self.neighbors:
             path_cost_through_neighbor = node.getDistTo(neighbor) + neighbor.cost
             if path_cost_through_neighbor < min_path_cost:
@@ -94,12 +88,6 @@ class RRTStar:
         R = int(node.getDistTo(closest) / self.r)
         dx = node.x - closest.x
         dy = node.y - closest.y
-        # This segment specifically is going to be very expensive to 
-        # calculate.
-        # If we introduce the notion of of the map.matrix into this code
-        # we could significantly lower the computation cost
-        # What we would have to do is to have a method that quickly maps a given
-        # coordinate to a point in the grid and tells us if it is occupied
         for i in range(1, R, 1):                    #
             xi = node.x + dx * i / R                #
             yi = node.y + dy * i / R                #
