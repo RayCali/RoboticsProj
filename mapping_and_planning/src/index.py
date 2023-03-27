@@ -7,31 +7,21 @@ from rospy import loginfo
 import tf2_ros
 import tf2_geometry_msgs
 import tf_conversions
-import torch
-from torchvision import transforms
-from sensor_msgs.msg import Image, PointCloud2
-from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
-import matplotlib.pyplot as plt
-from PIL import Image as pil
-from gridmapping import Mapper
-import yaml
-
-# This is just so that it is easier to read the code
-def doOneUpdate():
-    frames_dict = yaml.safe_load(tfBuffer.all_frames_as_yaml())
-    for key in frames_dict.keys():
-        if not m.getKeyLogged(key):
-            t = tflistener.getLatestCommonTime(frames_dict[key], "/map")
-            ts: TransformStamped = tfBuffer.lookupTransform(
-                frames_dict[key], "/map", t)
-            m.doInterpreteMSG(msg=ts, id="UNK")
+# import torch
+# from torchvision import transforms
+from detection.msg import objectPoseStampedLst
+from gridmapping import Map
+from global_explorer import getMostValuedCell
 
 
 if __name__ == "__main__":
 
-    m = Mapper()
-    m.doAnimate()
-    tfBuffer = tf2_ros.Buffer(rospy.Duration(1.0))
-    tflistener = tf2_ros.TransformListener(tfBuffer)
-    while not rospy.is_shutdown():
-        doOneUpdate()
+    rospy.init_node("mapping_and_planning")
+    m = Map(True, 11, 11, 0.05)
+    rospy.sleep(1)
+    m.doPublish()
+    # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
+    while True:
+        rospy.sleep(1)
+        m.doPublish()
+        
