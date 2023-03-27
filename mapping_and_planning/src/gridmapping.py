@@ -7,6 +7,7 @@ class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         super().__init__(plot, width,height,resolution)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
+        self.detection_sub = rospy.Subscriber("/detection/pose", ObjectPoselst, self.__doObjectCallback)
     def __doWorkspaceCallback(self, msg: Marker):
         poly = msg.points[:-1]
         for i in range(self.grid.info.width):

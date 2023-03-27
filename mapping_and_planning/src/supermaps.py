@@ -70,7 +70,7 @@ class SuperMap:
         if x == 4:
             return 90   # toy or box
         if x== 5:
-            return 100
+            return 100  # out
         else:
             raise Exception("None value in matrix")
 
