@@ -6,8 +6,12 @@ Panels:
       Expanded:
         - /Global Options1
         - /Image1
+        - /TF1
+        - /TF1/Frames1
+        - /ArUco1
         - /Image2
         - /Marker1
+        - /MarkerArray1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 70
   - Class: rviz/Selection
@@ -95,57 +99,51 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
-      Frame Timeout: 15
+      Frame Timeout: 120
       Frames:
         All Enabled: false
+        arucolandmark3:
+          Value: true
         base_link:
           Value: true
         camera_accel_frame:
-          Value: true
+          Value: false
         camera_accel_optical_frame:
-          Value: true
+          Value: false
         camera_aligned_depth_to_color_frame:
-          Value: true
+          Value: false
         camera_bottom_screw_frame:
           Value: false
         camera_color_frame:
-          Value: true
+          Value: false
         camera_color_optical_frame:
-          Value: true
+          Value: false
         camera_depth_frame:
-          Value: true
+          Value: false
         camera_depth_optical_frame:
-          Value: true
+          Value: false
         camera_gyro_frame:
-          Value: true
+          Value: false
         camera_gyro_optical_frame:
-          Value: true
+          Value: false
         camera_infra1_frame:
-          Value: true
+          Value: false
         camera_infra1_optical_frame:
-          Value: true
+          Value: false
         camera_infra2_frame:
-          Value: true
+          Value: false
         camera_infra2_optical_frame:
-          Value: true
+          Value: false
         camera_link:
           Value: false
-        detection1:
-          Value: true
-        detection2:
-          Value: true
-        detection3:
-          Value: true
-        detection4:
-          Value: true
-        detection5:
-          Value: true
-        detection6:
-          Value: true
-        detection7:
-          Value: true
+        detection_Oakie1:
+          Value: false
+        detection_Oakie2:
+          Value: false
+        detection_Oakie3:
+          Value: false
         imu_link:
-          Value: true
+          Value: false
         map:
           Value: true
         odom:
@@ -158,32 +156,29 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          detection1:
+          arucolandmark3:
+          detection_Oakie1:
             {}
-          detection2:
+          detection_Oakie2:
             {}
-          detection3:
-            {}
-          detection4:
-            {}
-          detection5:
-            {}
-          detection6:
-            {}
-          detection7:
+          detection_Oakie3:
             {}
           odom:
             base_link:
               camera_bottom_screw_frame:
                 camera_link:
+                  camera_color_frame:
+                    camera_color_optical_frame:
+                      {}
+                  camera_depth_frame:
+                    camera_depth_optical_frame:
+                      {}
                   camera_accel_frame:
                     camera_accel_optical_frame:
                       {}
                   camera_aligned_depth_to_color_frame:
                     camera_color_optical_frame:
                       {}
-                  camera_color_frame:
-                    {}
                   camera_depth_frame:
                     camera_depth_optical_frame:
                       {}
@@ -231,7 +226,7 @@ Visualization Manager:
       Visual Enabled: true
     - Class: rviz/Image
       Enabled: true
-      Image Topic: /aruco/result
+      Image Topic: /aruco_all/aruco/result
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -259,6 +254,14 @@ Visualization Manager:
       Name: Marker
       Namespaces:
         {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /covariances
+      Name: MarkerArray
+      Namespaces:
+        covariance: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -289,7 +292,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 3.2615222930908203
+      Distance: 2.881754159927368
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -297,17 +300,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -0.11741483211517334
-        Y: -0.022481471300125122
-        Z: 0
+        X: 0.21926137804985046
+        Y: -0.7387983798980713
+        Z: 2.384185791015625e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6047976613044739
+      Pitch: 0.6147978901863098
       Target Frame: <Fixed Frame>
-      Yaw: 2.577242612838745
+      Yaw: 3.9372446537017822
     Saved: ~
 Window Geometry:
   ArUco:
