@@ -3,11 +3,12 @@
   <arg name="motor_left_port" default="4"/>
   <arg name="motor_right_port" default="2"/>
   <arg name="imu_port" default="0"/>
-  
+
   <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
   <node pkg="localization" type="startup.py" name="aruco_node" output="screen"/>
   <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/>
-  <node pkg="detection" type="object_detection.py" name="object_detection" output="screen"/>
+  <include file="$(find depthimage_to_laserscan)/launch/launchfile_sample.launch"></include>
   
   <include file="$(find odometry)/launch/odometry.launch"></include>
-  </launch>
+  
+</launch>
