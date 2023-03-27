@@ -114,7 +114,7 @@ def aruco_callback(mesg):
             # new_aruco_pose = tf2_geometry_msgs.do_transform_pose(arucopose, transform)
             anglelist = [new_aruco_pose.pose.orientation.x, new_aruco_pose.pose.orientation.y, new_aruco_pose.pose.orientation.z,new_aruco_pose.pose.orientation.w]
             roll,pitch,yaw = tf_conversions.transformations.euler_from_quaternion(anglelist)
-            yaw = yaw - math.pi/2
+            yaw = yaw 
             q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw)
             
             
