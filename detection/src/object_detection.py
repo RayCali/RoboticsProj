@@ -17,7 +17,7 @@ from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped, Vector3Stamped
 import utils, detector
-from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStamped
+from detection.msg import centerpointArray, boundingboxArray, boundingboxMsg, objectPoseStampedLst
 from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -147,7 +147,7 @@ def imageCB(msg: Image):
         
     i = 1
     # transform and publish poses
-    object_poses = objectPoseStamped()
+    object_poses = objectPoseStampedLst()
     # poses = []
     classes = []
     for pos, label in zip(positions,labels):
@@ -214,7 +214,7 @@ if __name__=="__main__":
     bridge = CvBridge()
 
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB,queue_size=10, buff_size=2**24)
-    posePub = rospy.Publisher("/detection/pose", objectPoseStamped, queue_size=10)
+    posePub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
     # errPub = rospy.Publisher("/detection/bb_error", centerpointArray, queue_size=10)
 
