@@ -30,45 +30,50 @@ class path(object):
         self.rate = rospy.Rate(20)
 
         
-    def tracker(self,msg:PoseStamped):
+    def tracker(self,msg:objectPoseStampedLst):
         # if not self.done_once:
         self.cam_pose = PoseStamped()
         self.twist = Twist()
-        
+        listOfPoses: List[PoseStamped] = msg.PoseStamped
+        # rospy.loginfo(listOfPoses)
+        # listOfPoses: List[PoseStamped] = objectPoseStampedLst.PoseStamped
+        for pose in listOfPoses:
+            self.msgTime = pose.header.stamp
+            self.cam_pose.header.stamp = pose.header.stamp
+            self.cam_pose.header.frame_id = pose.header.frame_id
+            self.rate = rospy.Rate(20)
 
-        # self.rate = rospy.Rate(20)
-        self.msgTime = msg.header.stamp
-        self.cam_pose.header.stamp = msg.header.stamp
-        self.cam_pose.header.frame_id = msg.header.frame_id
-        self.cam_pose.pose = msg.pose
-
-        try:
-            self.trans = tfBuffer.lookup_transform("base_link", "odom", self.msgTime, timeout=rospy.Duration(0.5))
-            self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
-        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-            rospy.logerr("Failed to transform point from odom frame to base_link frame")
-            pass
-        
-        self.rotation = self.goal_pose.pose.orientation.z
-        self.inc_x = self.goal_pose.pose.position.x
-        self.inc_y = self.goal_pose.pose.position.y
-
-        # rospy.loginfo(abs(rotation))
-        while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
-            self.twist.linear.x = 0.0
-            self.twist.angular.z = -0.7
-            rospy.loginfo("Turning right")
-            rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
-            self.pub_twist.publish(self.twist)
-            self.rate.sleep()
             try:
-                self.trans = tfBuffer.lookup_transform("base_link", "odom", self.msgTime, timeout=rospy.Duration(2.0))
+                self.trans = tfBuffer.lookup_transform("base_link", "odom", self.msgTime, timeout=rospy.Duration(0.5))
                 self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logerr("Failed to transform point from odom frame to base_link frame")
                 pass
+        
+            self.rotation = self.goal_pose.pose.orientation.z
             self.inc_x = self.goal_pose.pose.position.x
             self.inc_y = self.goal_pose.pose.position.y
+
+        # # rospy.loginfo(abs(rotation))
+            while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+                self.twist.linear.x = 0.0
+                self.twist.angular.z = -0.7
+                rospy.loginfo("Turning right")
+                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                self.pub_twist.publish(self.twist)
+                self.rate.sleep()
+            # self.twist.linear.x = 0.0
+            # self.twist.angular.z = 0.0
+            # self.pub_twist.publish(self.twist)
+            # self.rate.sleep()
+                # try:
+                #     self.trans = tfBuffer.lookup_transform("base_link", "odom", self.msgTime, timeout=rospy.Duration(2.0))
+                #     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                #     rospy.logerr("Failed to transform point from odom frame to base_link frame")
+                #     pass
+                # self.inc_x = self.goal_pose.pose.position.x
+                # self.inc_y = self.goal_pose.pose.position.y
 
     #     while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
     #         self.twist.linear.x = 0.0
@@ -182,10 +187,7 @@ if __name__ == "__main__":
     tfBuffer = tf2_ros.Buffer()
     tflistener = tf2_ros.TransformListener(tfBuffer)
     rospy.sleep(2)
-    try:
-        follower = path()
-        
-    except rospy.ROSInterruptException:
-        pass
+    follower = path()
+
     
     rospy.spin()
