@@ -13,9 +13,9 @@ from objects import Plushie, Cube, Ball, Box, Movable
 from typing import Dict
 from utilities import normalized
 from brain.src.conditions import SUCCESS, RUNNING, FAILURE
-from memory.srv import Moveto
+from memory.srv import Moveto, NotPair
 
-class Mem:
+class Memory:
     def __init__(self):
         self.objects: Dict[Movable]= {}
         self.plushies: Dict[Plushie] = {}
@@ -34,10 +34,18 @@ class Mem:
            8 : "Box",
         }
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
-        self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)     
-        self.xThreshold = 0.2
-        self.yThreshold = 0.2
+        self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)
+        self.notpair_srv = rospy.Service("notpair", NotPair, self.NotPair)
+        self.xThreshold = 0.10
+        self.yThreshold = 0.10
+    def NotPair(self, req):
+        # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
+        return FAILURE
     def MoveTo(self, req):
+        # TODO: the move to service needs the following functionality
+        # 1) During approach verify that the object is where we found it 
+        # 2) If the object is gone, tell the map to whipe that area and set it to free
+        # 3) If the object is reclassified, change the object class and return failure
         while True:
             return Moveto()
         return SUCCESS

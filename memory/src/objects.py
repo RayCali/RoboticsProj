@@ -10,10 +10,8 @@ import tf_conversions
 
 class Movable:
     def __init__(self, pose: PoseStamped, name: str) -> None:
-        self.x = pose.pose.position.x
-        self.y = pose.pose.position.y 
-        self.stamp = pose.header.stamp
-        self.name = None
+        self.pose: PoseStamped = pose
+        self.name: str = None
 
 class Toy(Movable):
     count = 0
