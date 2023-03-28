@@ -12,7 +12,8 @@ import tf_conversions
 from objects import Plushie, Cube, Ball, Box, Movable
 from typing import Dict
 from utilities import normalized
-
+from brain.src.conditions import SUCCESS, RUNNING, FAILURE
+from memory.srv import Moveto
 
 class Mem:
     def __init__(self):
@@ -33,8 +34,13 @@ class Mem:
            8 : "Box",
         }
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
+        self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)     
         self.xThreshold = 0.2
         self.yThreshold = 0.2
+    def MoveTo(self, req):
+        while True:
+            return Moveto()
+        return SUCCESS
 
     def __putObject(self, pose: PoseStamped, id: int):
         id = int(id)
@@ -71,11 +77,6 @@ class Mem:
             if abs(object.x - pose.pose.position.x) < self.xThreshold or abs(object.y - pose.pose.position.y) < self.yThreshold:
                 return
         self.__putObject(pose, id)
-        
-
-            
-
-            
 
 
 if __name__ == "__main__":
