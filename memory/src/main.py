@@ -7,6 +7,7 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
 from detection.msg import objectPoseStampedLst
 from sensor_msgs.msg import LaserScan
+from aruco_msgs import MarkerArray
 import matplotlib.pyplot as plt
 import tf_conversions
 from objects import Plushie, Cube, Ball, Box, Movable
@@ -33,14 +34,36 @@ class Memory:
            7 : "Ball",
            8 : "Box",
         }
+        self.arucoId2Box = {
+            0 : "Box_Plushies",
+            1 : "Box_Balls",
+            2 : "Box_Cubes",
+        }
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
+        self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
         self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)
         self.notpair_srv = rospy.Service("notpair", NotPair, self.NotPair)
         self.xThreshold = 0.10
         self.yThreshold = 0.10
+
     def NotPair(self, req):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
-        return FAILURE
+        # we have a pair if
+        # 1) the box object has an aruco marker so we can identify which box it is
+        # 2) the dictionary of the object class that the box belongs to is not empty
+        for box in self.boxes:
+            if self.boxes[box].hasArucoMarker:
+                if self.boxes[box].name == "Box_Plushies":
+                    if len(self.plushies) > 0:
+                        return FAILURE
+                elif self.boxes[box].name == "Box_Balls":
+                    if len(self.balls) > 0:
+                        return FAILURE
+                elif self.boxes[box].name == "Box_Cubes":
+                    if len(self.cubes) > 0:
+                        return FAILURE
+        return SUCCESS
+    
     def MoveTo(self, req):
         # TODO: the move to service needs the following functionality
         # 1) During approach verify that the object is where we found it 
@@ -75,14 +98,51 @@ class Memory:
         self.objects[name] = object
         correctDict[name] = object
 
+    def __putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
+        boxes = Box
+        if object.hasArucoMarker:
+            if replace:
+                del self.objects[object_to_replace]
+            self.objects[object.name] = object
+            self.boxes[object.name] = object
+        else:
+            name = self.id2Object[8] + "_" + str(boxes.count)
+            boxes.count += 1
+            self.objects[name] = object
+            self.boxes[name] = object
 
     def __doStoreAllDetectedObjects(self, msg: objectPoseStampedLst):
         for pose, id in zip(msg.PoseStamped, msg.object_class):
-            self.__putInDictsIfNotAlreadyIn(pose,id)
+            if id < 8:
+                self.__putInDictsIfNotAlreadyIn(pose,id)
+            elif id == 8:
+                boxObject = Box(pose, self.id2Object[id])
+                boxObject.hasArucoMarker = False      
+                self.__putBoxInDict(boxObject)
+
+    def __doStoreAllBoxesWAruco(self, msg: MarkerArray):
+        for marker in msg.markers:
+            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id])
+            boxObject.hasArucoMarker = True
+            self.__putBoxInDict(boxObject)
+
+    def __putBoxInDict(self, boxObject: Box):
+        for object_name in self.objects:
+            objectPos = self.objects[object_name].poseStamped.pose.position
+            boxPos = boxObject.poseStamped.pose.position
+            if (abs(objectPos.x - boxPos.x) < self.xThreshold and
+                 abs(objectPos.y - boxPos.y) < self.yThreshold):
+                if not object.hasArucoMarker and boxObject.hasArucoMarker:
+                    replace = True
+                    self.putBox(boxObject,replace,object_name)
+                    return
+        self.__putBox(boxObject)
+            
     
-    def __doStoreAllDetectedObjects(self, pose: PoseStamped, id: int):
+    def __putInDictsIfNotAlreadyIn(self, pose: PoseStamped, id: int):
         for object in self.objects:
-            if abs(object.x - pose.pose.position.x) < self.xThreshold or abs(object.y - pose.pose.position.y) < self.yThreshold:
+            if (abs(object.poseStamped.pose.position.x - pose.pose.position.x) < self.xThreshold and
+                 abs(object.poseStamped.pose.position.y - pose.pose.position.y) < self.yThreshold):
                 return
         self.__putObject(pose, id)
 
@@ -90,5 +150,5 @@ class Memory:
 if __name__ == "__main__":
 
     rospy.init_node("memory")
-    m = Mem()
+    m = Memory()
     rospy.spin()    

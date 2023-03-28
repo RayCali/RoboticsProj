@@ -10,7 +10,7 @@ import tf_conversions
 
 class Movable:
     def __init__(self, pose: PoseStamped, name: str) -> None:
-        self.pose: PoseStamped = pose
+        self.poseStamped: PoseStamped = pose
         self.name: str = None
 
 class Toy(Movable):
@@ -22,19 +22,18 @@ class Toy(Movable):
 class Plushie(Toy):
     def __init__(self, pose: PoseStamped, name: str) -> None:
         super().__init__(pose, name)
-        self.inBox = False
+
 class Cube(Toy):
     def __init__(self, pose: PoseStamped, name: str) -> None:
         super().__init__(pose, name)
-        self.inBox = False
 
 class Ball(Toy):
     def __init__(self, pose: PoseStamped, name: str) -> None:
         super().__init__(pose, name)
-        self.inBox = False
 
 class Box(Movable):
     count = 0
     def __init__(self, pose: PoseStamped, name: str) -> None:
         super().__init__(pose, name)
         self.hasArucoMarker = False
+        self.objectLst = []
