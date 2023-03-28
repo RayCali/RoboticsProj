@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import rospy
 import numpy as np
+from numpy import dot, array, 
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
@@ -10,6 +11,7 @@ import matplotlib.pyplot as plt
 import tf_conversions
 from objects import Plushie, Cube, Ball, Box, Movable
 from typing import Dict
+from utilities import normalized
 
 
 class Mem:
@@ -31,6 +33,8 @@ class Mem:
            8 : "Box",
         }
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
+        self.angleThreshold = 0.9
+        self.lengtThreashold = 0.3
         
 
     def __putObject(self, pose: PoseStamped, id: int):
@@ -60,7 +64,22 @@ class Mem:
 
 
     def __doStoreAllDetectedObjects(self, msg: objectPoseStampedLst):
-        pass
+        for pose, id in zip(msg.PoseStamped, msg.object_class):
+            self.__putInDictsIfNotAlreadyIn(pose,id)
+    
+    def __doStoreAllDetectedObjects(self, pose: PoseStamped, id):
+        u = array(pose.pose.position.x, pose.pose.position.y)
+        for object in self.objects:
+            v = array(object.x, object.y)
+            if dot(normalized(v), normalized(v)) < self.dotThreshold:
+                return
+            if abs(np.linalg.norm(v) - np.linalg.norm(u)) < self.lengtThreashold:
+                return
+        self.__putObject(pose, id)
+        
+
+            
+
             
 
 
