@@ -33,9 +33,8 @@ class Mem:
            8 : "Box",
         }
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
-        self.angleThreshold = 0.9
-        self.lengtThreashold = 0.3
-        
+        self.xThreshold = 0.2
+        self.yThreshold = 0.2
 
     def __putObject(self, pose: PoseStamped, id: int):
         id = int(id)
@@ -68,12 +67,10 @@ class Mem:
             self.__putInDictsIfNotAlreadyIn(pose,id)
     
     def __doStoreAllDetectedObjects(self, pose: PoseStamped, id):
-        u = array(pose.pose.position.x, pose.pose.position.y)
         for object in self.objects:
-            v = array(object.x, object.y)
-            if dot(normalized(v), normalized(v)) < self.dotThreshold:
-                return
-            if abs(np.linalg.norm(v) - np.linalg.norm(u)) < self.lengtThreashold:
+            if abs(object.x - pose.pose.position.x) < self.xThreshold \
+                  or \
+                abs(object.y - pose.pose.position.y) < self.yThreshold:
                 return
         self.__putObject(pose, id)
         
