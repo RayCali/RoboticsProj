@@ -66,11 +66,9 @@ class Mem:
         for pose, id in zip(msg.PoseStamped, msg.object_class):
             self.__putInDictsIfNotAlreadyIn(pose,id)
     
-    def __doStoreAllDetectedObjects(self, pose: PoseStamped, id):
+    def __doStoreAllDetectedObjects(self, pose: PoseStamped, id: int):
         for object in self.objects:
-            if abs(object.x - pose.pose.position.x) < self.xThreshold \
-                  or \
-                abs(object.y - pose.pose.position.y) < self.yThreshold:
+            if abs(object.x - pose.pose.position.x) < self.xThreshold or abs(object.y - pose.pose.position.y) < self.yThreshold:
                 return
         self.__putObject(pose, id)
         
