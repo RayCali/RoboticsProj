@@ -4,6 +4,7 @@ import numpy as np
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
+from detection.msg import objectPoseStampedLst
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
@@ -29,6 +30,8 @@ class Mem:
            7 : "Ball",
            8 : "Box",
         }
+        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
+        
 
     def __putObject(self, pose: PoseStamped, id: int):
         id = int(id)
@@ -56,7 +59,8 @@ class Mem:
         correctDict[name] = object
 
 
-
+    def __doStoreAllDetectedObjects(self, msg: objectPoseStampedLst):
+        pass
             
 
 
