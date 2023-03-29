@@ -46,6 +46,7 @@ class Memory:
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
         self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)
         self.notpair_srv = rospy.Service("notpair", NotPair, self.NotPair)
+        self.pathPlanner_srv = rospy.ServiceProxy("pathPlanner", #TODO)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -81,9 +82,11 @@ class Memory:
         
         # 1)
         # This is too convoluted to implement as a single method. It needs to be expanded into a node
+        goal: PoseStamped = 
         while True:
             if self.targetHasBecomeInvalid:
                 self.targetHasBecomeInvalid = False
+                #
                 return Moveto(FAILURE)
             else:
                 return Moveto(RUNNING)
