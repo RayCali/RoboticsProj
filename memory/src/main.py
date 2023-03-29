@@ -4,19 +4,21 @@ import numpy as np
 from numpy import dot, array, 
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
 from detection.msg import objectPoseStampedLst
 from sensor_msgs.msg import LaserScan
 from aruco_msgs import MarkerArray
 import matplotlib.pyplot as plt
 import tf_conversions
-from objects import Plushie, Cube, Ball, Box, Movable
+from objects import Plushie, Cube, Ball, Box, Movable, Toy
 from typing import Dict
 from utilities import normalized
 from brain.src.conditions import SUCCESS, RUNNING, FAILURE
 from memory.srv import Moveto, NotPair
 
 class Memory:
+    #A[A==0]
+    #ray = linspace([xr, r])
     def __init__(self):
         self.objects: Dict[Movable]= {}
         self.plushies: Dict[Plushie] = {}
@@ -39,13 +41,19 @@ class Memory:
             1 : "Box_Balls",
             2 : "Box_Cubes",
         }
+
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
         self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)
         self.notpair_srv = rospy.Service("notpair", NotPair, self.NotPair)
+        
+        self.movingToTargetToy = False
+        self.targetToy: Toy = None
+        self.targetHasBecomeInvalid = False
         self.xThreshold = 0.10
         self.yThreshold = 0.10
-
+        
+        
     def NotPair(self, req):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
         # we have a pair if
@@ -70,9 +78,16 @@ class Memory:
         # 1) During approach verify that the object is where we found it 
         # 2) If the object is gone, tell the map to whipe that area and set it to free
         # 3) If the object is reclassified, change the object class and return failure
+        
+        # 1)
+        # This is too convoluted to implement as a single method. It needs to be expanded into a node
         while True:
-            return Moveto()
-        return SUCCESS
+            if self.targetHasBecomeInvalid:
+                self.targetHasBecomeInvalid = False
+                return Moveto(FAILURE)
+            else:
+                return Moveto(RUNNING)
+        return Moveto(SUCCESS)
 
     def __putObject(self, pose: PoseStamped, id: int):
         id = int(id)
@@ -90,6 +105,7 @@ class Memory:
             correctDict= self.balls
         else:
             raise Exception("Invalid object ID: " % str(id))
+        
         name = self.id2Object[id] + "_" + str(objectType.count)
         objectType.count += 1
         object = objectType(pose=pose, name=name)
@@ -117,7 +133,12 @@ class Memory:
                 boxObject = Box(pose, self.id2Object[id])
                 boxObject.hasArucoMarker = False      
                 self.__putBoxInDict(boxObject)
-
+    def __getWithinRange(self, a: Point, b: Point) -> bool:
+        if abs(a.x - b.x) < self.xThreshold and abs(a.y - b.y) < self.yThreshold:
+            return True
+        False
+            
+        return False
     def __doStoreAllBoxesWAruco(self, msg: MarkerArray):
         for marker in msg.markers:
             boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id])
@@ -128,8 +149,7 @@ class Memory:
         for object_name in self.objects:
             objectPos = self.objects[object_name].poseStamped.pose.position
             boxPos = boxObject.poseStamped.pose.position
-            if (abs(objectPos.x - boxPos.x) < self.xThreshold and
-                 abs(objectPos.y - boxPos.y) < self.yThreshold):
+            if self.__getWithinRange(objectPos, boxPos):
                 if not object.hasArucoMarker and boxObject.hasArucoMarker:
                     replace = True
                     self.putBox(boxObject,replace,object_name)
@@ -139,8 +159,13 @@ class Memory:
     
     def __putInDictsIfNotAlreadyIn(self, pose: PoseStamped, id: int):
         for object in self.objects:
-            if (abs(object.poseStamped.pose.position.x - pose.pose.position.x) < self.xThreshold and
-                 abs(object.poseStamped.pose.position.y - pose.pose.position.y) < self.yThreshold):
+            if self.__getWithinRange(a=object.poseStamped.pose.position, b=pose.pose.position):
+                if self.movingToTargetToy and object.name==self.targetToy.name and self.targetToy.id != id:
+                    # Grumpy is looking at a toy, lets call it the observed toy
+                    # The observed toy is where the target toy is supposed to be
+                    # However the observed toy is not of the same id as the target toy
+                    # A missclassification has occured
+                    self.targetHasBecomeInvalid = True
                 return
         self.__putObject(pose, id)
 

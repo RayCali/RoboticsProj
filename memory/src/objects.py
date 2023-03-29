@@ -1,39 +1,38 @@
 #!/usr/bin/python3
-import rospy
 import numpy as np
-import tf2_ros
-from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped
+from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
+from typing import List
 
 class Movable:
-    def __init__(self, pose: PoseStamped, name: str) -> None:
+    def __init__(self, pose: PoseStamped, name: str,  id: int) -> None:
         self.poseStamped: PoseStamped = pose
         self.name: str = None
+        self.id: int = id
 
 class Toy(Movable):
     count = 0
-    def __init__(self, pose: PoseStamped, name: str) -> None:
-        super().__init__(pose, name)
+    def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
+        super().__init__(pose, name, id)
         self.inBox = False
 
-class Plushie(Toy):
-    def __init__(self, pose: PoseStamped, name: str) -> None:
-        super().__init__(pose, name)
 
+class Plushie(Toy):
+    def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
+        super().__init__(pose, name, id)
 class Cube(Toy):
-    def __init__(self, pose: PoseStamped, name: str) -> None:
-        super().__init__(pose, name)
+    def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
+        super().__init__(pose, name, id)
 
 class Ball(Toy):
-    def __init__(self, pose: PoseStamped, name: str) -> None:
-        super().__init__(pose, name)
+    def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
+        super().__init__(pose, name, id)
 
 class Box(Movable):
     count = 0
-    def __init__(self, pose: PoseStamped, name: str) -> None:
-        super().__init__(pose, name)
+    def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
+        super().__init__(pose, name, id)
         self.hasArucoMarker = False
-        self.objectLst = []
+        self.objectLst: List[Toy] = []
