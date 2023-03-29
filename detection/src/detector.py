@@ -46,7 +46,7 @@ class Detector(nn.Module):
         # output of mobilenet_v2 will be 1280x23x40 for 720x1280 input images
         # output of mobilenet_v2 will be 1280x15x20 for 480x640 input images 
 
-        self.head = nn.Conv2d(in_channels=1280, out_channels=13, kernel_size=1)
+        self.head = nn.Conv2d(in_channels=1280, out_channels=14, kernel_size=1)
         # 1x1 Convolution to reduce channels to out_channels without changing H and W
 
         # 1280x15x20 -> 5x15x20, where each element 5 channel tuple corresponds to
@@ -127,7 +127,7 @@ class Detector(nn.Module):
                 ).item()
 
                 bb_class = ""
-                maxProbIdx = torch.argmax(o[5:13, bb_index[0], bb_index[1]])
+                maxProbIdx = torch.argmax(o[5:14, bb_index[0], bb_index[1]])
                 # print(o[5:13, bb_index[0], bb_index[1]])
                 # print(o[5:13, bb_index[0], bb_index[1]].size)
                 # print(maxProbIdx)
@@ -148,6 +148,9 @@ class Detector(nn.Module):
                     bb_class = "cube"
                 elif maxProbIdx == 7:
                     bb_class = "ball"
+                elif maxProbIdx == 8:
+                    bb_class = "box"
+
 
                 img_bbs.append(
                     {
@@ -192,7 +195,7 @@ class Detector(nn.Module):
           mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
           )(image)
      
-      target = torch.zeros(13, self.out_cells_y, self.out_cells_x)
+      target = torch.zeros(14, self.out_cells_y, self.out_cells_x)
       for bbx in bbs:
         x = bbx[0]
         y = bbx[1]
