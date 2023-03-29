@@ -16,7 +16,7 @@ import math
 import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
+from robot_arm.srv import Place, PlaceResponse, PlaceRequest
 
 from utils import *
 
@@ -38,7 +38,7 @@ def joint_state_callback(msg: JointState):
     global joint_states
     joint_states = msg
 
-def handle_place_req(req: TriggerRequest):
+def handle_place_req(req: PlaceRequest):
     global dropoff
     dropoff.header.stamp = rospy.Time.now()
     if joint_states.position[-1] == gripper_closed:
@@ -75,13 +75,13 @@ def handle_place_req(req: TriggerRequest):
     else:
         rospy.logerr("Gripper is not closed")
 
-    return TriggerResponse(True, "Success")
+    return PlaceResponse(True, "Success")
 
 
 if __name__ == "__main__":
     rospy.init_node("place_server")
     
-    rospy.Service("/place", Trigger, handle_place_req)
+    rospy.Service("/place", Place, handle_place_req)
 
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
 

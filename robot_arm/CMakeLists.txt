@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   hiwonder_servo_msgs
   rospy
   trajectory_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,11 +56,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  pick.srv
+  place.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

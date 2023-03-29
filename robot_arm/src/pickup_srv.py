@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
 import rospy
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
-from robp_msgs.msg import Encoders
-from std_msgs.msg import Float64
 from hiwonder_servo_msgs.msg import CommandDuration
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import tf_conversions
@@ -17,27 +15,29 @@ import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
+from robot_arm.srv import Pick, PickRequest, PickResponse
 
 from utils import *
 
 
 joint_states = None
-pose_stamped = None
+# pose_stamped = None
 
 
-def pose_callback(msg: PoseStamped):
-    global pose_stamped
-    pose_stamped = msg
+# def pose_callback(msg: PoseStamped):
+#     global pose_stamped
+#     pose_stamped = msg
 
 def joint_state_callback(msg: JointState):
     global joint_states
     joint_states = msg
 
-def handle_pickup_req(req: TriggerRequest):
+def handle_pickup_req(req: PickRequest):
 
     if joint_states.position[-1] == gripper_open:
 
         # transform pose given in base_link to arm_base
+        pose_stamped = req
         stamp = pose_stamped.header.stamp
 
         try:
@@ -92,15 +92,15 @@ def handle_pickup_req(req: TriggerRequest):
             trajectory_client.wait_for_result()
 
     else:
-        return TriggerResponse(False, "Gripper is already closed, cannot pick up object.")
+        return PickResponse(False, "Gripper is already closed, cannot pick up object.")
 
-    return TriggerResponse(True, "Success")
+    return PickResponse(True, "Success")
 
 
 if __name__ == "__main__":
     rospy.init_node("pickup_server")
     
-    rospy.Service("/pickup", Trigger, handle_pickup_req)
+    rospy.Service("/pickup", Pick, handle_pickup_req)
 
     poseSub = rospy.Subscriber("/detection/pose", PoseStamped, pose_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
