@@ -14,7 +14,7 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from point_follower.srv import Node
+from point_follower.srv import Node, Moveto, MovetoResponse, MovetoRequest
 # from brain.src.config import SUCCESS, FAILURE, RUNNING
 
 
@@ -24,22 +24,23 @@ class path(object):
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
 
         # ROS Subscribers
-        self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
+        # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         
         self.done_once = False
         self.rate = rospy.Rate(20)
+        s = rospy.Service('/moveto', Moveto, self.tracker)
 
         
-    def tracker(self,msg:objectPoseStampedLst):
+    def tracker(self,req:MovetoRequest):
         if not self.done_once:
             self.cam_pose = PoseStamped()
             self.twist = Twist()
             rospy.sleep(2)
-            if len(msg.PoseStamped) == 0:
-                rospy.loginfo("No object detected")
-                exit()
+            # if len(msg.PoseStamped) == 0:
+            #     rospy.loginfo("No object detected")
+            #     exit()
             
-            self.cam_pose = msg.PoseStamped[0]
+            self.cam_pose = req.goal
             # self.rate = rospy.Rate(20)
             # rospy.Time(0) = msg.header.stamp
             # rospy.Time(0) = msg.header.stamp
@@ -145,11 +146,44 @@ class path(object):
                     self.twist.angular.z = -0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
+            
+            while math.atan2(self.inc_y, self.inc_x)< -0.02: # or math.atan2(inc_y, inc_x) < -0.2:
+                self.twist.linear.x = 0.0
+                self.twist.angular.z = -0.7
+                rospy.loginfo("Turning right")
+                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                self.pub_twist.publish(self.twist)
+                self.rate.sleep()
+                try:
+                    self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    rospy.logerr("Failed to transform point from odom frame to base_link frame")
+                    pass
+                self.inc_x = self.goal_pose.pose.position.x
+                self.inc_y = self.goal_pose.pose.position.y
+
+            while math.atan2(self.inc_y, self.inc_x) > 0.02: # or math.atan2(inc_y, inc_x) < -0.2:
+                self.twist.linear.x = 0.0
+                self.twist.angular.z = 0.7
+                rospy.loginfo("Turning left")
+                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                self.pub_twist.publish(self.twist)
+                self.rate.sleep()
+                try:
+                    self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                    rospy.logerr("Failed to transform point from odom frame to base_link frame")
+                    pass
+                self.inc_x = self.goal_pose.pose.position.x
+                self.inc_y = self.goal_pose.pose.position.y
             self.done_once = True
         rospy.loginfo('You have reached the goal')
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
+        return MovetoResponse(True,"success")
         # self.rate.sleep()
         # try:
         #     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))

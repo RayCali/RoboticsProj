@@ -59,6 +59,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   Node.srv
+  Moveto.srv
 )
 
 ## Generate actions in the 'action' folder
