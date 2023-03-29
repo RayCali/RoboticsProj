@@ -11,8 +11,8 @@ Panels:
         - /ArUco1
         - /Image2
         - /Marker1
-        - /MarkerArray1
         - /Map1
+        - /MarkerArray1
       Splitter Ratio: 0.7439024448394775
     Tree Height: 267
   - Class: rviz/Selection
@@ -103,46 +103,50 @@ Visualization Manager:
       Frame Timeout: 120
       Frames:
         All Enabled: false
-        arucolandmark3:
-          Value: true
+        arm_base:
+          Value: false
         base_link:
           Value: true
         camera_accel_frame:
-          Value: true
+          Value: false
         camera_accel_optical_frame:
-          Value: true
+          Value: false
         camera_aligned_depth_to_color_frame:
-          Value: true
+          Value: false
         camera_bottom_screw_frame:
           Value: false
         camera_color_frame:
-          Value: true
+          Value: false
         camera_color_optical_frame:
-          Value: true
+          Value: false
         camera_depth_frame:
-          Value: true
+          Value: false
         camera_depth_optical_frame:
-          Value: true
+          Value: false
         camera_gyro_frame:
-          Value: true
+          Value: false
         camera_gyro_optical_frame:
-          Value: true
+          Value: false
         camera_infra1_frame:
-          Value: true
+          Value: false
         camera_infra1_optical_frame:
-          Value: true
+          Value: false
         camera_infra2_frame:
-          Value: true
+          Value: false
         camera_infra2_optical_frame:
-          Value: true
+          Value: false
         camera_link:
           Value: false
+        center_robot:
+          Value: false
+        detection_ball1:
+          Value: true
         imu_link:
-          Value: true
+          Value: false
         map:
-          Value: true
+          Value: false
         odom:
-          Value: true
+          Value: false
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -151,29 +155,22 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          arucolandmark3:
-          detection_Oakie1:
-            {}
-          detection_Oakie2:
-            {}
-          detection_Oakie3:
+          detection_ball1:
             {}
           odom:
             base_link:
+              arm_base:
+                {}
               camera_bottom_screw_frame:
                 camera_link:
-                  camera_color_frame:
-                    camera_color_optical_frame:
-                      {}
-                  camera_depth_frame:
-                    camera_depth_optical_frame:
-                      {}
                   camera_accel_frame:
                     camera_accel_optical_frame:
                       {}
                   camera_aligned_depth_to_color_frame:
                     camera_color_optical_frame:
                       {}
+                  camera_color_frame:
+                    {}
                   camera_depth_frame:
                     camera_depth_optical_frame:
                       {}
@@ -186,6 +183,8 @@ Visualization Manager:
                   camera_infra2_frame:
                     camera_infra2_optical_frame:
                       {}
+              center_robot:
+                {}
             imu_link:
               {}
       Update Interval: 0
@@ -260,12 +259,13 @@ Visualization Manager:
       Topic: /topic
       Unreliable: false
       Use Timestamp: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /covariances
       Name: MarkerArray
       Namespaces:
-        covariance: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
