@@ -10,6 +10,7 @@
 
 	<node name="sf_odometry" pkg="odometry" type="sf_odometry.py" output = "screen"/>
 	<node name="odom" pkg="tf2_ros" type="static_transform_publisher" args="0 0 0 0 0 0 map odom" output ="screen" />
+	<node name="center_robot" pkg="tf2_ros" type="static_transform_publisher" args="-0.18 0 0 0 0 0 base_link center_robot" output ="screen" />
 
 	<!-- <node name="marker_1" pkg="tf2_ros" type="static_transform_publisher" args="-1 -1 0.18 0 0 0 map aruco/marker1" />
 	<node name="marker_2" pkg="tf2_ros" type="static_transform_publisher" args="2 0 0.18 3.14159265359 0 0 map aruco/marker2" /> -->
