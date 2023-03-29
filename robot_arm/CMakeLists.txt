@@ -58,8 +58,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  pick.srv
-  place.srv
+  Pick.srv
+  Place.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -69,11 +69,11 @@ add_service_files(
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   hiwonder_servo_msgs#   trajectory_msgs
-# )
+# Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs   hiwonder_servo_msgs   trajectory_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

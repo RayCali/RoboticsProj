@@ -102,7 +102,7 @@ if __name__ == "__main__":
     
     rospy.Service("/pickup", Pick, handle_pickup_req)
 
-    poseSub = rospy.Subscriber("/detection/pose", PoseStamped, pose_callback)
+    # poseSub = rospy.Subscriber("/detection/pose", PoseStamped, pose_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
 
     gripperPub = rospy.Publisher('/r_joint_controller/command_duration', CommandDuration, queue_size=1)
