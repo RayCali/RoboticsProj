@@ -51,15 +51,16 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        for box in self.boxes:
-            if self.boxes[box].hasArucoMarker:
-                if self.boxes[box].name == "Box_Plushies":
+        for key in self.boxes:
+            box = self.boxes[key]
+            if box.hasArucoMarker:
+                if box.name == "Box_Plushies":
                     if len(self.plushies) > 0:
                         return FAILURE
-                elif self.boxes[box].name == "Box_Balls":
+                elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
                         return FAILURE
-                elif self.boxes[box].name == "Box_Cubes":
+                elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
                         return FAILURE
         return SUCCESS
@@ -87,9 +88,6 @@ class Memory:
         elif id==7:
             objectType = Ball
             correctDict= self.balls
-        elif id==8:
-            objectType = Box
-            correctDict = self.boxes
         else:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
