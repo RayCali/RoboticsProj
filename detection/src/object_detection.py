@@ -123,34 +123,34 @@ def imageCB(msg: Image):
         centerbbx_x = int(x+int(width/2))
         centerbbx_y = int(y+int(height/2))
 
-        if label == "ball":
-            r = image[0,img_center_y,img_center_x]
-            g = image[1,img_center_y,img_center_x]
-            b = image[2,img_center_y,img_center_x]
-            # infer ball colour:
-            if b > g and g > r:
-                label = "blue_ball"
-            elif g > b and b > r:
-                label = "green_ball"
-            elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
-                label = "red_ball"
-            else:
-                label = "ball_unknown"
-        if label == "cube":
-            r = image[0,img_center_y,img_center_x]
-            g = image[1,img_center_y,img_center_x]
-            b = image[2,img_center_y,img_center_x]
-            # infer cube color
-            if b > g and g > r:
-                label = "blue_cube"
-            elif g > b and b > r:
-                label = "green_cube"
-            elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
-                label = "red_cube"
-            elif (b-20 < g or g < b+20) and max(g,b) < r:
-                label = "wooden_cube"
-            else:
-                label = "cube_unknown"
+        # if label == "ball":
+        #     r = image[0,img_center_y,img_center_x]
+        #     g = image[1,img_center_y,img_center_x]
+        #     b = image[2,img_center_y,img_center_x]
+        #     # infer ball colour:
+        #     if b > g and g > r:
+        #         label = "blue_ball"
+        #     elif g > b and b > r:
+        #         label = "green_ball"
+        #     elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
+        #         label = "red_ball"
+        #     else:
+        #         label = "ball_unknown"
+        # if label == "cube":
+        #     r = image[0,img_center_y,img_center_x]
+        #     g = image[1,img_center_y,img_center_x]
+        #     b = image[2,img_center_y,img_center_x]
+        #     # infer cube color
+        #     if b > g and g > r:
+        #         label = "blue_cube"
+        #     elif g > b and b > r:
+        #         label = "green_cube"
+        #     elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
+        #         label = "red_cube"
+        #     elif (b-20 < g or g < b+20) and max(g,b)+30 < r:
+        #         label = "wooden_cube"
+        #     else:
+        #         label = "cube_unknown"
     
     
         if depthImg_rcvd:
@@ -165,34 +165,30 @@ def imageCB(msg: Image):
         # box_float = torch.tensor(box, dtype=torch.float)
         # print(torch.linalg.matrix_norm(box_float))
         for i in range(len(boxes)):
-            corners_i = [[int(boxes[i][0,0]),int(boxes[i][0,1])], [int(boxes[i][0,2]),int(boxes[i][0,1])],
-                          [int(boxes[i][0,2]),int(boxes[i][0,3])], [int(boxes[i][0,0]),int(boxes[i][0,3])]]
-            polygon_i = Polygon(corners_i)
-            overlap = polygon_bbx.intersection(polygon_i).area / polygon_bbx.union(polygon_i).area
-            # calculate overlap between the bounding boxes
-            if overlap > 0.3:
-                if scores[i] > score:
+            # corners_i = [[int(boxes[i][0,0]),int(boxes[i][0,1])], [int(boxes[i][0,2]),int(boxes[i][0,1])],
+            #               [int(boxes[i][0,2]),int(boxes[i][0,3])], [int(boxes[i][0,0]),int(boxes[i][0,3])]]
+            # polygon_i = Polygon(corners_i)
+            # overlap = polygon_bbx.intersection(polygon_i).area / polygon_bbx.union(polygon_i).area
+            # # calculate overlap between the bounding boxes
+            # if overlap > 0.3:
+            if np.linalg.norm(positions[i] - object_position) < 0.1:
+                if scores[i] >= score:
                     break
                 else:
-                    boxes.pop(i)
-                    labels.pop(i)
-                    scores.pop(i)
-                    scores.append(score)
-                    labels.append(label)
-                    boxes.append(box)
+                    boxes[i] = box
+                    labels[i] = label
+                    scores[i] = score
                     if depthImg_rcvd:
-                        positions.pop(i)
-                        positions.append(object_position)
+                        positions[i] = object_position
                     break
-            else:
-                if score > 0.8:
-                    boxes.append(box)
-                    labels.append(label)
-                    scores.append(score)
-                    if depthImg_rcvd:
-                        positions.append(object_position)
+            if i == len(boxes)-1 and score > 0.9:
+                boxes.append(box)
+                labels.append(label)
+                scores.append(score)
+                if depthImg_rcvd:
+                    positions.append(object_position)
         
-        if len(boxes) == 0 and score > 0.8:
+        if len(boxes) == 0 and score > 0.9:
             boxes.append(box)
             labels.append(label)
             scores.append(score)
@@ -210,6 +206,8 @@ def imageCB(msg: Image):
     # transform and publish poses
     object_poses = objectPoseStampedLst()
     # classes = []
+    rospy.loginfo(len(positions)==len(labels))
+    rospy.loginfo(positions)
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
@@ -256,7 +254,7 @@ if __name__=="__main__":
     posesPub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
 
-    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+    tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
     tfbroadcaster = tf2_ros.TransformBroadcaster()
 
