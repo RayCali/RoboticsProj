@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
+from mapping_and_planning.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
 
 class SuperMap:
         
@@ -14,7 +15,7 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-    
+        s = rospy.Service('/no_collision', NoCollision, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
         
@@ -77,7 +78,6 @@ class SuperMap:
 
     def __doScanCallback(self, msg: LaserScan):
         latestupdate = rospy.Time(0)
-        rospy.loginfo(msg.angle_max)
 
         try:
             transform = self.tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
@@ -163,6 +163,20 @@ class SuperMap:
             for ii in range(lower, lower + boxSize, 1):
                 self.matrix[i, ii] = 1
     
+    def __nocollision(self,req:NoCollisionRequest):
+        radiusgrid = req.radius/self.grid.info.resolution
+        transform = self.tf_buffer.lookup_transform("map", "center_robot", rospy.Time(0), rospy.Duration(2))
+        x = transform.transform.translation.x
+        y = transform.transform.translation.y
+        x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+        y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+        for i in range(x_ind - radiusgrid, x_ind + radiusgrid, 1):
+            for ii in range(y_ind - radiusgrid, y_ind + radiusgrid, 1):
+                if self.matrix[ii, i] == 2:
+                    return NoCollisionResponse(False)
+                elif self.matrix[ii, i] == 5:
+                    return NoCollisionResponse(False)
+
     def point_inside_polygon(self,x,y,poly):
         n = len(poly)
         inside =False
