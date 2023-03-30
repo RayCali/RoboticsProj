@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
+import matplotlib.path as mpltPath
 
 class SuperMap:
         
@@ -45,10 +46,17 @@ class SuperMap:
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
-        self.grid.data = []
-        for i in range(self.grid.info.width):
-            for ii in range(self.grid.info.height):
-                self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
+        self.grid.data = self.matrix.flatten()
+        self.grid.data[self.grid.data == 0] = 20
+        self.grid.data[self.grid.data == 1] = 0
+        self.grid.data[self.grid.data == 2] = 95
+        self.grid.data[self.grid.data == 3] = 50
+        self.grid.data[self.grid.data == 4] = 75
+        self.grid.data[self.grid.data == 5] = 100
+        # self.grid.data = []
+        # for i in range(self.grid.info.width):
+        #     for ii in range(self.grid.info.height):
+        #         self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
     def doPublish(self):
