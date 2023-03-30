@@ -78,7 +78,7 @@ class SuperMap:
 
     def __doScanCallback(self, msg: LaserScan):
         latestupdate = rospy.Time(0)
-
+        laserlist = []
         try:
             transform = self.tf_buffer.lookup_transform("map", "base_link", latestupdate, rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
@@ -86,10 +86,15 @@ class SuperMap:
 
         anglelist = tf_conversions.transformations.euler_from_quaternion([transform.transform.rotation.x, transform.transform.rotation.y, transform.transform.rotation.z, transform.transform.rotation.w])
         for i in range(len(msg.ranges)):
-            if msg.ranges[i] < 3:
+            objectorfree = 2
+            laserlist.append(msg.ranges[i])
+            if laserlist[i] > 2:
+                laserlist[i] = 2
+                objectorfree=1
+            if laserlist[i] <= 2:
                 
-                x = transform.transform.translation.x + msg.ranges[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
-                y = transform.transform.translation.y + msg.ranges[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                x = transform.transform.translation.x + laserlist[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
+                y = transform.transform.translation.y + laserlist[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
                 
                 x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
                 y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -97,7 +102,7 @@ class SuperMap:
                     print("FUCKUP!NOTGOOD!VERY BAD!!!")
                     exit()
                 self.__doDrawFreespace(
-                    r=msg.ranges[i], 
+                    r=laserlist[i], 
                     x0 = transform.transform.translation.x,
                     y0 = transform.transform.translation.y,
                     x1 = x,
@@ -107,7 +112,7 @@ class SuperMap:
                     )
                 try:
                     if self.matrix[y_ind, x_ind] != 5:
-                        self.matrix[y_ind, x_ind] = 2
+                        self.matrix[y_ind, x_ind] = objectorfree
                 except IndexError:
                     print("Outside grid")
                     exit()
@@ -170,12 +175,15 @@ class SuperMap:
         y = transform.transform.translation.y
         x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
         y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-        for i in range(x_ind - radiusgrid, x_ind + radiusgrid, 1):
-            for ii in range(y_ind - radiusgrid, y_ind + radiusgrid, 1):
+        for i in range(x_ind - int(radiusgrid), x_ind + int(radiusgrid), 1):
+            for ii in range(y_ind - int(radiusgrid), y_ind + int(radiusgrid), 1):
                 if self.matrix[ii, i] == 2:
+                    rospy.loginfo(i)
+                    rospy.loginfo(ii)
                     return NoCollisionResponse(False)
                 elif self.matrix[ii, i] == 5:
                     return NoCollisionResponse(False)
+        return NoCollisionResponse(True)
 
     def point_inside_polygon(self,x,y,poly):
         n = len(poly)

@@ -17,7 +17,7 @@ def tracker(msg):
       rospy.loginfo("No object detected")
       exit()
     resp1 = s(msg.PoseStamped[0])
-    resp1.wait_for_result()
+    # resp1.wait_for_result()
   
 def anchorcallback(msg):
   global seenanchor
