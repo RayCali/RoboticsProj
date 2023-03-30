@@ -15,16 +15,16 @@ def tracker(msg):
     rospy.loginfo("No object detected")
     exit()
   resp1 = s(msg.PoseStamped[0])
-  resp1.wait_for_result()
-  rospy.wait_for_service("/pickup")
-  pickup = rospy.ServiceProxy("/pickup", Pick)
-  try:
-    resp = pickup(msg.PoseStamped[0])
-    rospy.loginfo("Pickup service called")
-    resp.wait_for_result()
-    print(resp.msg)
-  except rospy.ServiceException as e:
-    rospy.loginfo("Service call failed: %s"%e)
+  if resp1.success:
+    rospy.wait_for_service("/pickup")
+    pickup = rospy.ServiceProxy("/pickup", Pick)
+    try:
+      resp = pickup(msg.PoseStamped[0])
+      rospy.loginfo("Pickup service called")
+      resp.wait_for_result()
+      print(resp.msg)
+    except rospy.ServiceException as e:
+      rospy.loginfo("Service call failed: %s"%e)
   
 
 if __name__ == '__main__':

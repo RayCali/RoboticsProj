@@ -71,22 +71,22 @@ def analyticalIK_lock4(position):
     z = z-l0 # subtract offset
 
     l2_eff = math.sqrt(l2**2 + (l3+l4)**2 - 2*l2*(l3+l4)*math.cos(math.pi-abs(q4)))
-    print(l2_eff)
+    # print(l2_eff)
 
-    print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
+    # print((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q3_eff = -math.acos((x**2 + z**2 - (l1**2 + l2_eff**2))/(2*l1*l2_eff))
     q2 = -math.atan2(x, z) - math.atan2(l2_eff*math.sin(q3_eff), l1 + l2_eff*math.cos(q3_eff))
 
     angle_offset = math.acos((l2_eff**2+l2**2-(l3+l4)**2)/(2*l2_eff*l2))
-    print("inner angle: ",angle_offset)
+    # print("inner angle: ",angle_offset)
     q3 = q3_eff + angle_offset
-    print("eff:", [q1, q2, q3_eff, q4, q5])
+    # print("eff:", [q1, q2, q3_eff, q4, q5])
     q = [q1, q2, q3, q4, q5]
 
     x_ = -l1*math.sin(q2) - l2_eff*math.sin(q2+q3)
     z_ = l1*math.cos(q2) + l2_eff*math.cos(q2+q3) + l0
 
-    print(q)
-    print([x_,z_])
+    # print(q)
+    # print([x_,z_])
     
     return q
