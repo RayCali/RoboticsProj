@@ -92,6 +92,7 @@ def imageCB(msg: Image):
         depthImg_rcvd = True
     except rospy.ROSInterruptException:
         rospy.loginfo("No depth image received")
+        return
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
     cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")

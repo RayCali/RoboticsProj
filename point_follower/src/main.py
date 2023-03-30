@@ -32,7 +32,7 @@ class path(object):
         self.rate = rospy.Rate(20)
         s = rospy.Service('/moveto', Moveto, self.tracker)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
-        self.radius_sub = float(0.3)
+        self.radius_sub = float(1)
 
     # def Radius(self, msg:Float64):
     #     self.radius_sub = msg.data
@@ -114,7 +114,7 @@ class path(object):
                 rospy.loginfo("Waiting for service")
                 rospy.wait_for_service('/no_collision')
                 rospy.loginfo("Service found")
-                resp1 = self.s(self.radius_sub)
+                resp1 = self.s()
                 rospy.loginfo(resp1)
                 #resp1.wait_for_result()
                 if resp1.success is not True:

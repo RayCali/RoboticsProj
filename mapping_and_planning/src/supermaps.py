@@ -7,10 +7,13 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
+from geometry_msgs.msg import PoseStamped
 from mapping_and_planning.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
 
+
+
 class SuperMap:
-        
+    laserscan = []
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
@@ -46,10 +49,17 @@ class SuperMap:
         if plot:
             self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
-        self.grid.data = []
-        for i in range(self.grid.info.width):
-            for ii in range(self.grid.info.height):
-                self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
+        self.grid.data = self.matrix.flatten()
+        self.grid.data[self.grid.data == 0] = 20
+        self.grid.data[self.grid.data == 1] = 0
+        self.grid.data[self.grid.data == 2] = 95
+        self.grid.data[self.grid.data == 3] = 50
+        self.grid.data[self.grid.data == 4] = 75
+        self.grid.data[self.grid.data == 5] = 100
+        # self.grid.data = []
+        # for i in range(self.grid.info.width):
+        #     for ii in range(self.grid.info.height):
+        #         self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
     def doPublish(self):
@@ -77,6 +87,8 @@ class SuperMap:
 
 
     def __doScanCallback(self, msg: LaserScan):
+        global latestscan
+        latestscan = msg
         latestupdate = rospy.Time(0)
         laserlist = []
         try:
@@ -169,21 +181,13 @@ class SuperMap:
                 self.matrix[i, ii] = 1
     
     def __nocollision(self,req:NoCollisionRequest):
-        radiusgrid = req.radius/self.grid.info.resolution
-        transform = self.tf_buffer.lookup_transform("map", "center_robot", rospy.Time(0), rospy.Duration(2))
-        x = transform.transform.translation.x
-        y = transform.transform.translation.y
-        x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-        y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-        for i in range(x_ind - int(radiusgrid), x_ind + int(radiusgrid), 1):
-            for ii in range(y_ind - int(radiusgrid), y_ind + int(radiusgrid), 1):
-                if self.matrix[ii, i] == 2:
-                    rospy.loginfo(i)
-                    rospy.loginfo(ii)
-                    return NoCollisionResponse(False)
-                elif self.matrix[ii, i] == 5:
+        global latestscan
+        for i in range (len(latestscan.ranges)):
+            if latestscan.ranges[i] < 0.5:
+                if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
                     return NoCollisionResponse(False)
         return NoCollisionResponse(True)
+
 
     def point_inside_polygon(self,x,y,poly):
         n = len(poly)

@@ -5,7 +5,7 @@ from detection.msg import objectPoseStampedLst
 from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 from typing import List
-
+import matplotlib.path as mpltPath
 class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         super().__init__(plot, width,height,resolution)
@@ -25,7 +25,7 @@ class Map(SuperMap):
         }
     def __doObjectCallback(self, msg: objectPoseStampedLst):
         listOfPoses: List[PoseStamped] = msg.PoseStamped
-        print(msg.object_class)
+        # print(msg.object_class)
         labels: List[str] = [self.class_dictionary[c] for c in msg.object_class]
         for i in range(len(listOfPoses)):
             c = labels[i]
@@ -47,6 +47,10 @@ class Map(SuperMap):
 
     def __doWorkspaceCallback(self, msg: Marker):
         poly = msg.points[:-1]
+        poly_real = []
+        for i in range(len(poly)):
+            poly_real.append((poly[i].x,poly[i].y))
+
         for i in range(self.grid.info.width):
             for j in range(self.grid.info.height):
                 transform = self.tf_buffer.lookup_transform("arucomap", "map", rospy.Time(0), rospy.Duration(2))
@@ -56,7 +60,9 @@ class Map(SuperMap):
                 point.pose.orientation= Quaternion(0,0,0,1)
                 point.header.frame_id="map"
                 point =  tf2_geometry_msgs.do_transform_pose(point, transform)
-                inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
+                #inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
+                path = mpltPath.Path(poly_real)
+                inside = path.contains_points([[point.pose.position.x,point.pose.position.y]])
                 if not inside:
                     self.matrix[j,i]=5
             

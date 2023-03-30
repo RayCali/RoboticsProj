@@ -16,7 +16,9 @@ def tracker(msg):
     if len(msg.PoseStamped) == 0:
       rospy.loginfo("No object detected")
       exit()
-    resp1 = s(msg.PoseStamped[0])
+    for i in range (len(msg.object_class)):
+      if msg.object_class[i] != "box":
+        resp1 = s(msg.PoseStamped[i])
     # resp1.wait_for_result()
   
 def anchorcallback(msg):
