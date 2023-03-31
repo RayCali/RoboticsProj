@@ -81,6 +81,38 @@ def get_map_pose(position,msg_frame,msg_stamp):
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
         rospy.loginfo(e)
         return e
+    
+def get_baseLink_pose(position,msg_frame,msg_stamp):
+    pose = PoseStamped()
+    pose.header.frame_id = msg_frame
+    pose.header.stamp = rospy.Time.now()
+    pose.pose.position.x = position[0]
+    pose.pose.position.y = position[1]
+    pose.pose.position.z = position[2]
+    
+    try:
+        transform = tf_buffer.lookup_transform("base_link", msg_frame, msg_stamp, rospy.Duration(2))
+        baseLink_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
+        baseLink_pose.pose.position.z = 0.0
+        # fix orientation facing the robot
+        try:
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
+            rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
+            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
+            yaw = yaw + math.pi
+            quat = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
+            baseLink_pose.pose.orientation.x = quat[0]
+            baseLink_pose.pose.orientation.y = quat[1]
+            baseLink_pose.pose.orientation.z = quat[2]
+            baseLink_pose.pose.orientation.w = quat[3]
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+            rospy.loginfo("Couldn't fix orientation of object facing the robot, using (0,0,0,1) orientation wrt map.")
+            pose.pose.orientation.w = 1
+        return baseLink_pose
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+        rospy.loginfo(e)
+        return e
 
 
 def imageCB(msg: Image):
@@ -163,7 +195,8 @@ def imageCB(msg: Image):
         
     i = 1
     # transform and publish poses
-    object_poses = objectPoseStampedLst()    
+    object_poses = objectPoseStampedLst()
+    object_poses_baseLink = objectPoseStampedLst()
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
@@ -184,11 +217,20 @@ def imageCB(msg: Image):
         except:
             loginfo("Failed to get map pose")
             continue
+
+        try:
+            baseLink_pose = get_baseLink_pose(pos,image_frame_id,image_stamp)
+            object_poses_baseLink.PoseStamped.append(baseLink_pose)
+            object_poses_baseLink.object_class.append(label)
+
+        except:
+            loginfo("Failed to get baseLink pose")
+            continue
         
 
-    # object_poses.object_class = classes
     posesPub.publish(object_poses)
 
+    baseLink_posePub.publish(object_poses_baseLink)
     
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
@@ -209,6 +251,7 @@ if __name__=="__main__":
 
     posesPub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
+    baseLink_posePub = rospy.Publisher("/detection/pose_baseLink", objectPoseStampedLst, queue_size=10)
 
     tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
