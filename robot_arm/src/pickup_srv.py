@@ -48,7 +48,7 @@ def handle_pickup_req(req: PickRequest):
             return
 
         print("POSE_BASE: ", pose_base)
-        if pose_base.pose.position.x < 0.2:
+        if pose_base.pose.position.x < 0.15:
             return PickResponse(False, "Object too close to robot")
         # go to hover position
         pos_hover = [pose_base.pose.position.x - 0.02, pose_base.pose.position.y, 0.0]
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     
     rospy.Service("/pickup", Pick, handle_pickup_req)
 
-    poseSub = rospy.Subscriber("/detection/pose", PoseStamped, pose_callback)
+    # poseSub = rospy.Subscriber("/detection/pose", PoseStamped, pose_callback)
     jointStateSub = rospy.Subscriber('/joint_states', JointState, joint_state_callback)
 
     gripperPub = rospy.Publisher('/r_joint_controller/command_duration', CommandDuration, queue_size=1)
