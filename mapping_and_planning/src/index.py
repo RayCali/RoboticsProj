@@ -12,6 +12,7 @@ import tf_conversions
 from msg_srv_pkg.msg import objectPoseStampedLst
 from gridmapping import Map
 from global_explorer import getMostValuedCell
+from path_planner import doPlan
 
 
 if __name__ == "__main__":
@@ -20,6 +21,7 @@ if __name__ == "__main__":
     m = Map(True, 11, 11, 0.05)
     rospy.sleep(1)
     m.doPublish()
+    doPlan(m)
     # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
     while True:
         rospy.sleep(0.05)

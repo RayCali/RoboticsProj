@@ -2,6 +2,13 @@
 import math
 import random
 import numpy as np
+import rospy
+import tf_conversions
+import tf2_ros
+from geometry_msgs.msg import PoseStamped, TransformStamped
+from gridmapping import Map
+
+start= 0.0
 
 class Node:
     def __init__(self, x, y):
@@ -13,7 +20,6 @@ class Node:
 class RRTStar:
     def __init__(self, start, obstacles, width, height, goal,max_iter=1000, goal_sample_rate=0.05, radius=10.0):
         self.start = Node(start[0], start[1])
-        self.goal = Node(goal[0], goal[1])
         self.obstacles = obstacles
         self.width = width
         self.height = height
@@ -124,11 +130,32 @@ class RRTStar:
         return (-B - math.sqrt(D)) / (2 * A) if D >= 0 else float("inf")
         #Calculates the distance from the starting position (x1, y1) to the closest point on the circumference of the obstacle, taking into account the obstacle's radius (r) and position (xo, yo).
 
-def main():
-    print("Starting planner... ")
-    rrt_star =  RRTStar(start=[0, 0], goal=[10, 10], obstacles=[[5, 5, 1]], width=10, height=10)
-    rrt_star.planning()
-    print("Done!!!")
 
-if __name__=="__main__":
-   main()
+    def doGoalCallback(self, goal:PoseStamped):
+        self.goal = [goal.pose.position.x, goal.pose.position.y]
+        rospy.loginfo("Goal received")
+        rospy.loginfo(goal)
+        self.planning()
+
+
+def doPlan(m: Map):
+    global start
+    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+    listener = tf2_ros.TransformListener(tf_buffer)
+    
+    print("Starting planner... ")
+    try:
+        transform = tf_buffer.lookup_transform("map", "center_robot", rospy.Time(0), rospy.Duration(0.5))
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+        rospy.loginfo(e)
+    start_x = transform.transform.translation.x
+    start_y = transform.transform.translation.y
+    start = [start_x, start_y]
+    x,y = np.where(m.matrix==2)
+    radius = 1
+    obstacles = [[o[0], o[1], radius] for o in zip(x,y)] #obstacles are represented as [x, y, radius]
+
+    rrt = RRTStar(start=start, obstacles=obstacles, width=11, height=11)
+    
+    goal_sub = rospy.Subscriber("/detection/pose", PoseStamped, rrt.doGoalCallback, queue_size=1)
+    print("Done!!!")
