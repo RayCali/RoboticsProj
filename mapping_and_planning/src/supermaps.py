@@ -8,7 +8,7 @@ from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
-from mapping_and_planning.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
+from msg_srv_pkg.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
 
 
 

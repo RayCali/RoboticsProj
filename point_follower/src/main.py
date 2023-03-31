@@ -14,7 +14,7 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
+from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
 from std_msgs.msg import Float64
 
 class path(object):
