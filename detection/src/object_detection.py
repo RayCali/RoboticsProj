@@ -121,37 +121,7 @@ def imageCB(msg: Image):
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
         centerbbx_x = int(x+int(width/2))
-        centerbbx_y = int(y+int(height/2))
-
-        # if label == "ball":
-        #     r = image[0,img_center_y,img_center_x]
-        #     g = image[1,img_center_y,img_center_x]
-        #     b = image[2,img_center_y,img_center_x]
-        #     # infer ball colour:
-        #     if b > g and g > r:
-        #         label = "blue_ball"
-        #     elif g > b and b > r:
-        #         label = "green_ball"
-        #     elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
-        #         label = "red_ball"
-        #     else:
-        #         label = "ball_unknown"
-        # if label == "cube":
-        #     r = image[0,img_center_y,img_center_x]
-        #     g = image[1,img_center_y,img_center_x]
-        #     b = image[2,img_center_y,img_center_x]
-        #     # infer cube color
-        #     if b > g and g > r:
-        #         label = "blue_cube"
-        #     elif g > b and b > r:
-        #         label = "green_cube"
-        #     elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
-        #         label = "red_cube"
-        #     elif (b-20 < g or g < b+20) and max(g,b)+30 < r:
-        #         label = "wooden_cube"
-        #     else:
-        #         label = "cube_unknown"
-    
+        centerbbx_y = int(y+int(height/2))    
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
