@@ -55,9 +55,6 @@ def get_map_pose(position,msg_frame,msg_stamp):
     pose.pose.position.y = position[1]
     pose.pose.position.z = position[2]
     
-    # object_poses.PoseStamped.append(pose)
-    # object_poses.object_class.append(label)
-    # classes.append(label)
     try:
         transform = tf_buffer.lookup_transform("map", msg_frame, msg_stamp, rospy.Duration(2))
         map_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
@@ -109,7 +106,7 @@ def imageCB(msg: Image):
     with torch.no_grad():
         inference = detectionModel(image).cpu() # size: (15,20,5)
     
-    bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
+    bbs = detectionModel.decode_output(inference, threshold=0.8)[0]
     image = torch.from_numpy(np_image).permute(2,0,1)
     img_center_x = int(image.shape[2]/2)
     img_center_y = int(image.shape[1]/2)
@@ -122,7 +119,36 @@ def imageCB(msg: Image):
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
         centerbbx_x = int(x+int(width/2))
-        centerbbx_y = int(y+int(height/2))    
+        centerbbx_y = int(y+int(height/2))
+
+        if label == "ball":
+            r = image[0,img_center_y,img_center_x]
+            g = image[1,img_center_y,img_center_x]
+            b = image[2,img_center_y,img_center_x]
+            # infer ball colour:
+            if b > g and g > r:
+                label = "blue_ball"
+            elif g > b and b > r:
+                label = "green_ball"
+            elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
+                label = "red_ball"
+            else:
+                label = "ball_unknown"
+        if label == "cube":
+            r = image[0,img_center_y,img_center_x]
+            g = image[1,img_center_y,img_center_x]
+            b = image[2,img_center_y,img_center_x]
+            # infer cube color
+            if b > g and g > r:
+                label = "blue_cube"
+            elif g > b and b > r:
+                label = "green_cube"
+            elif (b-10 < g or g < b+10) and 1.5*g < r and 1.5*b < r:
+                label = "red_cube"
+            elif (b-20 < g or g < b+20) and max(g,b) < r:
+                label = "wooden_cube"
+            else:
+                label = "cube_unknown" 
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
@@ -130,7 +156,7 @@ def imageCB(msg: Image):
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
             
         for i in range(len(boxes)):
-            if np.linalg.norm(positions[i] - object_position) < 0.1:
+            if np.linalg.norm(positions[i] - object_position) < 0.05:
                 if scores[i] >= score:
                     break
                 else:
