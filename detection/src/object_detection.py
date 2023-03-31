@@ -125,22 +125,8 @@ def imageCB(msg: Image):
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
-
-        # get polygon object from bbx corners
-        box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
-        corners = [[int(box[0,0]),int(box[0,1])], [int(box[0,2]),int(box[0,1])],
-                    [int(box[0,2]),int(box[0,3])], [int(box[0,0]),int(box[0,3])]]
-        polygon_bbx = Polygon(corners)
-        # print(box)
-        # box_float = torch.tensor(box, dtype=torch.float)
-        # print(torch.linalg.matrix_norm(box_float))
+            
         for i in range(len(boxes)):
-            # corners_i = [[int(boxes[i][0,0]),int(boxes[i][0,1])], [int(boxes[i][0,2]),int(boxes[i][0,1])],
-            #               [int(boxes[i][0,2]),int(boxes[i][0,3])], [int(boxes[i][0,0]),int(boxes[i][0,3])]]
-            # polygon_i = Polygon(corners_i)
-            # overlap = polygon_bbx.intersection(polygon_i).area / polygon_bbx.union(polygon_i).area
-            # # calculate overlap between the bounding boxes
-            # if overlap > 0.3:
             if np.linalg.norm(positions[i] - object_position) < 0.1:
                 if scores[i] >= score:
                     break
