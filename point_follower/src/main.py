@@ -14,8 +14,8 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg import Node, Moveto
-
+from msg_srv_pkg import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
+from std_msgs.msg import Float64
 
 class path(object):
     def __init__(self):
@@ -24,12 +24,15 @@ class path(object):
 
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
-        
+        self.s =rospy.ServiceProxy('/no_collision', NoCollision)
         self.done_once = False
         self.rate = rospy.Rate(20)
         s = rospy.Service('/moveto', Moveto, self.tracker)
+        # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
+        self.radius_sub = float(1)
 
-        
+    # def Radius(self, msg:Float64):
+    #     self.radius_sub = msg.data
     def tracker(self,req:MovetoRequest):
         if not self.done_once:
             self.cam_pose = PoseStamped()
@@ -105,6 +108,18 @@ class path(object):
             self.inc_y = self.goal_pose.pose.position.y
 
             while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05:
+                rospy.loginfo("Waiting for service")
+                rospy.wait_for_service('/no_collision')
+                rospy.loginfo("Service found")
+                resp1 = self.s()
+                rospy.loginfo(resp1)
+                #resp1.wait_for_result()
+                if resp1.success is not True:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.loginfo("Collision detected")
+                    return MovetoResponse(False,"Failure")
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
