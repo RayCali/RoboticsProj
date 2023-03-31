@@ -7,18 +7,15 @@ from aruco_msgs.msg import MarkerArray
 from robp_msgs.msg import DutyCycles
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg import objectPoseStampedLst
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
+from msg_srv_pkg import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
 from std_msgs.msg import Float64
-from point_follower.srv import Node, Moveto, MovetoResponse, MovetoRequest
-from mapping_and_planning.srv import NoCollision, NoCollisionRequest, NoCollisionResponse
-# from brain.src.config import SUCCESS, FAILURE, RUNNING
-
 
 class path(object):
     def __init__(self):

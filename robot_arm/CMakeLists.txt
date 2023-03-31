@@ -8,9 +8,9 @@ project(robot_arm)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  rospy
   geometry_msgs
   hiwonder_servo_msgs
-  rospy
   trajectory_msgs
 )
 
@@ -57,8 +57,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
-#   Service1.srv
-#   Service2.srv
+#   pick.srv
+#   place.srv
 # )
 
 ## Generate actions in the 'action' folder
