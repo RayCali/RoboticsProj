@@ -17,7 +17,7 @@ from open3d import open3d as o3d
 from open3d_ros_helper import open3d_ros_helper as o3drh
 from geometry_msgs.msg import PoseStamped, TransformStamped
 import utils, detector
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.msg import objectPoseStampedLst
 from PIL import Image as pil
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches

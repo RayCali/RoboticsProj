@@ -7,15 +7,14 @@ from aruco_msgs.msg import MarkerArray
 from robp_msgs.msg import DutyCycles
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg import objectPoseStampedLst
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from point_follower.srv import Node, Moveto, MovetoResponse, MovetoRequest
-# from brain.src.config import SUCCESS, FAILURE, RUNNING
+from msg_srv_pkg import Node, Moveto
 
 
 class path(object):
