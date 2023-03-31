@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from point_follower.srv import Node, NodeRequest, NodeResponse
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.srv import Node, NodeRequest, NodeResponse
+from msg_srv_pkg.msg import objectPoseStampedLst
 from geometry_msgs.msg import PoseStamped
 import rospy
 

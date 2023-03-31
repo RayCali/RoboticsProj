@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from point_follower.srv import Node, Moveto, MovetoResponse, MovetoRequest
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest
+from msg_srv_pkg.msg import objectPoseStampedLst
 import rospy
 from visualization_msgs.msg import Marker
 seenanchor = False
