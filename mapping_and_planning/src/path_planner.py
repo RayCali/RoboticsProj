@@ -157,5 +157,5 @@ def doPlan(m: Map):
 
     rrt = RRTStar(start=start, obstacles=obstacles, width=11, height=11)
     
-    goal_sub = rospy.Subscriber("/detection/pose", PoseStamped, rrt.doGoalCallback, queue_size=1)
+    goal_sub = rospy.Subscriber("/goal_pose", PoseStamped, rrt.doGoalCallback, queue_size=1)
     print("Done!!!")
