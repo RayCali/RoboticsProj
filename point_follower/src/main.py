@@ -7,7 +7,7 @@ from aruco_msgs.msg import MarkerArray
 from robp_msgs.msg import DutyCycles
 from nav_msgs.msg import Odometry
 from tf2_msgs.msg import TFMessage
-from msg_srv_pkg import objectPoseStampedLst
+from msg_srv_pkg.msg import objectPoseStampedLst
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs

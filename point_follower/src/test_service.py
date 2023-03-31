@@ -19,6 +19,7 @@ def tracker(msg):
     for i in range (len(msg.object_class)):
       if msg.object_class[i] != "box":
         resp1 = s(msg.PoseStamped[i])
+        break
     # resp1.wait_for_result()
   
 def anchorcallback(msg):

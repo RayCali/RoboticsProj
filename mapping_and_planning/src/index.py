@@ -9,7 +9,7 @@ import tf2_geometry_msgs
 import tf_conversions
 # import torch
 # from torchvision import transforms
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.msg import objectPoseStampedLst
 from gridmapping import Map
 from global_explorer import getMostValuedCell
 
