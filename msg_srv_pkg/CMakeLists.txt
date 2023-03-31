@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   message_generation
+  hiwonder_servo_msgs
+  trajectory_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -61,6 +63,8 @@ add_service_files(
   FILES
   Moveto.srv
   Node.srv
+  Pick.srv
+  Place.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -78,6 +82,8 @@ generate_messages(
   geometry_msgs
   robp_msgs
   sensor_msgs
+  hiwonder_servo_msgs
+  trajectory_msgs
 )
 
 ################################################
@@ -110,10 +116,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES msg_srv_pkg
-#  CATKIN_DEPENDS geometry_msgs robp_msgs roscpp rospy sensor_msgs std_msgs
-#  DEPENDS system_lib
+ INCLUDE_DIRS include
+ LIBRARIES msg_srv_pkg
+ CATKIN_DEPENDS geometry_msgs robp_msgs roscpp rospy sensor_msgs std_msgs hiwonder_servo_msgs trajectory_msgs
+ DEPENDS system_lib
 )
 
 ###########
