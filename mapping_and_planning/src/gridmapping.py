@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 from supermaps import *
 from geometry_msgs.msg import PoseStamped
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.msg import objectPoseStampedLst
 from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 from typing import List
