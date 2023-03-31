@@ -21,7 +21,7 @@ class path(object):
     def __init__(self):
         # ROS Publishers
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-
+        self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal)
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.s =rospy.ServiceProxy('/no_collision', NoCollision)
@@ -30,9 +30,21 @@ class path(object):
         s = rospy.Service('/moveto', Moveto, self.tracker)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.radius_sub = float(1)
+        self.objectpose = None
+        self.listen_once = False
+
 
     # def Radius(self, msg:Float64):
     #     self.radius_sub = msg.data
+    def distance_to_goal(self,msg):
+        #self.distance_to_object = math.sqrt(msg.pose.position.x**2 + msg.pose.position.y**2)
+        if self.listen_once:
+            if len(msg.PoseStamped) == 0:
+                rospy.loginfo("No object detected")
+                exit()
+            self.objectpose = msg.PoseStamped[0]
+            rospy.loginfo("Label: {}".format(msg.object_class[0]))
+            self.listen_once = False
     def tracker(self,req:MovetoRequest):
         if not self.done_once:
             self.cam_pose = PoseStamped()
@@ -63,8 +75,8 @@ class path(object):
             while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
-                rospy.loginfo("Turning right")
-                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                # rospy.loginfo("Turning right")
+                # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
@@ -79,8 +91,8 @@ class path(object):
             while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.7
-                rospy.loginfo("Turning left")
-                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                # rospy.loginfo("Turning left")
+                # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
@@ -97,7 +109,7 @@ class path(object):
             self.rate.sleep()
             rospy.sleep(1)
             self.acceleration = 0.01
-            self.deceleration = 0.08
+            self.deceleration = 0.05
             try:
                 self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                 self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
@@ -106,8 +118,11 @@ class path(object):
                 pass
             self.inc_x = self.goal_pose.pose.position.x
             self.inc_y = self.goal_pose.pose.position.y
-
-            while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05:
+            condition = math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05
+            distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
+            switch =True
+            current_pose = None
+            while condition:
                 rospy.loginfo("Waiting for service")
                 rospy.wait_for_service('/no_collision')
                 rospy.loginfo("Service found")
@@ -129,17 +144,17 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
-                if self.twist.linear.x < 0.6 and math.sqrt(self.inc_x**2 + self.inc_y**2)>self.twist.linear.x**2/(2*self.deceleration):
+                if self.twist.linear.x < 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration):
                     self.twist.linear.x += self.acceleration
-                    rospy.loginfo(self.twist.linear.x)
+                    # rospy.loginfo(self.twist.linear.x)
 
-                elif self.twist.linear.x >= 0.6 and math.sqrt(self.inc_x**2 + self.inc_y**2)>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
+                elif self.twist.linear.x >= 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
                     self.twist.linear.x = 0.6
 
                 else:
                     self.twist.linear.x -= self.deceleration
-                    rospy.loginfo("Decelerating")
-                    rospy.loginfo(self.twist.linear.x)
+                    # rospy.loginfo("Decelerating")
+                    # rospy.loginfo(self.twist.linear.x)
 
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
@@ -160,12 +175,36 @@ class path(object):
                     self.twist.angular.z = -0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
-            
+                if switch is False:
+                    current_trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
+                    latest_pose=tf2_geometry_msgs.do_transform_pose(latest_pose,current_trans)
+                    
+                    self.objectpose.pose.position.x = latest_pose.pose.position.x + self.objectpose.pose.position.x
+                    self.objectpose.pose.position.y = latest_pose.pose.position.y + self.objectpose.pose.position.y
+
+                    distance = math.sqrt((self.objectpose.pose.position.x)**2 + (self.objectpose.pose.position.y)**2)
+                    latest_pose = current_pose
+                    condition = distance > 0.05
+                else: 
+                    distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
+                rospy.loginfo("Distance:")
+                rospy.loginfo(distance)
+                if math.sqrt(self.inc_x**2 + self.inc_y**2) < 0.3 and switch:
+                    condition = distance > 0.05
+                    switch = False
+                    self.listen_once=True
+                    trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
+                    latest_pose = PoseStamped()
+                    latest_pose.header.frame_id = "map"
+                    latest_pose.pose.position.x = trans.transform.translation.x
+                    latest_pose.pose.position.y = trans.transform.translation.y
+                    rospy.loginfo("Switch!!!!!!!!!!!!")
+            rospy.loginfo("Out")
             while math.atan2(self.inc_y, self.inc_x)< -0.02: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
-                rospy.loginfo("Turning right")
-                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                #rospy.loginfo("Turning right")
+                #rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
@@ -180,8 +219,8 @@ class path(object):
             while math.atan2(self.inc_y, self.inc_x) > 0.02: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.7
-                rospy.loginfo("Turning left")
-                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                #rospy.loginfo("Turning left")
+                #rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
@@ -192,11 +231,12 @@ class path(object):
                     pass
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
-            self.done_once = True
+            self.done_once = True 
         rospy.loginfo('You have reached the goal')
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
+        self.distance_to_object = 500
         return MovetoResponse(True,"success")
         # self.rate.sleep()
         # try:
