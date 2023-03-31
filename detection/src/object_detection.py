@@ -121,49 +121,30 @@ def imageCB(msg: Image):
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
         centerbbx_x = int(x+int(width/2))
-        centerbbx_y = int(y+int(height/2))
-        
-        
+        centerbbx_y = int(y+int(height/2))    
+    
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
-
-        # get polygon object from bbx corners
-        box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
-        corners = [[int(box[0,0]),int(box[0,1])], [int(box[0,2]),int(box[0,1])],
-                    [int(box[0,2]),int(box[0,3])], [int(box[0,0]),int(box[0,3])]]
-        polygon_bbx = Polygon(corners)
-        # print(box)
-        # box_float = torch.tensor(box, dtype=torch.float)
-        # print(torch.linalg.matrix_norm(box_float))
+            
         for i in range(len(boxes)):
-            corners_i = [[int(boxes[i][0,0]),int(boxes[i][0,1])], [int(boxes[i][0,2]),int(boxes[i][0,1])],
-                          [int(boxes[i][0,2]),int(boxes[i][0,3])], [int(boxes[i][0,0]),int(boxes[i][0,3])]]
-            polygon_i = Polygon(corners_i)
-            overlap = polygon_bbx.intersection(polygon_i).area / polygon_bbx.union(polygon_i).area
-            # calculate overlap between the bounding boxes
-            if overlap > 0.3:
-                if scores[i] > score:
+            if np.linalg.norm(positions[i] - object_position) < 0.1:
+                if scores[i] >= score:
                     break
                 else:
-                    boxes.pop(i)
-                    labels.pop(i)
-                    scores.pop(i)
-                    scores.append(score)
-                    labels.append(label)
-                    boxes.append(box)
+                    boxes[i] = box
+                    labels[i] = label
+                    scores[i] = score
                     if depthImg_rcvd:
-                        positions.pop(i)
-                        positions.append(object_position)
+                        positions[i] = object_position
                     break
-            else:
-                if score > 0.8:
-                    boxes.append(box)
-                    labels.append(label)
-                    scores.append(score)
-                    if depthImg_rcvd:
-                        positions.append(object_position)
+            if i == len(boxes)-1 and score > 0.9:
+                boxes.append(box)
+                labels.append(label)
+                scores.append(score)
+                if depthImg_rcvd:
+                    positions.append(object_position)
         
-        if len(boxes) == 0 and score > 0.8:
+        if len(boxes) == 0 and score > 0.9:
             boxes.append(box)
             labels.append(label)
             scores.append(score)
@@ -181,6 +162,8 @@ def imageCB(msg: Image):
     # transform and publish poses
     object_poses = objectPoseStampedLst()
     # classes = []
+    rospy.loginfo(len(positions)==len(labels))
+    rospy.loginfo(positions)
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
@@ -227,7 +210,7 @@ if __name__=="__main__":
     posesPub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
 
-    tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+    tf_buffer = tf2_ros.Buffer(rospy.Duration(5.0)) #tf buffer length
     tflistener = tf2_ros.TransformListener(tf_buffer)
     tfbroadcaster = tf2_ros.TransformBroadcaster()
 
