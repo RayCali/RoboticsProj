@@ -16,7 +16,8 @@ import math
 import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from robot_arm.srv import Place, PlaceResponse, PlaceRequest
+#from robot_arm.srv import Place, PlaceResponse, PlaceRequest
+from msg_srv_pkg.srv import Place, PlaceResponse, PlaceRequest
 
 from utils import *
 

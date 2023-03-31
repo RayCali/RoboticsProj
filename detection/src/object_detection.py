@@ -125,6 +125,8 @@ def imageCB(msg: Image):
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
+
+        box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
             
         for i in range(len(boxes)):
             if np.linalg.norm(positions[i] - object_position) < 0.1:
@@ -137,14 +139,14 @@ def imageCB(msg: Image):
                     if depthImg_rcvd:
                         positions[i] = object_position
                     break
-            if i == len(boxes)-1 and score > 0.9:
+            if i == len(boxes)-1 and score > 0.8:
                 boxes.append(box)
                 labels.append(label)
                 scores.append(score)
                 if depthImg_rcvd:
                     positions.append(object_position)
         
-        if len(boxes) == 0 and score > 0.9:
+        if len(boxes) == 0 and score > 0.8:
             boxes.append(box)
             labels.append(label)
             scores.append(score)
@@ -160,10 +162,7 @@ def imageCB(msg: Image):
         
     i = 1
     # transform and publish poses
-    object_poses = objectPoseStampedLst()
-    # classes = []
-    rospy.loginfo(len(positions)==len(labels))
-    rospy.loginfo(positions)
+    object_poses = objectPoseStampedLst()    
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)

@@ -15,7 +15,7 @@ import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
-from robot_arm.srv import Pick, PickRequest, PickResponse
+from msg_srv_pkg.srv import Pick, PickRequest, PickResponse
 
 from utils import *
 

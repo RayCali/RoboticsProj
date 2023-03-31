@@ -4,12 +4,11 @@ import rospy
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
-from detection.msg import objectPoseStampedLst
+from msg_srv_pkg.msg import objectPoseStampedLst
 import tf_conversions
 import tf2_ros
 import tf2_geometry_msgs
-from robot_arm.srv import Pick, Place
-
+from msg_srv_pkg.srv import Pick, Place
 
 pose= None
 joint_states = None
