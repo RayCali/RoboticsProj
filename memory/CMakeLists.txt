@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(point_follower)
+project(memory)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -9,9 +9,13 @@ project(point_follower)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  robp_msgs
   roscpp
   rospy
+  sensor_msgs
   std_msgs
+  aruco_msgs
+  brain
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,11 +58,11 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
 # )
 
-# Generate services in the 'srv' folder
+## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
-#   Node.srv
-#   Moveto.srv
+#   Service1.srv
+#   Service2.srv
 # )
 
 ## Generate actions in the 'action' folder
@@ -68,11 +72,10 @@ find_package(catkin REQUIRED COMPONENTS
 #   Action2.action
 # )
 
-# Generate added messages and services with any dependencies listed here
+## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs
-#   std_msgs
+#   geometry_msgs#   robp_msgs#   sensor_msgs#   std_msgs
 # )
 
 ################################################
@@ -105,8 +108,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- LIBRARIES point_follower
- CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs
+#  INCLUDE_DIRS include
+#  LIBRARIES memory
+#  CATKIN_DEPENDS geometry_msgs robp_msgs roscpp rospy sensor_msgs std_msgs
+#  DEPENDS system_lib
 )
 
 ###########
@@ -122,7 +127,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/point_follower.cpp
+#   src/${PROJECT_NAME}/memory.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -133,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/point_follower_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/memory_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -197,7 +202,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_point_follower.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_memory.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

@@ -23,5 +23,6 @@ if __name__ == "__main__":
     # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
     while True:
         rospy.sleep(0.05)
+        rospy.loginfo("Updating map")
         m.doPublish()
         
