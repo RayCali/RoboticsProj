@@ -37,7 +37,7 @@ def handle_pickup_req(req: PickRequest):
     if joint_states.position[-1] == gripper_open:
 
         # transform pose given in base_link to arm_base
-        pose_stamped = req
+        pose_stamped = req.pose
         stamp = pose_stamped.header.stamp
 
         try:
@@ -48,6 +48,8 @@ def handle_pickup_req(req: PickRequest):
             return
 
         print("POSE_BASE: ", pose_base)
+        if pose_base.pose.position.x < 0.2:
+            return PickResponse(False, "Object too close to robot")
         # go to hover position
         pos_hover = [pose_base.pose.position.x - 0.02, pose_base.pose.position.y, 0.0]
         q_hover = analyticalIK_lock4(pos_hover)
