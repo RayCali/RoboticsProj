@@ -3,7 +3,7 @@ from array import array
 from typing import List
 from config import *
 from rospy import loginfo, ServiceException
-from std_srvs.srv import SetBool
+from msg_srv_pkg.srv import Request, RequestResponse
 from utilities import ServiceReturnedRunningException
 
 
@@ -32,11 +32,11 @@ class Action(Leaf):
         super().__init__()
     def tick(self):
         try:
-            res: SetBool = self.service()
+            res: RequestResponse = self.service()
         except ServiceException as e:
             loginfo(e)
             return FAILURE
-        return self.getStatusFromNum(res.message)
+        return self.getStatusFromNum(res.success)
 
 class Condition(Leaf):
     # In classical robotics this is called and execution node
@@ -44,11 +44,11 @@ class Condition(Leaf):
         super().__init__()
     def tick(self):
         try:
-            res: SetBool = self.service()
+            res: RequestResponse = self.service()
         except ServiceException as e:
             loginfo(e)
             return FAILURE
-        if self.getStatusFromNum(res.message)==RUNNING:
+        if self.getStatusFromNum(res.success)==RUNNING:
             raise ServiceReturnedRunningException("Service returned a RUNNING state to a condition node. This is not allowed.")
         
-        return self.getStatusFromNum(res.message)
+        return self.getStatusFromNum(res.success)

@@ -5,17 +5,16 @@ from numpy import dot, array,
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
-from detection.msg import objectPoseStampedLst
 from sensor_msgs.msg import LaserScan
-from aruco_msgs import MarkerArray
+from aruco_msgs import MarkerArray, Marker
 import matplotlib.pyplot as plt
 import tf_conversions
 from objects import Plushie, Cube, Ball, Box, Movable, Toy
 from typing import Dict
 from utilities import normalized
 from brain.src.conditions import SUCCESS, RUNNING, FAILURE
-from msg_srv_pkg.msg import *
-from msg_srv_pkg.srv import Moveto, MovetoResponse, NotPair, NotPairResponse
+from msg_srv_pkg.msg import objectPoseStampedLst
+from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse
 
 class Memory:
     def __init__(self):
@@ -42,20 +41,49 @@ class Memory:
             2 : "Box_Cubes",
         }
 
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
+        
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
-        self.moveto_srv = rospy.Service("moveto", Moveto, self.MoveTo)
-        self.notpair_srv = rospy.Service("notpair", NotPair, self.NotPair)
-        self.pathPlanner_srv = rospy.ServiceProxy("pathPlanner", Moveto)
+        self.moveto_srv = rospy.Service("moveto", Moveto, self.srvMoveTo)
+        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.srvIsLocalized)
+        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.srvDoLocalized)
+
+        
+        self.isnotpair_srv = rospy.Service("notpair", Request, self.srvNotPair)
+
+        self.ispicked_srv = rospy.Service("ispicked", Request, self.srvIsPicked)
+        self.isInFrontToy = rospy.Service("isInFrontToy", Request, self.srvIsInFrontToy)
+        self.pathPlanner_proxy = rospy.ServiceProxy("pathPlanner", Moveto)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
         self.targetHasBecomeInvalid = False
         self.xThreshold = 0.10
         self.yThreshold = 0.10
+
         
-        
-    def NotPair(self, req):
+    
+    def srvIsInFrontToy(self, req):
+        InFrontThreshold_x = 0.15
+        InFrontThreshold_y = 0.15
+        try:
+            transform = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            rospy.loginfo(e)
+            return RequestResponse(FAILURE)
+        x = transform.transform.translation.x
+        y = transform.transform.translation.y
+        if abs(x - self.targetToy.pose.position.x) < InFrontThreshold_x and abs(y - self.targetToy.pose.position.y) < InFrontThreshold_y:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+
+
+    
+    def srvIsPicked(self, req):
+        return RequestResponse(FAILURE)
+    def srvNotPair(self, req):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
@@ -66,17 +94,24 @@ class Memory:
                 self.targetToy = self.__getTargetToy()
                 if box.name == "Box_Plushies":
                     if len(self.plushies) > 0:
-                        return NotPairResponse(FAILURE)
+                        return RequestResponse(FAILURE)
                 elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
-                        return NotPairResponse(FAILURE)
+                        return RequestResponse(FAILURE)
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
-                        return NotPairResponse(FAILURE)
+                        return RequestResponse(FAILURE)
                 
-        return NotPairResponse(SUCCESS)
+        return RequestResponse(SUCCESS)
     
-    def MoveTo(self, req):
+    def srvDoLocalized(self, req):
+        return RequestResponse(RUNNING)
+    def srvIsLocalized(self, req):
+        if self.anchordetected:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    
+    def srvMoveTo(self, req):
         # TODO: the move to service needs the following functionality
         # 1) During approach verify that the object is where we found it 
         # 2) If the object is gone, tell the map to whipe that area and set it to free
@@ -153,6 +188,8 @@ class Memory:
         return False
     def __doStoreAllBoxesWAruco(self, msg: MarkerArray):
         for marker in msg.markers:
+            if marker.id in 500:
+                self.anchordetected = True
             boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id])
             boxObject.hasArucoMarker = True
             self.__putBoxInDict(boxObject)

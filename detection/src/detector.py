@@ -46,7 +46,7 @@ class Detector(nn.Module):
         # output of mobilenet_v2 will be 1280x23x40 for 720x1280 input images
         # output of mobilenet_v2 will be 1280x15x20 for 480x640 input images 
 
-        self.head = nn.Conv2d(in_channels=1280, out_channels=13, kernel_size=1)
+        self.head = nn.Conv2d(in_channels=1280, out_channels=14, kernel_size=1)
         # 1x1 Convolution to reduce channels to out_channels without changing H and W
 
         # 1280x15x20 -> 5x15x20, where each element 5 channel tuple corresponds to
@@ -127,10 +127,7 @@ class Detector(nn.Module):
                 ).item()
 
                 bb_class = ""
-                maxProbIdx = torch.argmax(o[5:14, bb_index[0], bb_index[1]])
-                # print(o[5:13, bb_index[0], bb_index[1]])
-                # print(o[5:13, bb_index[0], bb_index[1]].size)
-                # print(maxProbIdx)
+                maxProbIdx = torch.argmax(o[5:, bb_index[0], bb_index[1]])
 
                 if maxProbIdx == 0:
                     bb_class = "Binky"
@@ -223,22 +220,7 @@ class Detector(nn.Module):
         target[3, y_ind, x_ind] = rel_height
 
         # one-hot encoding for classifiaction
-        if label == 0:
-            target[5, y_ind, x_ind] = 1 # "Binky"
-        elif label == 1:
-            target[6, y_ind, x_ind] = 1 # "Hugo"
-        elif label == 2:
-            target[7, y_ind, x_ind] = 1 # "Slush"
-        elif label == 3:
-            target[8, y_ind, x_ind] = 1 # "Muddles"
-        elif label == 4:
-            target[9, y_ind, x_ind] =  1 # "Kiki"
-        elif label == 5:
-            target[10, y_ind, x_ind] = 1 # "Oakie"
-        elif label == 6:
-            target[11, y_ind, x_ind] = 1 # cube
-        elif label == 7:
-            target[12, y_ind, x_ind] = 1 # ball
-
+        target[5+label, y_ind, x_ind] = 1
+        
       return image, target
     

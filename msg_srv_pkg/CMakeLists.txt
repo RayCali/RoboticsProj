@@ -66,6 +66,7 @@ add_service_files(
   Pick.srv
   Place.srv
   NoCollision.srv
+  Request.srv
 )
 
 ## Generate actions in the 'action' folder
