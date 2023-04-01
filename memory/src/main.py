@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import rospy
 import numpy as np
-from numpy import dot, array, 
+from numpy import dot, array
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
