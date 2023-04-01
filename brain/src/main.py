@@ -25,5 +25,7 @@ if __name__=="__main__":
 
         ])
     )
-    while True:
+    while not rospy.is_shutdown():
+        rospy.init_node("behavior_tree")
         root.tick()
+        rospy.sleep(5)

@@ -4,26 +4,13 @@ from typing import List
 from config import *
 from rospy import loginfo, ServiceException
 from msg_srv_pkg.srv import Request, RequestResponse
-from utilities import ServiceReturnedRunningException
-
-
-class Leaf:
-    # In classical robotics this is called and execution node
-    def __init__(self) -> None:
-        pass
-    def tick(self) -> int:
-        return RUNNING
-    def getStatusFromNum(num):
-        num = int(num)
-        if num == SUCCESS:
-            return SUCCESS
-        elif num == FAILURE:
-            return FAILURE
-        elif num == RUNNING:
-            return RUNNING
+from Leaf import Leaf
 
     
-    
+class ServiceReturnedRunningException(Exception):
+    def __init__(self, message) -> None:
+        super().__init__(message)
+        self.message = message
 
 
 class Action(Leaf):
@@ -31,6 +18,7 @@ class Action(Leaf):
     def __init__(self) -> None:
         super().__init__()
     def tick(self):
+        loginfo(self)
         try:
             res: RequestResponse = self.service()
         except ServiceException as e:
@@ -43,6 +31,7 @@ class Condition(Leaf):
     def __init__(self) -> None:
         super().__init__()
     def tick(self):
+        loginfo(self)
         try:
             res: RequestResponse = self.service()
         except ServiceException as e:
