@@ -49,12 +49,12 @@ class Memory:
         self.moveto_srv = rospy.Service("moveto", Moveto, self.srvMoveTo)
         self.isLocalized_srv = rospy.Service("isLocalized", Request, self.srvIsLocalized)
         self.doLocalize_srv = rospy.Service("doLocalize", Request, self.srvDoLocalized)
-
         
         self.isnotpair_srv = rospy.Service("notpair", Request, self.srvNotPair)
 
         self.ispicked_srv = rospy.Service("ispicked", Request, self.srvIsPicked)
-        self.isInFrontToy = rospy.Service("isInFrontToy", Request, self.srvIsInFrontToy)
+        self.isInFrontToy_srv = rospy.Service("isInFrontToy", Request, self.srvIsInFrontToy)
+        self.doMoveToGoal_srv = rospy.Service("doMoveToGoal", Request, self.srvDoMoveToGoal)
         self.pathPlanner_proxy = rospy.ServiceProxy("pathPlanner", Moveto)
         
         self.movingToTargetToy = False
@@ -64,7 +64,8 @@ class Memory:
         self.yThreshold = 0.10
 
         
-    
+    def srvDoMoveToGoal(self, req):
+        return RequestResponse(RUNNING)    
     def srvIsInFrontToy(self, req):
         InFrontThreshold_x = 0.15
         InFrontThreshold_y = 0.15
