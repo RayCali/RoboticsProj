@@ -1,20 +1,20 @@
 #!/usr/bin/python3
 import rospy
 import numpy as np
-from numpy import dot, array, 
+from numpy import dot, array
 import tf2_ros
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
 from sensor_msgs.msg import LaserScan
-from aruco_msgs import MarkerArray, Marker
+from aruco_msgs.msg import MarkerArray, Marker
 import matplotlib.pyplot as plt
 import tf_conversions
 from objects import Plushie, Cube, Ball, Box, Movable, Toy
 from typing import Dict
 from utilities import normalized
-from brain.src.conditions import SUCCESS, RUNNING, FAILURE
 from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse
+from config import SUCCESS, RUNNING, FAILURE
 
 class Memory:
     def __init__(self):
@@ -35,10 +35,22 @@ class Memory:
            7 : "Ball",
            8 : "Box",
         }
+        self.object2Id = {
+            "Binky"  : 0,
+            "Hugo"   : 1,
+            "Slush"  : 2,
+            "Muddles": 3,
+            "Kiki"   : 4,
+            "Oakie"  : 5,
+            "Cube"   : 6,
+            "Ball"   : 7,
+            "Box"    : 8
+        }
         self.arucoId2Box = {
             0 : "Box_Plushies",
             1 : "Box_Balls",
             2 : "Box_Cubes",
+            500 : "Anchor"
         }
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
@@ -135,7 +147,6 @@ class Memory:
         
 
     def __putObject(self, pose: PoseStamped, id: int):
-        id = int(id)
         object: Movable
         objectType = None
         correctDict = None
@@ -153,32 +164,30 @@ class Memory:
         
         name = self.id2Object[id] + "_" + str(objectType.count)
         objectType.count += 1
-        object = objectType(pose=pose, name=name)
+        object = objectType(pose=pose, name=name, id=id)
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
         
 
     def __putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
-        boxes = Box
         if object.hasArucoMarker:
             if replace:
                 del self.objects[object_to_replace]
             self.objects[object.name] = object
             self.boxes[object.name] = object
         else:
-            name = self.id2Object[8] + "_" + str(boxes.count)
-            boxes.count += 1
-            self.objects[name] = object
-            self.boxes[name] = object
+            Box.count += 1
+            self.objects[object.name] = object
+            self.boxes[object.name] = object
 
     def __doStoreAllDetectedObjects(self, msg: objectPoseStampedLst):
         for pose, id in zip(msg.PoseStamped, msg.object_class):
+            id = self.object2Id[id]
             if id < 8:
                 self.__putInDictsIfNotAlreadyIn(pose,id)
             elif id == 8:
-                boxObject = Box(pose, self.id2Object[id])
-                boxObject.hasArucoMarker = False      
+                boxObject = Box(pose, self.id2Object[id] + str(Box.count), id)
                 self.__putBoxInDict(boxObject)
     def __getWithinRange(self, a: Point, b: Point) -> bool:
         if abs(a.x - b.x) < self.xThreshold and abs(a.y - b.y) < self.yThreshold:
@@ -188,9 +197,9 @@ class Memory:
         return False
     def __doStoreAllBoxesWAruco(self, msg: MarkerArray):
         for marker in msg.markers:
-            if marker.id in 500:
+            if marker.id == 500:
                 self.anchordetected = True
-            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id])
+            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id] + str(Box.count), marker.id)
             boxObject.hasArucoMarker = True
             self.__putBoxInDict(boxObject)
 
@@ -207,7 +216,8 @@ class Memory:
             
     
     def __putInDictsIfNotAlreadyIn(self, pose: PoseStamped, id: int):
-        for object in self.objects:
+        for key in self.objects:
+            object = self.objects[key]
             if self.__getWithinRange(a=object.poseStamped.pose.position, b=pose.pose.position):
                 #if self.movingToTargetToy and object.name==self.targetToy.name and self.targetToy.id != id:
                     # Grumpy is looking at a toy, lets call it the observed toy
