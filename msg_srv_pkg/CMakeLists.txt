@@ -62,10 +62,7 @@ add_message_files(
 add_service_files(
   FILES
   Moveto.srv
-  Node.srv
   Pick.srv
-  Place.srv
-  NoCollision.srv
   Request.srv
 )
 

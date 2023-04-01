@@ -8,8 +8,8 @@ from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
-from msg_srv_pkg.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
-
+from msg_srv_pkg.srv import Request, RequestResponse
+SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
 class SuperMap:
@@ -18,7 +18,7 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-        s = rospy.Service('/no_collision', NoCollision, self.__nocollision)
+        s = rospy.Service('/no_collision', Request, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
         
@@ -176,13 +176,13 @@ class SuperMap:
             for ii in range(lower, lower + boxSize, 1):
                 self.matrix[i, ii] = 1
     
-    def __nocollision(self,req:NoCollisionRequest):
+    def __nocollision(self,req:Request):
         global latestscan
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
-                    return NoCollisionResponse(False)
-        return NoCollisionResponse(True)
+                    return RequestResponse(FAILURE)
+        return RequestResponse(SUCCESS)
 
 
     def point_inside_polygon(self,x,y,poly):

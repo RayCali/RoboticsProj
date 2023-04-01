@@ -6,6 +6,8 @@ from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 from typing import List
 import matplotlib.path as mpltPath
+from config import SUCCESS, RUNNING, FAILURE
+
 class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         super().__init__(plot, width,height,resolution)
@@ -14,7 +16,7 @@ class Map(SuperMap):
         self.class_dictionary = {
             "Binky" : 3,
             "Hugo" : 3,
-            "Slushy" : 3,
+            "Slush" : 3,
             "Muddles": 3,
             "Kiki": 3,
             "Oakie": 3,

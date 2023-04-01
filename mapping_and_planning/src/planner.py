@@ -24,6 +24,7 @@ class RRTStar:
             start: List[float],
             goal: List[float],
             obstacles: List[List[float]],
+            inside: List[List[float]],
             width: float,
             height: float,
             pick: float = 0.2,
@@ -33,6 +34,7 @@ class RRTStar:
         self.start = Node(start)
         self.goal = Node(goal)
         self.obstacles = [Node(pos) for pos in obstacles]
+        self.inside = inside
         self.width = width
         self.height = height
         self.nodes = [self.start]
@@ -100,10 +102,13 @@ class RRTStar:
 
     def getRandomNode(self):
         if random() > self.pick:
+            x = random() * self.width; y = random() * self.height 
+            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
             node = Node(
-                (random() * self.width, random() * self.height)
+                (x,y)
             )
-            if self.getIsInObstacle(node):
+            if self.getIsInObstacle(node) or not self.inside[x_ind, y_ind]:
                 node =  self.getRandomNode()
         else:
             node = self.goal
