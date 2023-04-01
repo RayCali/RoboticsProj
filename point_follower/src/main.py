@@ -15,7 +15,9 @@ import math
 import numpy as np
 import tf
 from point_follower.srv import Node, Moveto, MovetoResponse, MovetoRequest
-# from brain.src.config import SUCCESS, FAILURE, RUNNING
+SUCCESS = 1
+FAILURE = -1
+RUNNING = 0
 
 
 class path(object):
@@ -183,7 +185,7 @@ class path(object):
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
-        return MovetoResponse(True,"success")
+        return MovetoResponse(SUCCESS)
         # self.rate.sleep()
         # try:
         #     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
