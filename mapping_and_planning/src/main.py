@@ -25,10 +25,11 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlanner_srv = rospy.Service("pathPlanner", Moveto, self.srvPathPlanner)
+        self.pathPlanner_srv = rospy.Service("pathPlanner", Moveto, self.doPathPlanner)
+    
         self.path_pub = rospy.Publisher("/planning/path", Path, queue_size=10)
 
-    def srvPathPlanner(self, req: Moveto) -> MovetoResponse:
+    def doPathPlanner(self, req: Moveto) -> MovetoResponse:
         try:
             transform = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
@@ -67,6 +68,7 @@ class PathProvider:
 if __name__ == "__main__":
 
     rospy.init_node("mapping_and_planning")
+        
     m = Map(True, 11, 11, 0.05)
     rospy.sleep(1)
     m.doPublish()

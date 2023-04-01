@@ -31,9 +31,9 @@ class Memory:
            3 : "Muddles",
            4 : "Kiki",
            5 : "Oakie",
-           6 : "Cube",
-           7 : "Ball",
-           8 : "Box",
+           6 : "cube",
+           7 : "ball",
+           8 : "box",
         }
         self.object2Id = {
             "Binky"  : 0,
@@ -42,9 +42,9 @@ class Memory:
             "Muddles": 3,
             "Kiki"   : 4,
             "Oakie"  : 5,
-            "Cube"   : 6,
-            "Ball"   : 7,
-            "Box"    : 8
+            "cube"   : 6,
+            "ball"   : 7,
+            "box"    : 8
         }
         self.arucoId2Box = {
             0 : "Box_Plushies",
@@ -58,15 +58,16 @@ class Memory:
         
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
-        self.moveto_srv = rospy.Service("moveto", Moveto, self.srvMoveTo)
-        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.srvIsLocalized)
-        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.srvDoLocalized)
+
+        self.moveto_srv = rospy.Service("moveto", Moveto, self.doMoveTo)
+        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.getIsLocalized)
+        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.doLocalize)
 
         
-        self.isnotpair_srv = rospy.Service("notpair", Request, self.srvNotPair)
+        self.isnotpair_srv = rospy.Service("notpair", Request, self.getNotPair)
 
-        self.ispicked_srv = rospy.Service("ispicked", Request, self.srvIsPicked)
-        self.isInFrontToy = rospy.Service("isInFrontToy", Request, self.srvIsInFrontToy)
+        self.ispicked_srv = rospy.Service("ispicked", Request, self.getIsPicked)
+        self.isInFrontToy = rospy.Service("isInFrontToy", Request, self.getIsInFrontToy)
         self.pathPlanner_proxy = rospy.ServiceProxy("pathPlanner", Moveto)
         
         self.movingToTargetToy = False
@@ -77,7 +78,7 @@ class Memory:
 
         
     
-    def srvIsInFrontToy(self, req):
+    def getIsInFrontToy(self, req):
         InFrontThreshold_x = 0.15
         InFrontThreshold_y = 0.15
         try:
@@ -93,9 +94,9 @@ class Memory:
 
 
     
-    def srvIsPicked(self, req):
+    def getIsPicked(self, req):
         return RequestResponse(FAILURE)
-    def srvNotPair(self, req):
+    def getNotPair(self, req):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
@@ -103,7 +104,6 @@ class Memory:
         for key in self.boxes:
             box = self.boxes[key]
             if box.hasArucoMarker:
-                self.targetToy = self.__getTargetToy()
                 if box.name == "Box_Plushies":
                     if len(self.plushies) > 0:
                         return RequestResponse(FAILURE)
@@ -113,17 +113,17 @@ class Memory:
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
                         return RequestResponse(FAILURE)
-                
+        
         return RequestResponse(SUCCESS)
     
-    def srvDoLocalized(self, req):
+    def doLocalize(self, req):
         return RequestResponse(RUNNING)
-    def srvIsLocalized(self, req):
+    def getIsLocalized(self, req):
         if self.anchordetected:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
-    def srvMoveTo(self, req):
+    def doMoveTo(self, req):
         # TODO: the move to service needs the following functionality
         # 1) During approach verify that the object is where we found it 
         # 2) If the object is gone, tell the map to whipe that area and set it to free
@@ -134,18 +134,13 @@ class Memory:
         if self.targetHasBecomeInvalid:
             self.targetHasBecomeInvalid = False
             return Moveto(FAILURE)
-        mt = Moveto()
-        mt.goal = self.targetToy.poseStamped
-        res = self.pathPlanner_srv(mt) #blocking
-        if res.success == SUCCESS:
-            return MovetoResponse(SUCCESS)
-        return MovetoResponse(FAILURE)
-    
-    def __getTargetToy(self):
-        for key in self.toys:
-            return self.toys[key]
-        
+        req = Moveto()
+        req.goal = self.targetToy.poseStamped
 
+        res = self.pathPlanner_proxy(req)
+        STATUS = res.status
+        return MovetoResponse(STATUS)
+    
     def __putObject(self, pose: PoseStamped, id: int):
         object: Movable
         objectType = None
@@ -183,6 +178,7 @@ class Memory:
 
     def __doStoreAllDetectedObjects(self, msg: objectPoseStampedLst):
         for pose, id in zip(msg.PoseStamped, msg.object_class):
+            print(id, self.object2Id[id])
             id = self.object2Id[id]
             if id < 8:
                 self.__putInDictsIfNotAlreadyIn(pose,id)
@@ -192,14 +188,13 @@ class Memory:
     def __getWithinRange(self, a: Point, b: Point) -> bool:
         if abs(a.x - b.x) < self.xThreshold and abs(a.y - b.y) < self.yThreshold:
             return True
-        False
-            
         return False
     def __doStoreAllBoxesWAruco(self, msg: MarkerArray):
         for marker in msg.markers:
             if marker.id == 500:
                 self.anchordetected = True
-            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id] + str(Box.count), marker.id)
+                continue
+            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id], marker.id)
             boxObject.hasArucoMarker = True
             self.__putBoxInDict(boxObject)
 
