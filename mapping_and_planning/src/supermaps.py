@@ -56,10 +56,6 @@ class SuperMap:
         self.grid.data[self.grid.data == 3] = 50
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
-        # self.grid.data = []
-        # for i in range(self.grid.info.width):
-        #     for ii in range(self.grid.info.height):
-        #         self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
     def doPublish(self):

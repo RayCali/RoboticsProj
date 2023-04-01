@@ -2,19 +2,24 @@
 
 from superclasses import *
 import rospy
-from std_srvs.srv import SetBool
+from msg_srv_pkg.srv import Request, RequestResponse
 
-class ifAnchorDetected(Condition):
+class isLocalized(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('AnchorDetected/srv', SetBool)
-    
+        self.service = rospy.ServiceProxy('isLocalized', Request)
 
-
-class ifFoundMatchingToyAndBox(Condition):
+class isNotPair(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('FoundMatchingToyAndBox/srv', SetBool)
+        self.service = rospy.ServiceProxy('isnotpair', Request)
 
-    
+class isPicked(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('isPicked', Request)
 
+class isInFrontToy(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('isInFrontToy', Request)
