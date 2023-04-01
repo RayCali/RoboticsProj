@@ -47,14 +47,14 @@ class Memory:
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.__doStoreAllBoxesWAruco)
         self.moveto_srv = rospy.Service("moveto", Moveto, self.srvMoveTo)
-        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.srvIsLocalized)
-        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.srvDoLocalized)
+        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.getIsLocalized)
+        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.doLocalize)
         
-        self.isnotpair_srv = rospy.Service("notpair", Request, self.srvNotPair)
+        self.isnotpair_srv = rospy.Service("notpair", Request, self.getNotPair)
 
-        self.ispicked_srv = rospy.Service("ispicked", Request, self.srvIsPicked)
-        self.isInFrontToy_srv = rospy.Service("isInFrontToy", Request, self.srvIsInFrontToy)
-        self.doMoveToGoal_srv = rospy.Service("doMoveToGoal", Request, self.srvDoMoveToGoal)
+        self.ispicked_srv = rospy.Service("ispicked", Request, self.getIsPicked)
+        self.isInFrontToy_srv = rospy.Service("isInFrontToy", Request, self.getIsInFrontToy)
+        self.doMoveToGoal_srv = rospy.Service("doMoveToGoal", Request, self.doMoveToGoal)
         self.pathPlanner_proxy = rospy.ServiceProxy("pathPlanner", Moveto)
         
         self.movingToTargetToy = False
@@ -64,9 +64,9 @@ class Memory:
         self.yThreshold = 0.10
 
         
-    def srvDoMoveToGoal(self, req):
+    def doMoveToGoal(self, req):
         return RequestResponse(RUNNING)    
-    def srvIsInFrontToy(self, req):
+    def getIsInFrontToy(self, req):
         InFrontThreshold_x = 0.15
         InFrontThreshold_y = 0.15
         try:
@@ -82,9 +82,9 @@ class Memory:
 
 
     
-    def srvIsPicked(self, req):
+    def getIsPicked(self, req):
         return RequestResponse(FAILURE)
-    def srvNotPair(self, req):
+    def getNotPair(self, req):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
@@ -105,9 +105,9 @@ class Memory:
                 
         return RequestResponse(SUCCESS)
     
-    def srvDoLocalized(self, req):
+    def doLocalize(self, req):
         return RequestResponse(RUNNING)
-    def srvIsLocalized(self, req):
+    def getIsLocalized(self, req):
         if self.anchordetected:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
