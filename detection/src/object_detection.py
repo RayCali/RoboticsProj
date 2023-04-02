@@ -116,6 +116,8 @@ def get_baseLink_pose(position,msg_frame,msg_stamp):
 
 
 def imageCB(msg: Image):
+    # start = rospy.Time.now()
+    # start=start.to_sec()
     image_frame_id  = msg.header.frame_id
     image_stamp = msg.header.stamp
     depthImg_rcvd = False
@@ -134,10 +136,10 @@ def imageCB(msg: Image):
     image = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )(image)
-    image = image.to(DEVICE)
-    
+
     image = image.unsqueeze(0)
-    #loginfo(image)
+    image = image.to(DEVICE)
+        
     with torch.no_grad():
         inference = detectionModel(image).cpu() # size: (15,20,5)
     
@@ -150,7 +152,6 @@ def imageCB(msg: Image):
     scores = []
     positions = []
     for bbx in bbs:
-        # label=[]
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         # extract center position of box
         centerbbx_x = int(x+int(width/2))
@@ -162,7 +163,7 @@ def imageCB(msg: Image):
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
             
         for i in range(len(boxes)):
-            if np.linalg.norm(positions[i] - object_position) < 0.1:
+            if np.linalg.norm(positions[i] - object_position) < 0.05:
                 if scores[i] >= score:
                     break
                 else:
@@ -235,6 +236,10 @@ def imageCB(msg: Image):
     pubImg = rnp.msgify(Image,image.permute(1,2,0).numpy(),encoding='rgb8')
     
     imgPub.publish(pubImg)
+
+    # end = rospy.Time.now()
+    # end = end.to_sec()
+    # rospy.loginfo("Time taken for detection: {}".format(end-start))
     
 
 

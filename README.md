@@ -14,6 +14,7 @@ rostopic pub /cmd_vel geometry_msgs/Twist
 alias cb="cd ~/dd2419_ws;catkin build;cd -;source ~/dd2419_ws/devel/setup.bash"
 # launch camera
 roslaunch realsense2_camera rs_camera.launch filters:=pointcloud
+roslaunch realsense2_camera rs_camera.launch align_depth:=True
 # launch everything else including odometry and cartesian controllerS
 roslaunch robp_phidgets phidgets.launch
 # usb_cam name 
