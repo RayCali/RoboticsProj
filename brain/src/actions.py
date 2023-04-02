@@ -14,3 +14,9 @@ class doLocalize(Action):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy("doLocalize", Request)
+
+class doPickUp(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/pickup", Request)
+
