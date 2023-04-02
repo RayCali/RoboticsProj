@@ -31,6 +31,7 @@ class PathProvider:
 
     def doPathPlanner(self, req: Moveto) -> MovetoResponse:
         try:
+            # should be from base link to grid
             transform = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
@@ -38,8 +39,6 @@ class PathProvider:
         y = transform.transform.translation.y
         start = (x,y)
         goal = (req.goal.pose.position.x, req.goal.pose.position.y)
-        obstacles = self.getObstacles()
-        inside = self.getInside()
         self.rrt = RRTStar(
             start=start,
             goal=goal,
