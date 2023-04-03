@@ -179,8 +179,8 @@ class path(object):
                     current_trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     latest_pose=tf2_geometry_msgs.do_transform_pose(latest_pose,current_trans)
                     
-                    self.objectpose.pose.position.x = latest_pose.pose.position.x + self.objectpose.pose.position.x
-                    self.objectpose.pose.position.y = latest_pose.pose.position.y + self.objectpose.pose.position.y
+                    self.objectpose.pose.position.x = latest_pose.pose.position.x #latest_pose.pose.position.x + self.objectpose.pose.position.x
+                    self.objectpose.pose.position.y = latest_pose.pose.position.y #latest_pose.pose.position.y + self.objectpose.pose.position.y
 
                     distance = math.sqrt((self.objectpose.pose.position.x)**2 + (self.objectpose.pose.position.y)**2)
                     latest_pose = current_pose
@@ -200,6 +200,8 @@ class path(object):
                     latest_pose.pose.position.y = trans.transform.translation.y
                     rospy.loginfo("Switch!!!!!!!!!!!!")
             rospy.loginfo("Out")
+            self.twist.linear.x = 0.0
+            self.twist.angular.z = 0.0 #I added these two lines just incase
             while math.atan2(self.inc_y, self.inc_x)< -0.02: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
