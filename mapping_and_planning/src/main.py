@@ -35,27 +35,36 @@ class PathProvider:
             transform = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
-        x = transform.transform.translation.x
-        y = transform.transform.translation.y
+        x = transform.transform.translation.x - self.map.grid.info.origin.position.x
+        y = transform.transform.translation.y - self.map.grid.info.origin.position.y
         start = (x,y)
-        goal = (req.goal.pose.position.x, req.goal.pose.position.y)
+        goal = (req.goal.pose.position.x - self.map.grid.info.origin.position.x, req.goal.pose.position.y - self.map.grid.info.origin.position.y)
         self.rrt = RRTStar(
             start=start,
             goal=goal,
-            obstacles=zip(np.where(self.map.matrix == 2)),
-            inside = self.map.matrix != 5,
+            obstacles=self.getObstacles(),
+            inside = self.getInside(),
             width=self.map.grid.info.width,
             height=self.map.grid.info.height,
             )
         self.rrt.doPath()
-        path_msg = Path()
-        path: List[List[float, float]] = self.rrt.getPath()
-        if len(path)==1:
-            return MovetoResponse(FAILURE)
-        for point in path:
-            path_msg.poses.append(self.getPoseStamped(point))
-        self.path_pub.publish(path_msg)
+        if self.rrt.getPathFound:
+
+            path_msg = Path()
+            path: List[List[float, float]] = self.rrt.getPath()
+            for point in path:
+                path_msg.poses.append(self.getPoseStamped(point))
+            self.path_pub.publish(path_msg)
         return MovetoResponse(SUCCESS)
+    
+    def getInside(self):
+        matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace = self.map.matrix != 5
+        return matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace 
+
+    def getObstacles(self):
+        obstacles = zip(np.where(self.map.matrix == 2))
+        offset = self.map.grid.info.resolution
+        return [(x+offset,y+offset) for x,y in obstacles]
     def getPoseStamped(self, point: List[float]) -> PoseStamped:
         pose = PoseStamped()
         pose.header.frame_id = "map"

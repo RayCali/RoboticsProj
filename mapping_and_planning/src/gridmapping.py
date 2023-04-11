@@ -7,6 +7,7 @@ import tf2_geometry_msgs
 from typing import List
 import matplotlib.path as mpltPath
 from config import SUCCESS, RUNNING, FAILURE
+from visualization_msgs.msg import Marker
 
 class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):

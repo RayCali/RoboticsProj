@@ -38,7 +38,7 @@ class SuperMap:
             "outside of workspace": 5
         }
         
-        self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the real-world pose of the
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)

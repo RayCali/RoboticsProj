@@ -53,6 +53,10 @@ class RRTStar:
             self.setNeighbors(node)
             self.setParentToSomeoneWithBetterCostPlusDistance(node)
             self.doRewire(node)
+    def getPathFound(self) -> bool:
+        if self.goal.parent:
+            return True
+        return False
     def getPath(self) -> List[List[float]]:
         path = []
         node = self.goal
