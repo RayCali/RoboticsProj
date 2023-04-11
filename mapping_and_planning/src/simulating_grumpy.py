@@ -83,8 +83,8 @@ def doPublish500Marker():
     statictransform.transform.translation.y = 0
     statictransform.transform.translation.z = 0
     
-    statictransform.transform.rotation.x =  sqrt(2)/2#1
-    statictransform.transform.rotation.y =  sqrt(2)/2#1
+    statictransform.transform.rotation.x =  1/sqrt(2)
+    statictransform.transform.rotation.y =  1/sqrt(2)
     statictransform.transform.rotation.z =  0
     statictransform.transform.rotation.w =  0
     st.sendTransform(statictransform)
