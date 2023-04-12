@@ -2,7 +2,9 @@
 import numpy as np
 from typing import List
 from random import random
+from nav_msgs.msg import OccupancyGrid
 # https://theclassytim.medium.com/robotic-path-planning-rrt-and-rrt-212319121378
+# Glömde att lägga till noden i self.nodes listan
 class Node:
     def __init__(self, pos):
         self.x = pos[0]
@@ -27,7 +29,8 @@ class RRTStar:
             inside: List[List[float]],
             width: float,
             height: float,
-            pick: float = 0.2,
+            grid: OccupancyGrid,
+            pick: float = 0.2, #
             r: float = 0.15, #radius to osbtacle
             proximity: float = 0.5 #The proximity at which we will look for a new parent
             ) -> None:
@@ -37,6 +40,7 @@ class RRTStar:
         self.inside = inside
         self.width = width
         self.height = height
+        self.grid = grid
         self.nodes = [self.start]
         self.pick = pick
         self.r = r
@@ -46,13 +50,17 @@ class RRTStar:
     def doPath(self, vertices = 500):
         for i in range(vertices):
             node = self.getRandomNode()
+            node = self.goal
             closest = self.getClosestNode(node)
             if self.getObstacleInTheWay(node, closest):
                 continue
             node.setParent(closest)
+            self.nodes.append(node)
             self.setNeighbors(node)
             self.setParentToSomeoneWithBetterCostPlusDistance(node)
             self.doRewire(node)
+            if node.getDistTo(self.goal) < self.r:
+                break
     def getPathFound(self) -> bool:
         if self.goal.parent:
             return True
@@ -60,10 +68,15 @@ class RRTStar:
     def getPath(self) -> List[List[float]]:
         path = []
         node = self.goal
-        while node.parent:
-            path.append([node.x, node.y])
+
+        while True:
+            point = [node.x, node.y]
+            path.append(point)
             node = node.parent
-        return path.reverse()
+            if node is None:
+                break
+        path.reverse()
+        return path
 
     def doRewire(self, node:Node):
         for neighbor in self.neighbors:
@@ -79,7 +92,7 @@ class RRTStar:
             if path_cost_through_neighbor < min_path_cost:
                 if not self.getObstacleInTheWay(node, neighbor):
                     node.setParent(neighbor)
-                    min_path_cost = node.cost + node.parent.cost
+                    min_path_cost = path_cost_through_neighbor
         return
     def setNeighbors(self, node: Node):
         self.neighbors = []
@@ -91,24 +104,36 @@ class RRTStar:
         return
                     
     def getObstacleInTheWay(self, node: Node, closest: Node) -> bool:
+        print(20*"_")
         R = int(node.getDistTo(closest) / self.r)
         dx = node.x - closest.x
         dy = node.y - closest.y
-        for i in range(1, R, 1):                    #
-            xi = node.x + dx * i / R                #
-            yi = node.y + dy * i / R                #
-            n = Node((xi,yi))                       #
-            for obstacle in self.obstacles:         #
+        # TODO: steps are too big
+        for i in range(1, R, 1):                    
+            xi = np.round(node.x + dx * i / R, 4)                
+            yi = np.round(node.y + dy * i / R, 4)                
+            n = Node((xi,yi))                       
+            for obstacle in self.obstacles:         
+                print(
+                    (closest.x, closest.y),
+                    (n.x, n.y),
+                    (node.x, node.y),
+                    (obstacle.x, obstacle.y),
+                    obstacle.getDistTo(n))
                 if obstacle.getDistTo(n) < self.r:  #
+                    print("intheway")
+            
                     return True
         return False
 
 
     def getRandomNode(self):
         if random() > self.pick:
-            x = random() * self.width; y = random() * self.height 
-            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            x = random() * self.width
+            y = random() * self.height
+            # Obstacles are in the map frame, I think, while the new dots are in the grid frame
+            x_ind = int(x / self.grid.info.resolution)
+            y_ind = int(y / self.grid.info.resolution)
             node = Node(
                 (x,y)
             )

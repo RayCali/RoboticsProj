@@ -9,9 +9,10 @@ import tf2_geometry_msgs
 import tf_conversions
 # import torch
 # from torchvision import transforms
+from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped, Pose
 from msg_srv_pkg.msg import objectPoseStampedLst
-from msg_srv_pkg.srv import Moveto, MovetoResponse
+from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse
 from gridmapping import Map
 from global_explorer import getMostValuedCell
 from nav_msgs.msg import Path
@@ -26,51 +27,73 @@ class PathProvider:
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
         self.pathPlanner_srv = rospy.Service("pathPlanner", Moveto, self.doPathPlanner)
-    
-        self.path_pub = rospy.Publisher("/planning/path", Path, queue_size=10)
+        self.test_srv = rospy.Service("testService", Request, self.doCall)
+        self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
+        self.getObstacles()
+    def doCall(self, req: Request):
+        return RequestResponse(SUCCESS)
 
     def doPathPlanner(self, req: Moveto) -> MovetoResponse:
+        path_msg= Path()
+        header = Header()
+        header.stamp = rospy.Time.now()
+        header.frame_id = "map"
+        path_msg.header = header
         try:
             # should be from base link to grid
-            transform = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+            transform = self.tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
         x = transform.transform.translation.x - self.map.grid.info.origin.position.x
         y = transform.transform.translation.y - self.map.grid.info.origin.position.y
-        start = (x,y)
-        goal = (req.goal.pose.position.x - self.map.grid.info.origin.position.x, req.goal.pose.position.y - self.map.grid.info.origin.position.y)
+        
+        start = (
+            transform.transform.translation.x - self.map.grid.info.origin.position.x,
+            transform.transform.translation.y - self.map.grid.info.origin.position.y
+        )
+        goal = (
+            req.goal.pose.position.x - self.map.grid.info.origin.position.x, 
+            req.goal.pose.position.y - self.map.grid.info.origin.position.y
+        )
         self.rrt = RRTStar(
             start=start,
             goal=goal,
             obstacles=self.getObstacles(),
             inside = self.getInside(),
-            width=self.map.grid.info.width,
-            height=self.map.grid.info.height,
+            width=self.map.grid.info.width * self.map.grid.info.resolution,
+            height=self.map.grid.info.height * self.map.grid.info.resolution,
+            grid=self.map.grid
             )
-        self.rrt.doPath()
-        if self.rrt.getPathFound:
+        self.rrt.doPath(vertices=50)
+        if self.rrt.getPathFound():
 
-            path_msg = Path()
             path: List[List[float, float]] = self.rrt.getPath()
+            print(path)
             for point in path:
-                path_msg.poses.append(self.getPoseStamped(point))
+                path_msg.poses.append(self.getPoseStamped(point,header))
             self.path_pub.publish(path_msg)
-        return MovetoResponse(SUCCESS)
+            return MovetoResponse(SUCCESS)
+        return MovetoResponse(FAILURE)
     
     def getInside(self):
         matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace = self.map.matrix != 5
         return matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace 
 
     def getObstacles(self):
-        obstacles = zip(np.where(self.map.matrix == 2))
-        offset = self.map.grid.info.resolution
-        return [(x+offset,y+offset) for x,y in obstacles]
-    def getPoseStamped(self, point: List[float]) -> PoseStamped:
-        pose = PoseStamped()
-        pose.header.frame_id = "map"
-        pose.pose.position.x = point[0] - self.map.grid.info.origin.position.x
-        pose.pose.position.y = point[1] - self.map.grid.info.origin.position.y
-        return pose
+        x, y = np.where(self.map.matrix == 2)
+        obstacles = zip(x,y)
+        obstacles = [
+            (np.round(o[1] * self.map.grid.info.resolution, 3),
+             np.round(o[0] * self.map.grid.info.resolution, 3))
+                      for o in obstacles]
+        print(obstacles)
+        return obstacles
+    def getPoseStamped(self, point: List[float], header: Header) -> PoseStamped:
+        ps = PoseStamped()
+        ps.header = header
+        ps.pose.position.x = point[0] + self.map.grid.info.origin.position.x
+        ps.pose.position.y = point[1] + self.map.grid.info.origin.position.y
+        return ps
         
 
 if __name__ == "__main__":
@@ -78,6 +101,7 @@ if __name__ == "__main__":
     rospy.init_node("mapping_and_planning")
         
     m = Map(True, 11, 11, 0.05)
+    p = PathProvider(m)
     rospy.sleep(1)
     m.doPublish()
     # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))

@@ -56,6 +56,7 @@ class SuperMap:
         self.grid.data[self.grid.data == 3] = 50
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
+
         return self.grid
     
     def doPublish(self):
@@ -133,9 +134,6 @@ class SuperMap:
 
                 
             self.grid.header.stamp = rospy.Time.now()
-    def __doEmptyScanCallback(self):
-
-        return
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []
@@ -175,6 +173,17 @@ class SuperMap:
         for i in range(lower, lower + boxSize, 1):
             for ii in range(lower, lower + boxSize, 1):
                 self.matrix[i, ii] = 1
+
+        lower = int(min(self.grid.info.width, self.grid.info.height) / 2)
+        transform = self.tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
+        offset = 0
+        x = transform.transform.translation.x + 1 + offset - self.grid.info.origin.position.x
+        y = transform.transform.translation.y - self.grid.info.origin.position.y
+        x = int(x/self.grid.info.resolution)
+        y = int(y/self.grid.info.resolution)
+        
+        for i in range(-10,10,1):
+            self.matrix[y+i,x] = 2
     
     def __nocollision(self,req:Request):
         global latestscan
