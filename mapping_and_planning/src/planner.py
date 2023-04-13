@@ -81,7 +81,6 @@ class RRTStar:
             return True
         return False
     def getPath(self) -> List[List[float]]:
-        print("getPath()")
         path = []
         node = self.goal
         import time
