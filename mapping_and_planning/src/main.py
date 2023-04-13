@@ -29,6 +29,7 @@ class PathProvider:
         self.pathPlanner_srv = rospy.Service("pathPlanner", Moveto, self.doPathPlanner)
         self.test_srv = rospy.Service("testService", Request, self.doCall)
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
+        self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
         self.getObstacles()
     def doCall(self, req: Request):
         return RequestResponse(SUCCESS)
@@ -55,7 +56,7 @@ class PathProvider:
             req.goal.pose.position.x - self.map.grid.info.origin.position.x, 
             req.goal.pose.position.y - self.map.grid.info.origin.position.y
         )
-        self.rrt = RRTStar(
+        rrt = RRTStar(
             start=start,
             goal=goal,
             obstacles=self.getObstacles(),
@@ -64,15 +65,24 @@ class PathProvider:
             height=self.map.grid.info.height * self.map.grid.info.resolution,
             grid=self.map.grid
             )
-        self.rrt.doPath(vertices=50)
-        if self.rrt.getPathFound():
+        rrt.doPath(vertices=5000)
+        if rrt.getPathFound():
+            print("path found")
 
-            path: List[List[float, float]] = self.rrt.getPath()
-            print(path)
+            path: List[List[float, float]] = rrt.getPath()
             for point in path:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.path_pub.publish(path_msg)
+            
+            path_msg.poses = []
+            path: List[List[float, float]] = rrt.getPathRewired()
+            for point in path:
+                path_msg.poses.append(self.getPoseStamped(point,header))
+            self.rewired_pub.publish(path_msg)
+            
             return MovetoResponse(SUCCESS)
+
+        print("no path found")
         return MovetoResponse(FAILURE)
     
     def getInside(self):
@@ -86,7 +96,6 @@ class PathProvider:
             (np.round(o[1] * self.map.grid.info.resolution, 3),
              np.round(o[0] * self.map.grid.info.resolution, 3))
                       for o in obstacles]
-        print(obstacles)
         return obstacles
     def getPoseStamped(self, point: List[float], header: Header) -> PoseStamped:
         ps = PoseStamped()

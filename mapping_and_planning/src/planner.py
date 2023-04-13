@@ -46,21 +46,30 @@ class RRTStar:
         self.r = r
         self.proximity = proximity
         self.neighbors = List[Node]
+        self.goalInList = False
     
-    def doPath(self, vertices = 500):
+    def doPath(self, vertices = 1000):
         for i in range(vertices):
+            print(i, len(self.nodes))
             node = self.getRandomNode()
-            node = self.goal
+            if node is None:
+                continue
+            
             closest = self.getClosestNode(node)
             if self.getObstacleInTheWay(node, closest):
                 continue
+            if node.getDistTo(self.goal) < self.r:
+                #This is the goal
+                if not self.goalInList:
+                    self.goalInList = True
+                else:
+                    continue
+            
             node.setParent(closest)
             self.nodes.append(node)
             self.setNeighbors(node)
             self.setParentToSomeoneWithBetterCostPlusDistance(node)
             self.doRewire(node)
-            if node.getDistTo(self.goal) < self.r:
-                break
     def getPathFound(self) -> bool:
         if self.goal.parent:
             return True
@@ -68,15 +77,41 @@ class RRTStar:
     def getPath(self) -> List[List[float]]:
         path = []
         node = self.goal
-
         while True:
             point = [node.x, node.y]
+            print(point)
             path.append(point)
             node = node.parent
             if node is None:
                 break
         path.reverse()
         return path
+    def getPathRewired(self) -> List[List[float]]:
+        node = self.goal
+        while True:
+            #print(np.round(node.x,2),np.round(node.y,2))
+            parent = node.parent
+            if parent is None:
+                break
+            if parent.parent is None:
+                break
+            while True:
+                grandparent = parent.parent
+                if grandparent is None:
+                    break
+                if self.getObstacleInTheWay(node, grandparent):
+                    #print(np.round(grandparent.x, 2), np.round(grandparent.y,2),"in the way")
+                    node = parent
+                    break
+                else:
+                    #print(np.round(grandparent.x, 2), np.round(grandparent.y,2),"clear")
+                    node.parent = grandparent
+                    parent = grandparent
+                    
+        return self.getPath()
+
+
+        return
 
     def doRewire(self, node:Node):
         for neighbor in self.neighbors:
@@ -104,25 +139,24 @@ class RRTStar:
         return
                     
     def getObstacleInTheWay(self, node: Node, closest: Node) -> bool:
-        print(20*"_")
-        R = int(node.getDistTo(closest) / self.r)
+        R = int(node.getDistTo(closest) / self.r) + 2
         dx = node.x - closest.x
         dy = node.y - closest.y
         # TODO: steps are too big
         for i in range(1, R, 1):                    
-            xi = np.round(node.x + dx * i / R, 4)                
-            yi = np.round(node.y + dy * i / R, 4)                
+            xi = np.round(closest.x + dx * i / R, 4)                
+            yi = np.round(closest.y + dy * i / R, 4)
+            x_ind = int(xi / self.grid.info.resolution)
+            y_ind = int(yi / self.grid.info.resolution)             
             n = Node((xi,yi))                       
             for obstacle in self.obstacles:         
-                print(
-                    (closest.x, closest.y),
-                    (n.x, n.y),
-                    (node.x, node.y),
-                    (obstacle.x, obstacle.y),
-                    obstacle.getDistTo(n))
-                if obstacle.getDistTo(n) < self.r:  #
-                    print("intheway")
-            
+                # print(
+                #     (closest.x, closest.y),
+                #     (n.x, n.y),
+                #     (node.x, node.y),
+                #     (obstacle.x, obstacle.y),
+                #     obstacle.getDistTo(n))
+                if obstacle.getDistTo(n) < self.r or not self.inside[y_ind, x_ind]:  #
                     return True
         return False
 
@@ -137,11 +171,11 @@ class RRTStar:
             node = Node(
                 (x,y)
             )
-            if self.getIsInObstacle(node) or not self.inside[x_ind, y_ind]:
-                node =  self.getRandomNode()
+            if self.getIsInObstacle(node) or not self.inside[y_ind, x_ind]:
+                return None
+            return node
         else:
-            node = self.goal
-        return node
+            return self.goal
 
     def getIsInObstacle(self, node: Node) -> bool:
         for obstacle in self.obstacles:

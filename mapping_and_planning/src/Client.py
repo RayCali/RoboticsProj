@@ -23,8 +23,8 @@ if __name__ == "__main__":
     listener = tf2_ros.TransformListener(tf_buffer)
     tfbroadcaster = tf2_ros.TransformBroadcaster()
     transform = tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
-    x = transform.transform.translation.x + 1.20
-    y = transform.transform.translation.y
+    x = transform.transform.translation.x + 7
+    y = transform.transform.translation.y + 3
 
     t = TransformStamped()
     t.header.stamp = rospy.Time.now()
