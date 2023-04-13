@@ -33,7 +33,7 @@ class RRTStar:
             grid: OccupancyGrid,
             pick: float = 0.2, #
             r: float = 0.15, #radius to osbtacle
-            proximity: float = 0.4 #The proximity at which we will look for a new parent
+            proximity: float = 1.0 #The proximity at which we will look for a new parent
             ) -> None:
         self.start = Node(start)
         self.goal = Node(goal)
