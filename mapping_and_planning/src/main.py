@@ -65,7 +65,7 @@ class PathProvider:
             height=self.map.grid.info.height * self.map.grid.info.resolution,
             grid=self.map.grid
             )
-        rrt.doPath(vertices=5000)
+        rrt.doPath(max_time=10)
         if rrt.getPathFound():
             print("path found")
 
@@ -73,7 +73,6 @@ class PathProvider:
             for point in path:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.path_pub.publish(path_msg)
-            
             path_msg.poses = []
             path: List[List[float, float]] = rrt.getPathRewired()
             for point in path:

@@ -3,6 +3,7 @@ import numpy as np
 from typing import List
 from random import random
 from nav_msgs.msg import OccupancyGrid
+from time import time
 # https://theclassytim.medium.com/robotic-path-planning-rrt-and-rrt-212319121378
 # Glömde att lägga till noden i self.nodes listan
 class Node:
@@ -32,7 +33,7 @@ class RRTStar:
             grid: OccupancyGrid,
             pick: float = 0.2, #
             r: float = 0.15, #radius to osbtacle
-            proximity: float = 0.5 #The proximity at which we will look for a new parent
+            proximity: float = 0.4 #The proximity at which we will look for a new parent
             ) -> None:
         self.start = Node(start)
         self.goal = Node(goal)
@@ -48,8 +49,11 @@ class RRTStar:
         self.neighbors = List[Node]
         self.goalInList = False
     
-    def doPath(self, vertices = 1000):
-        for i in range(vertices):
+    def doPath(self, max_time = 30):
+        start = time()
+        i = 0
+        while True:
+            i += 1
             print(i, len(self.nodes))
             node = self.getRandomNode()
             if node is None:
@@ -70,18 +74,25 @@ class RRTStar:
             self.setNeighbors(node)
             self.setParentToSomeoneWithBetterCostPlusDistance(node)
             self.doRewire(node)
+            if (time() - start) > max_time:
+                break
     def getPathFound(self) -> bool:
         if self.goal.parent:
             return True
         return False
     def getPath(self) -> List[List[float]]:
+        print("getPath()")
         path = []
         node = self.goal
+        import time
+        start = time.time()
         while True:
             point = [node.x, node.y]
-            print(point)
             path.append(point)
             node = node.parent
+            if (time.time() - start) > 10:
+                print("loop")
+                break
             if node is None:
                 break
         path.reverse()
@@ -115,7 +126,7 @@ class RRTStar:
 
     def doRewire(self, node:Node):
         for neighbor in self.neighbors:
-            if node.cost < neighbor.cost:
+            if node.cost + node.getDistTo(neighbor) < neighbor.cost :
                 if not self.getObstacleInTheWay(node, neighbor):
                     neighbor.setParent(node)
 
@@ -127,14 +138,14 @@ class RRTStar:
             if path_cost_through_neighbor < min_path_cost:
                 if not self.getObstacleInTheWay(node, neighbor):
                     node.setParent(neighbor)
-                    min_path_cost = path_cost_through_neighbor
+                    min_path_cost = node.cost
         return
     def setNeighbors(self, node: Node):
         self.neighbors = []
         for neighbor in self.nodes:
             if neighbor.getDistTo(node) < self.proximity:
-                if neighbor is node.parent:
-                    continue
+                #if neighbor is node.parent:
+                #    continue
                 self.neighbors.append(neighbor)
         return
                     
