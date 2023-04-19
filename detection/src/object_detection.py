@@ -223,6 +223,7 @@ def imageCB(msg: Image):
             baseLink_pose = get_baseLink_pose(pos,image_frame_id,image_stamp)
             object_poses_baseLink.PoseStamped.append(baseLink_pose)
             object_poses_baseLink.object_class.append(label)
+            rospy.loginfo(baseLink_pose)
 
         except:
             loginfo("Failed to get baseLink pose")
