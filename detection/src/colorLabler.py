@@ -27,16 +27,26 @@ class ColorLabeler:
         # to L*a*b*
         self.lab = cv2.cvtColor(self.lab, cv2.COLOR_RGB2LAB)
 
-    def label(self, image, c):
-        # constrct a mask for the image and fill out the region
-        # of the bounding box with white
-        mask = np.zeros(image.shape[:2], dtype="uint8")
-        cv2.drawContours(mask, [c], -1, 255, -1)
-        # erode the mask to make the border of the bounding box
-        # less prominent and be sure to only compute the mean
-        # for the object
-        mask = cv2.erode(mask, None, iterations=2)
-        mean = cv2.mean(image, mask=mask)[:3]
+    def label(self, center_colour):
+        """
+        Label the color of an object.
+
+        Inputs:
+            image: the entire image
+            c: the area around the object
+
+        Output: 
+            the name of the color.
+        """
+        # # constrct a mask for the image and fill out the region
+        # # of the bounding box with white
+        # mask = np.zeros(image.shape[1:], dtype="uint8")
+        # cv2.drawContours(mask, [c], -1, 255, -1)
+        # # erode the mask to make the border of the bounding box
+        # # less prominent and be sure to only compute the mean
+        # # for the object
+        # mask = cv2.erode(mask, None, iterations=2)
+        # mean = cv2.mean(image, mask=mask)[:3]
 
         # initialize the minimum distance found thus far
         minDist = (np.inf, None)
@@ -45,7 +55,7 @@ class ColorLabeler:
         for (i, row) in enumerate(self.lab):
             # compute the distance between the current L*a*b*
             # color value and the mean of the image
-            d = dist.euclidean(row[0], mean)
+            d = dist.euclidean(row[0], center_colour)
             # if the distance is smaller than the current distance,
             # then update the bookkeeping variable
             if d < minDist[0]:
