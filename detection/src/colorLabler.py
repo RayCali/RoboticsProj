@@ -3,6 +3,7 @@
 from scipy.spatial import distance as dist
 from collections import OrderedDict
 import numpy as np
+import math
 import cv2
 
 class ColorLabeler:
@@ -32,30 +33,21 @@ class ColorLabeler:
         Label the color of an object.
 
         Inputs:
-            image: the entire image
-            c: the area around the object
+            center_colour: colour of center of object in L*a*b* colour space.
 
         Output: 
             the name of the color.
         """
-        # # constrct a mask for the image and fill out the region
-        # # of the bounding box with white
-        # mask = np.zeros(image.shape[1:], dtype="uint8")
-        # cv2.drawContours(mask, [c], -1, 255, -1)
-        # # erode the mask to make the border of the bounding box
-        # # less prominent and be sure to only compute the mean
-        # # for the object
-        # mask = cv2.erode(mask, None, iterations=2)
-        # mean = cv2.mean(image, mask=mask)[:3]
-
         # initialize the minimum distance found thus far
         minDist = (np.inf, None)
 
         # loop over the known L*a*b* color values
         for (i, row) in enumerate(self.lab):
+            print("Lab {}: {}".format(i,row[0]))
             # compute the distance between the current L*a*b*
             # color value and the mean of the image
-            d = dist.euclidean(row[0], center_colour)
+            d = math.sqrt((center_colour[0]-row[0][0])**2 + (center_colour[1]-row[0][1])**2 + (center_colour[2]-row[0][2])**2)
+            print("Distance from {} is {}".format(self.colorNames[i], d))
             # if the distance is smaller than the current distance,
             # then update the bookkeeping variable
             if d < minDist[0]:

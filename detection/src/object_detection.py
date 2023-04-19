@@ -25,7 +25,7 @@ from rospy import loginfo
 from cv_bridge import CvBridge
 import cv2
 from shapely.geometry import Polygon
-import colorLabler
+from colorLabler import ColorLabeler
 
 FOCAL_LENGTH = 605.9197387695312
 DEVICE = "cuda"
@@ -94,6 +94,7 @@ def imageCB(msg: Image):
     #imgPub.publish(msg)
     # msg is of type Image, convert to torch tensor
     cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")
+    print(cv_image.shape)
     np_image = rnp.numpify(msg) # shape: (480, 640, 3)
     
     image = transforms.ToTensor()(cv_image) # shape: (3,720,1280)
@@ -116,7 +117,8 @@ def imageCB(msg: Image):
     scores = []
     positions = []
 
-    colorLabler = colorLabler.ColorLabeler()
+    colorLabler = ColorLabeler()
+    lab_img = cv2.cvtColor(cv_image, cv2.COLOR_RGB2LAB)
     for bbx in bbs:
         # label=[]
         x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
@@ -125,20 +127,26 @@ def imageCB(msg: Image):
         centerbbx_y = int(y+int(height/2))
 
         if label == "ball":
-            rgb = image[:, img_center_y,img_center_x]
-            center_lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+            center_lab = lab_img[centerbbx_y,centerbbx_x,:]
+            rgb = image[:,centerbbx_y,centerbbx_x]
+            print("BALL: ",center_lab)
+            print(rgb)
+            print("IMG POS: ", centerbbx_x, centerbbx_y)
 
             colour = colorLabler.label(center_lab)
 
-            label == "{} ball".format(colour)
+            label = colour + "_" + label
             
         if label == "cube":
-            rgb = image[:, img_center_y,img_center_x]
-            center_lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+            center_lab = lab_img[centerbbx_y,centerbbx_x,:]
+            rgb = image[:,centerbbx_y,centerbbx_x]
+            print("CUBE: ",center_lab)
+            print(rgb)
+            print("IMG POS: ", centerbbx_x, centerbbx_y)
 
             colour = colorLabler.label(center_lab)
 
-            label == "{} cube".format(colour)
+            label = colour + "_" + label
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
