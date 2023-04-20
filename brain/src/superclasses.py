@@ -23,7 +23,21 @@ class Leaf:
             return RUNNING
 
     
+"""
+Some brainstorming:
+    - The service is called in the tick function and expects an immediate response from the service (1,-1,0).
+        This won't work since the service call blocks the rest.
+    - The service call is blocking, so the tick function can't return until the service call returns.
+    - Rather have a custom function in the class that checks the status of the action, calls the service and returns the status.
+        The tick functiuon then just checks the status through a class variable without having to call the service or another function which might block.
+        -----> this is good, I like this.
+    - Question is where to define that class. In the package of the service or in the brain package?
+    - Shutup co pilot, I'm thinking.
+    - Orrrr, we check the status of the action in the tick function and call the service in the tick function depending on the status and return the status.
+    - This is a bit of a hack, but it works. shut up copilot.
     
+
+"""  
 
 
 class Action(Leaf):
