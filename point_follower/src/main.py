@@ -46,7 +46,7 @@ class path(object):
                 rospy.loginfo("No object detected")
                 exit()
             self.objectpose = msg.PoseStamped[0]
-            if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or self.objectpose.pose.position.x > 0.35:
+            if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or self.objectpose.pose.position.x > 0.4:
                 self.listen_once = True
             else: 
                 self.listen_once = False
