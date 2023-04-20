@@ -38,6 +38,7 @@ def handle_pickup_req(req: PickRequest):
 
         # transform pose given in base_link to arm_base
         pose_stamped = req.pose
+        pose_stamped.pose.position.x = 0.05
         stamp = pose_stamped.header.stamp
 
         try:
@@ -46,7 +47,6 @@ def handle_pickup_req(req: PickRequest):
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rospy.logerr("Could not get transform")
             return
-
         print("POSE_BASE: ", pose_base)
         if pose_base.pose.position.x < 0.15:
             return PickResponse(False, "Object too close to robot")

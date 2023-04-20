@@ -38,7 +38,7 @@ def workspacecallback(data:Marker):
 
 def twistcallback(data:Twist):
     global twistmsg, listener, workspace, tf_buffer, pub,marginpose
-    rospy.loginfo("got twist")
+    #rospy.loginfo("got twist")
     twistmsg = data
     if twistmsg.linear.x != 0:
         transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
