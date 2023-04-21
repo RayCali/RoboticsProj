@@ -33,11 +33,14 @@ def joint_state_callback(msg: JointState):
     joint_states = msg
 
 def handle_pickup_req(req: PickRequest):
+    rospy.loginfo("Let's do some picking!")
 
     if joint_states.position[-1] == gripper_open:
 
         # transform pose given in base_link to arm_base
         pose_stamped = req.pose
+        print("BASELINK_POSE: ", pose_stamped)
+        # pose_stamped.pose.position.x = 0.05
         stamp = pose_stamped.header.stamp
 
         try:
@@ -46,7 +49,6 @@ def handle_pickup_req(req: PickRequest):
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             rospy.logerr("Could not get transform")
             return
-
         print("POSE_BASE: ", pose_base)
         if pose_base.pose.position.x < 0.15:
             return PickResponse(False, "Object too close to robot")
@@ -55,7 +57,7 @@ def handle_pickup_req(req: PickRequest):
         q_hover = analyticalIK_lock4(pos_hover)
 
         # go to desired position
-        pos_pick = [pose_base.pose.position.x + 0.02, pose_base.pose.position.y, pose_base.pose.position.z]
+        pos_pick = [pose_base.pose.position.x + 0.05, pose_base.pose.position.y, -0.1]
         q_pick = analyticalIK_lock4(pos_pick)
 
         q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]

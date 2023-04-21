@@ -77,9 +77,15 @@ class Memory:
         self.targetHasBecomeInvalid = False
         self.xThreshold = 0.10
         self.yThreshold = 0.10
-
-        
+        self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
     
+    def doInformOfPick(self):
+        if self.alreadyPickingUpAnObjectSinceBefore:
+            return Pick(RUNNING)
+        else:
+            self.alreadyPickingUpAnObjectSinceBefore = True
+    def doMoveToGoal(self, req):
+        return RequestResponse(RUNNING)    
     def getIsInFrontToy(self, req):
         InFrontThreshold_x = 0.15
         InFrontThreshold_y = 0.15

@@ -17,12 +17,12 @@ prevencr=None
 prevencl=None
 def callbackTwist(data):
     global desiredTwist
-    rospy.loginfo("got twist")
+    #rospy.loginfo("got twist")
     desiredTwist=data
 
 def callbackEncoder(data):
     global Efeedback
-    rospy.loginfo("nu")
+    #rospy.loginfo("nu")
     Efeedback=data
 
 def listener():

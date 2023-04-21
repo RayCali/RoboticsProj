@@ -19,6 +19,7 @@ if __name__=="__main__":
                     Or([
                         isPicked(),
                         isInFrontToy(),
+                        doMoveToGoal(),
                     ])
                 ])
             ])

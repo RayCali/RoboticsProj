@@ -14,98 +14,49 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse, Request, RequestResponse
+from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
 from std_msgs.msg import Float64
-SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 class path(object):
     def __init__(self):
         # ROS Publishers
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal, queue_size=1)
-        self.object_finalpose = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
+        self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal)
+        self.poseToPick = rospy.Publisher("/poseToPick", PoseStamped, queue_size=1)
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.s =rospy.ServiceProxy('/no_collision', NoCollision)
         self.done_once = False
         self.rate = rospy.Rate(20)
+        s = rospy.Service('/moveto', Moveto, self.tracker)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.radius_sub = float(1)
-        self.objectpose = PoseStamped()
+        self.objectpose = None
         self.listen_once = False
-        self.updated_first_pose = PoseStamped()
-        self.areWeThereYet = rospy.Service("atToy", Request, self.getAreWeThereYet)
-
-        
-
-        self.moveTo = rospy.Service('moveToToy', Moveto, self.doMoveToToyResponse)
-
-        self.moveto_pub = rospy.Publisher('/moveToToy', PoseStamped, queue_size=1)
-        self.moveto_sub = rospy.Subscriber('/moveToToy', PoseStamped, self.tracker, queue_size=1)
-        
-        self.STATE = FAILURE
-        self.running = False
-
-    def doMoveToToyResponse(self, req: Moveto):
-        if not self.running:
-            self.running = True
-            self.moveto_pub(Moveto.goal)
-            return MovetoResponse(RUNNING)
-        if self.running:
-            if self.STATE == RUNNING:
-                return MovetoResponse(RUNNING)
-            if self.STATE == FAILURE:
-                self.running = False
-                return MovetoResponse(FAILURE)
-            if self.STATE == SUCCESS:
-                self.running = False
-                return MovetoResponse(SUCCESS)
-
-    def getAreWeThereYet(self, req: Request):
-        if self.STATE == SUCCESS:
-            self.STATE = RUNNING
-            return RequestResponse(SUCCESS)
-        
-        return RequestResponse(FAILURE)
 
 
     # def Radius(self, msg:Float64):
     #     self.radius_sub = msg.data
     def distance_to_goal(self,msg):
         #self.distance_to_object = math.sqrt(msg.pose.position.x**2 + msg.pose.position.y**2)
-        i = 50
         if self.listen_once:
             if len(msg.PoseStamped) == 0:
                 rospy.loginfo("No object detected")
                 exit()
             self.objectpose = msg.PoseStamped[0]
-            if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or self.objectpose.pose.position.x > 0.4:
-                self.listen_once = True
-            else: 
-                self.listen_once = False
-                trans = tfBuffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(1.0))
-                self.updated_first_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            if i>0:
-                rospy.loginfo("Distance to object: {}".format(self.objectpose.pose.position.x))
-                i = i-1
-            #rospy.loginfo("Label: {}".format(msg.object_class[0]))
-    
-    
-    
-    
-    
-    
-    
-    
-    def tracker(self, msg: PoseStamped):
+            self.poseToPick.publish(self.objectpose)
+            rospy.loginfo("Label: {}".format(msg.object_class[0]))
+            self.listen_once = False
+    def tracker(self,req:MovetoRequest):
         if not self.done_once:
-            self.cam_pose = msg
+            self.cam_pose = PoseStamped()
             self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
             #     rospy.loginfo("No object detected")
             #     exit()
             
+            self.cam_pose = req.goal
             # self.rate = rospy.Rate(20)
             # rospy.Time(0) = msg.header.stamp
             # rospy.Time(0) = msg.header.stamp
@@ -172,21 +123,20 @@ class path(object):
             condition = math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05
             distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
             switch =True
-            latest_pose=None
-            
+            current_pose = None
             while condition:
-                # rospy.loginfo("Waiting for service")
-                # rospy.wait_for_service('/no_collision')
-                # rospy.loginfo("Service found")
-                # resp1 = self.s()
-                # rospy.loginfo(resp1)
-                # #resp1.wait_for_result()
-                # if resp1.success is not True:
-                #     self.twist.linear.x = 0.0
-                #     self.twist.angular.z = 0.0
-                #     self.pub_twist.publish(self.twist)
-                #     rospy.loginfo("Collision detected")
-                #     return MovetoResponse(False,"Failure")
+                rospy.loginfo("Waiting for service")
+                rospy.wait_for_service('/no_collision')
+                rospy.loginfo("Service found")
+                resp1 = self.s()
+                rospy.loginfo(resp1)
+                #resp1.wait_for_result()
+                if resp1.success is not True:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.loginfo("Collision detected")
+                    return MovetoResponse(False,"Failure")
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
@@ -208,7 +158,7 @@ class path(object):
                         # rospy.loginfo("Decelerating")
                         # rospy.loginfo(self.twist.linear.x)
                 else:
-                    self.twist.linear.x = 0.15
+                    self.twist.linear.x = 0.1
 
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
@@ -232,33 +182,26 @@ class path(object):
                 if switch is False:
                     current_trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     latest_pose=tf2_geometry_msgs.do_transform_pose(latest_pose,current_trans)
-                    
-                    rospy.loginfo("distance to obj straight")
-                    rospy.loginfo(self.objectpose.pose.position.x + latest_pose.pose.position.x)
-                    self.objectpose.pose.position.x = self.objectpose.pose.position.x + latest_pose.pose.position.x
-                    self.objectpose.pose.position.y = self.objectpose.pose.position.y + latest_pose.pose.position.y
-                    distance = math.sqrt(self.objectpose.pose.position.x**2 + self.objectpose.pose.position.y**2)
-                    trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    latest_pose = PoseStamped()
-                    latest_pose.header.frame_id = "map"
-                    latest_pose.pose.position.x = trans.transform.translation.x
-                    latest_pose.pose.position.y = trans.transform.translation.y
-                    condition = distance > 0.1
+                    while self.objectpose is None:
+                        self.twist.linear.x = 0.0
+                        self.twist.angular.z = 0.0
+                        self.pub_twist.publish(self.twist)
+                        self.listen_once = True
+                        continue
+                    self.objectpose.pose.position.x = latest_pose.pose.position.x + self.objectpose.pose.position.x
+                    self.objectpose.pose.position.y = latest_pose.pose.position.y + self.objectpose.pose.position.y
 
-                    
+                    distance = math.sqrt((self.objectpose.pose.position.x)**2 + (self.objectpose.pose.position.y)**2)
+                    latest_pose = current_pose
+                    condition = distance > 0.05
                 else: 
                     distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
                 rospy.loginfo("Distance:")
                 rospy.loginfo(distance)
                 if math.sqrt(self.inc_x**2 + self.inc_y**2) < 0.3 and switch:
-                    self.listen_once=True
-                    while self.listen_once:
-                        self.twist.linear.x = 0
-                        self.twist.angular.z = 0
-                        self.pub_twist.publish(self.twist)
-                    
-                    condition = distance > 0.1
+                    condition = distance > 0.05
                     switch = False
+                    self.listen_once=True
                     trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
                     latest_pose = PoseStamped()
                     latest_pose.header.frame_id = "map"
@@ -266,12 +209,7 @@ class path(object):
                     latest_pose.pose.position.y = trans.transform.translation.y
                     rospy.loginfo("Switch!!!!!!!!!!!!")
             rospy.loginfo("Out")
-            self.twist.linear.x = 0.0
-            self.twist.angular.z = 0.0 #I added these two lines just incase
-            self.pub_twist.publish(self.twist)
-            trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
-            final_pose_map = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            while math.atan2(self.inc_y, self.inc_x)< -0.005: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x)< -0.02: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
                 #rospy.loginfo("Turning right")
@@ -287,7 +225,7 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
-            while math.atan2(self.inc_y, self.inc_x) > 0.005: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x) > 0.02: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.7
                 #rospy.loginfo("Turning left")
@@ -308,12 +246,7 @@ class path(object):
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
         self.distance_to_object = 500
-        trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-        final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
-        self.object_finalpose.publish(final_pose)
-        rospy.loginfo(self.objectpose)
-        self.STATE = SUCCESS
-    
+        return MovetoResponse(True,"success")
         # self.rate.sleep()
         # try:
         #     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
