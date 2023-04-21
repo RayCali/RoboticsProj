@@ -82,9 +82,10 @@ class Memory:
         self.anchordetected = False
     
     def getIsFound(self, req):
-        print(len(self.toys) > 1)
-        if len(self.toys) > 1:
+        if len(self.toys) > 0:
+            print("Found more than one toy")
             return RequestResponse(SUCCESS)
+        print("Found less than one toy")
         return RequestResponse(FAILURE)
     
     def doInformOfPick(self, req):
@@ -138,10 +139,12 @@ class Memory:
     def doLocalize(self, req):
         return RequestResponse(SUCCESS)
     def getIsLocalized(self, req):
-        print(self.anchordetected)
+        print("anchor detected")
         if self.anchordetected:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
+    def doSetAnchorAsDetected(self, msg):
+        self.anchordetected = True
     
     def doMoveTo(self, req):
         # TODO: the move to service needs the following functionality
@@ -244,10 +247,6 @@ class Memory:
                 return
         self.putObject(pose, id)
     
-    def doSetAnchorAsDetected(self, msg):
-        print("Anchor detected!")
-        self.anchordetected = True
-
 
 if __name__ == "__main__":
 

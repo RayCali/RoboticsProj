@@ -27,3 +27,12 @@ class doMoveToGoal(Action):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy("doMoveToGoal", Request)
+
+class doMoveToToy(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/moveToToy", Request)
+    def tick(self):
+        print("doMoveToToy")
+        res = super().tick()
+        return res

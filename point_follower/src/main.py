@@ -14,7 +14,7 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse, Request, RequestResponse
+from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse, Request, RequestRequest, RequestResponse
 from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
@@ -36,7 +36,7 @@ class path(object):
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/atToy", Request, self.arrivedAtToy)
 
-        self.moveToToy_srv = rospy.Service('/moveToToy', Moveto, self.doMoveToToyResponse)
+        self.moveToToy_srv = rospy.Service('/moveToToy', Request, self.doMoveToToyResponse)
 
         self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
@@ -48,12 +48,12 @@ class path(object):
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doSaveObjectpose_final, queue_size=1)
     
 
-    def doMoveToToyResponse(self, req):
+    def doMoveToToyResponse(self, req: RequestRequest):
         if not self.running:
-            if self.object_finalpose is None:
+            if self.objectpose_finalpose is None:
                 return RequestResponse(FAILURE) 
             self.running = True
-            self.moveto_pub(Moveto.goal)
+            self.moveto_pub.publish(self.objectpose_finalpose)
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -67,21 +67,22 @@ class path(object):
 
     def arrivedAtToy(self, req: Request):
         if self.STATE == SUCCESS:
-            self.STATE = RUNNING
+            self.STATE = FAILURE
             return RequestResponse(SUCCESS)
-        
         return RequestResponse(FAILURE)
     
-    def doSaveObjectpose_final(self, msg):
+    def doSaveObjectpose_final(self, msg: objectPoseStampedLst):
         if len(msg.PoseStamped) == 0:
-            rospy.loginfo("No object detected")
+            rospy.loginfo("No object detected!!!!!!!!!!!!!!")
             exit()
-        self.object_finalpose = msg.PoseStamped[0]
+        rospy.loginfo("Object detected")
+        self.objectpose_finalpose = msg.PoseStamped[0]
 
 
     # def Radius(self, msg:Float64):
     #     self.radius_sub = msg.data
     def distance_to_goal(self,msg):
+        rospy.loginfo("Distance to object: {}".format(msg.PoseStamped[0].pose.position.x))
         #self.distance_to_object = math.sqrt(msg.pose.position.x**2 + msg.pose.position.y**2)
         i = 50
         if self.listen_once:

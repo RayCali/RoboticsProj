@@ -16,6 +16,7 @@ if __name__=="__main__":
             isFound(),
             Or([
                 isAtToy(),
+                doMoveToToy()
             ])
         ])
     )
