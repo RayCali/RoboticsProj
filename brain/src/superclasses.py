@@ -19,7 +19,6 @@ class Action(Leaf):
     def __init__(self) -> None:
         super().__init__()
     def tick(self):
-        loginfo(self)
         try:
             res: RequestResponse = self.service()
         except ServiceException as e:
@@ -32,7 +31,6 @@ class Condition(Leaf):
     def __init__(self) -> None:
         super().__init__()
     def tick(self):
-        loginfo(self)
         try:
             res: RequestResponse = self.service()
         except ServiceException as e:

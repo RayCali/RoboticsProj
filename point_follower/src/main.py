@@ -34,14 +34,12 @@ class path(object):
         self.objectpose = PoseStamped()
         self.listen_once = False
         self.updated_first_pose = PoseStamped()
-        self.areWeThereYet = rospy.Service("atToy", Request, self.getAreWeThereYet)
+        self.atToy_srv = rospy.Service("/atToy", Request, self.arrivedAtToy)
 
-        
+        self.moveToToy_srv = rospy.Service('/moveToToy', Moveto, self.doMoveToToyResponse)
 
-        self.moveTo = rospy.Service('moveToToy', Moveto, self.doMoveToToyResponse)
-
-        self.moveto_pub = rospy.Publisher('/moveToToy', PoseStamped, queue_size=1)
-        self.moveto_sub = rospy.Subscriber('/moveToToy', PoseStamped, self.tracker, queue_size=1)
+        self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
+        self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
         
         self.STATE = FAILURE
         self.running = False
@@ -61,7 +59,7 @@ class path(object):
                 self.running = False
                 return MovetoResponse(SUCCESS)
 
-    def getAreWeThereYet(self, req: Request):
+    def arrivedAtToy(self, req: Request):
         if self.STATE == SUCCESS:
             self.STATE = RUNNING
             return RequestResponse(SUCCESS)

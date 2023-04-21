@@ -13,7 +13,7 @@ from objects import Plushie, Cube, Ball, Box, Movable, Toy
 from typing import Dict
 from utilities import normalized
 from msg_srv_pkg.msg import objectPoseStampedLst
-from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse
+from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse, Pick, PickResponse
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
@@ -57,20 +57,21 @@ class Memory:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.anchor_sub = rospy.Subscriber("/boundaries", Marker, self.doSetAnchorAsDetected) 
+        self.anchor_sub = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
 
-        self.moveto_srv = rospy.Service("moveto", Moveto, self.doMoveTo)
-        self.isLocalized_srv = rospy.Service("isLocalized", Request, self.getIsLocalized)
-        self.doLocalize_srv = rospy.Service("doLocalize", Request, self.doLocalize)
+        self.moveto_srv = rospy.Service("/moveto", Moveto, self.doMoveTo)
+        self.isLocalized_srv = rospy.Service("/isLocalized", Request, self.getIsLocalized)
+        self.doLocalize_srv = rospy.Service("/doLocalize", Request, self.doLocalize)
 
-        
-        self.isnotpair_srv = rospy.Service("notpair", Request, self.getNotPair)
+        self.isnotpair_srv = rospy.Service("/notpair", Request, self.getNotPair)
 
-        self.ispicked_srv = rospy.Service("ispicked", Request, self.getIsPicked)
-        self.isInFrontToy_srv = rospy.Service("isInFrontToy", Request, self.getIsInFrontToy)
-        self.pathPlanner_proxy = rospy.ServiceProxy("pathPlanner", Moveto)
+        self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
+        self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
+        self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
+
+        self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -78,8 +79,15 @@ class Memory:
         self.xThreshold = 0.10
         self.yThreshold = 0.10
         self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
+        self.anchordetected = False
     
-    def doInformOfPick(self):
+    def getIsFound(self, req):
+        print(len(self.toys) > 1)
+        if len(self.toys) > 1:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    
+    def doInformOfPick(self, req):
         if self.alreadyPickingUpAnObjectSinceBefore:
             return Pick(RUNNING)
         else:
@@ -128,8 +136,9 @@ class Memory:
         return RequestResponse(STATUS)
     
     def doLocalize(self, req):
-        return RequestResponse(RUNNING)
+        return RequestResponse(SUCCESS)
     def getIsLocalized(self, req):
+        print(self.anchordetected)
         if self.anchordetected:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
@@ -235,7 +244,8 @@ class Memory:
                 return
         self.putObject(pose, id)
     
-    def doSetAnchorAsDetected(self, pose: PoseStamped):
+    def doSetAnchorAsDetected(self, msg):
+        print("Anchor detected!")
         self.anchordetected = True
 
 

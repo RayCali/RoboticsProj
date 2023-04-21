@@ -13,20 +13,13 @@ if __name__=="__main__":
                 isLocalized(),
                 doLocalize()
             ]),
+            isFound(),
             Or([
-                isNotPair(),
-                And([
-                    Or([
-                        isPicked(),
-                        isInFrontToy(),
-                        doMoveToGoal(),
-                    ])
-                ])
+                isAtToy(),
             ])
-
         ])
     )
     while not rospy.is_shutdown():
         rospy.init_node("behavior_tree")
         root.tick()
-        rospy.sleep(5)
+        rospy.sleep(2)

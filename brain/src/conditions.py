@@ -7,7 +7,11 @@ from msg_srv_pkg.srv import Request, RequestResponse
 class isLocalized(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('isLocalized', Request)
+        self.service = rospy.ServiceProxy('/isLocalized', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        return res
+
 
 class isNotPair(Condition):
     def __init__(self) -> None:
@@ -23,3 +27,21 @@ class isInFrontToy(Condition):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy('isInFrontToy', Request)
+
+
+class isFound(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/isFound', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        return res
+    
+class isAtToy(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/atToy', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print(res)
+        return res

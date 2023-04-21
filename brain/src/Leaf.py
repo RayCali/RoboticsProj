@@ -9,7 +9,7 @@ class Leaf:
         pass
     def tick(self) -> int:
         return RUNNING
-    def getStatusFromNum(num):
+    def getStatusFromNum(self, num):
         num = int(num)
         if num == SUCCESS:
             return SUCCESS
