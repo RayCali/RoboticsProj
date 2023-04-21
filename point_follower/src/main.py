@@ -23,7 +23,7 @@ class path(object):
         # ROS Publishers
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal, queue_size=1)
-        self.object_finalpose = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
+        self.object_finalpose_pub = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.s =rospy.ServiceProxy('/no_collision', NoCollision)
@@ -43,21 +43,27 @@ class path(object):
         
         self.STATE = FAILURE
         self.running = False
+        self.objectpose_finalpose = None
 
-    def doMoveToToyResponse(self, req: Moveto):
+        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doSaveObjectpose_final, queue_size=1)
+    
+
+    def doMoveToToyResponse(self, req):
         if not self.running:
+            if self.object_finalpose is None:
+                return RequestResponse(FAILURE) 
             self.running = True
             self.moveto_pub(Moveto.goal)
-            return MovetoResponse(RUNNING)
+            return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
-                return MovetoResponse(RUNNING)
+                return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
-                return MovetoResponse(FAILURE)
+                return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
-                return MovetoResponse(SUCCESS)
+                return RequestResponse(SUCCESS)
 
     def arrivedAtToy(self, req: Request):
         if self.STATE == SUCCESS:
@@ -65,6 +71,12 @@ class path(object):
             return RequestResponse(SUCCESS)
         
         return RequestResponse(FAILURE)
+    
+    def doSaveObjectpose_final(self, msg):
+        if len(msg.PoseStamped) == 0:
+            rospy.loginfo("No object detected")
+            exit()
+        self.object_finalpose = msg.PoseStamped[0]
 
 
     # def Radius(self, msg:Float64):
@@ -308,7 +320,7 @@ class path(object):
         self.distance_to_object = 500
         trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
         final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
-        self.object_finalpose.publish(final_pose)
+        self.object_finalpose_pub.publish(final_pose)
         rospy.loginfo(self.objectpose)
         self.STATE = SUCCESS
     
