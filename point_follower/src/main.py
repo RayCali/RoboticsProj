@@ -14,8 +14,9 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse
+from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse, Request, RequestResponse
 from std_msgs.msg import Float64
+SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 class path(object):
     def __init__(self):
@@ -28,12 +29,44 @@ class path(object):
         self.s =rospy.ServiceProxy('/no_collision', NoCollision)
         self.done_once = False
         self.rate = rospy.Rate(20)
-        s = rospy.Service('/moveto', Moveto, self.tracker)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.radius_sub = float(1)
         self.objectpose = PoseStamped()
         self.listen_once = False
         self.updated_first_pose = PoseStamped()
+        self.areWeThereYet = rospy.Service("atToy", Request, self.getAreWeThereYet)
+
+        
+
+        self.moveTo = rospy.Service('moveToToy', Moveto, self.doMoveToToyResponse)
+
+        self.moveto_pub = rospy.Publisher('/moveToToy', PoseStamped, queue_size=1)
+        self.moveto_sub = rospy.Subscriber('/moveToToy', PoseStamped, self.tracker, queue_size=1)
+        
+        self.STATE = FAILURE
+        self.running = False
+
+    def doMoveToToyResponse(self, req: Moveto):
+        if not self.running:
+            self.running = True
+            self.moveto_pub(Moveto.goal)
+            return MovetoResponse(RUNNING)
+        if self.running:
+            if self.STATE == RUNNING:
+                return MovetoResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return MovetoResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return MovetoResponse(SUCCESS)
+
+    def getAreWeThereYet(self, req: Request):
+        if self.STATE == SUCCESS:
+            self.STATE = RUNNING
+            return RequestResponse(SUCCESS)
+        
+        return RequestResponse(FAILURE)
 
 
     # def Radius(self, msg:Float64):
@@ -64,16 +97,15 @@ class path(object):
     
     
     
-    def tracker(self,req:MovetoRequest):
+    def tracker(self, msg: PoseStamped):
         if not self.done_once:
-            self.cam_pose = PoseStamped()
+            self.cam_pose = msg
             self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
             #     rospy.loginfo("No object detected")
             #     exit()
             
-            self.cam_pose = req.goal
             # self.rate = rospy.Rate(20)
             # rospy.Time(0) = msg.header.stamp
             # rospy.Time(0) = msg.header.stamp
@@ -280,7 +312,8 @@ class path(object):
         final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
         self.object_finalpose.publish(final_pose)
         rospy.loginfo(self.objectpose)
-        return MovetoResponse(True,"success")
+        self.STATE = SUCCESS
+    
         # self.rate.sleep()
         # try:
         #     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
