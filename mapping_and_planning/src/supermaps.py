@@ -10,7 +10,9 @@ import tf_conversions
 from geometry_msgs.msg import PoseStamped
 from msg_srv_pkg.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
 import math
-
+from visualization_msgs.msg import Marker
+import tf2_geometry_msgs
+from geometry_msgs.msg import PointStamped
 
 
 class SuperMap:
@@ -19,6 +21,7 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
         s = rospy.Service('/no_collision', NoCollision, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
@@ -208,33 +211,50 @@ class SuperMap:
                             inside = not inside
             p1x,p1y = p2x,p2y
         return inside
-    def __lineitup(self, poly):
+    def __lineitup(self, msg:Marker):
+        rospy.loginfo("LINE IT UP")
+        poly = msg
         prevpoint = None
         margin = 0.3
         for i in range(len(poly.points)):
+            #rospy.loginfo(i)
+            trans = self.tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0))
+            apoint = PoseStamped()
+            apoint.header.frame_id = "arucomap"
+            apoint.pose.position.x = poly.points[i].x
+            apoint.pose.position.y = poly.points[i].y
+            apoint.pose.position.z =0
+            apoint_new = tf2_geometry_msgs.do_transform_pose(apoint,trans)
+            poly.points[i].x = apoint_new.pose.position.x
+            poly.points[i].y = apoint_new.pose.position.y
+            rospy.loginfo(poly.points[i])
             if i == 0:
                 prevpoint = poly.points[i]
+            elif i == 6:
+                 break
             else:
                 if poly.points[i].x < prevpoint.x and poly.points[i].y > prevpoint.y:#negative k
                     t = prevpoint
                     b = poly.points[i]
-                    angle = math.atan2(t.x-b.x, t.y-b.y)
-                    minitargetx = b.y + margin*math.cos(angle)
-                    minitargety = b.x + margin*math.sin(angle)
+                    angle = math.atan2(t.y-b.y, t.x-b.x)
+                    minitargetx = b.x + margin*math.cos(angle)
+                    minitargety = b.y + margin*math.sin(angle)
+                    rospy.loginfo("4")
                     while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
                         self.matrix[y_ind, x_ind] = 6
                         b.x = minitargetx
                         b.y = minitargety
-                        minitargetx = b.y + margin*math.cos(angle)
-                        minitargety = b.x + margin*math.sin(angle)
+                        minitargetx = b.x + margin*math.cos(angle)
+                        minitargety = b.y + margin*math.sin(angle)
                 elif poly.points[i].x < prevpoint.x and poly.points[i].y < prevpoint.y: #positive k
                     t = prevpoint
                     b = poly.points[i]
                     angle = math.atan2(t.y-b.y, t.x-b.x)
                     minitargetx = b.x + margin*math.cos(angle)
                     minitargety = b.y + margin*math.sin(angle)
+                    rospy.loginfo("2")
                     while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -249,6 +269,7 @@ class SuperMap:
                     angle = math.atan2(t.y-b.y, t.x-b.x)
                     minitargetx = b.x + margin*math.cos(angle)
                     minitargety = b.y + margin*math.sin(angle)
+                    rospy.loginfo("3")
                     while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -260,17 +281,18 @@ class SuperMap:
                 elif poly.points[i].x > prevpoint.x and poly.points[i].y < prevpoint.y:# negative k
                     t = poly.points[i]
                     b = prevpoint
-                    angle = math.atan2(t.x-b.x, t.y-b.y)
-                    minitargetx = b.y + margin*math.cos(angle)
-                    minitargety = b.x + margin*math.sin(angle)
+                    angle = math.atan2(t.y-b.y, t.x-b.x)
+                    minitargetx = b.x + margin*math.cos(angle)
+                    minitargety = b.y + margin*math.sin(angle)
+                    rospy.loginfo("4")
                     while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
                         self.matrix[y_ind, x_ind] = 6
                         b.x = minitargetx
                         b.y = minitargety
-                        minitargetx = b.y + margin*math.cos(angle)
-                        minitargety = b.x + margin*math.sin(angle)
+                        minitargetx = b.x + margin*math.cos(angle)
+                        minitargety = b.y + margin*math.sin(angle)
                 elif poly.points[i].x == prevpoint.x:
                     if poly.points[i].y > prevpoint.y:
                         t = poly.points[i]
@@ -305,7 +327,9 @@ class SuperMap:
                         b.y = minitargety
                         minitargetx = b.x + margin
                         minitargety = b.y
-                prevpoint = poly.points[i]
+            prevpoint = poly.points[i]
+            rospy.loginfo(prevpoint)
+                
     
     def __getImage(self) -> np.array:
         image = np.array([[(255, 255, 255) for i in range(self.grid.info.width)] for i in range(self.grid.info.height)], dtype=np.uint8)

@@ -46,7 +46,6 @@ class Map(SuperMap):
             
 
     def __doWorkspaceCallback(self, msg: Marker):
-        self.__lineitup(msg.points)
         poly = msg.points[:-1]
         poly_real = []
         # for i in range(len(poly)):

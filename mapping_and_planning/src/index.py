@@ -17,12 +17,12 @@ from global_explorer import getMostValuedCell
 if __name__ == "__main__":
 
     rospy.init_node("mapping_and_planning")
-    m = Map(True, 11, 11, 0.05)
+    m = Map(True, 12, 12, 0.05)
     rospy.sleep(1)
     m.doPublish()
     # print(getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height))
     while True:
         rospy.sleep(0.05)
-        rospy.loginfo("Updating map")
+        #rospy.loginfo("Updating map")
         m.doPublish()
         
