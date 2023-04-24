@@ -1,3 +1,4 @@
 geometry_msgs/PoseStamped pose
 ---
-int64 success
+bool success
+string msg
