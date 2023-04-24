@@ -24,6 +24,7 @@ class Memory:
         self.cubes: Dict[Cube] = {}
         self.balls: Dict[Ball] = {}
         self.toys: Dict[Toy] = {}
+        self.toys_buffer = []
         self.boxes: Dict[Box] = {}
         self.id2Object = {
            0 : "Binky",
@@ -67,8 +68,8 @@ class Memory:
 
         self.isnotpair_srv = rospy.Service("/notpair", Request, self.getNotPair)
 
-        self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
-        self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
+        # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
+        # self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
         self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
@@ -83,9 +84,9 @@ class Memory:
     
     def getIsFound(self, req):
         if len(self.toys) > 0:
-            print("Found more than one toy")
+            print("Found a toy")
             return RequestResponse(SUCCESS)
-        print("Found less than one toy")
+        print("NO TOY!")
         return RequestResponse(FAILURE)
     
     def doInformOfPick(self, req):
@@ -137,10 +138,12 @@ class Memory:
         return RequestResponse(STATUS)
     
     def doLocalize(self, req):
+        if not self.anchordetected:
+            return RequestResponse(RUNNING)
         return RequestResponse(SUCCESS)
     def getIsLocalized(self, req):
-        print("anchor detected")
         if self.anchordetected:
+            print("anchor detected")
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     def doSetAnchorAsDetected(self, msg):
@@ -188,6 +191,20 @@ class Memory:
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
+
+    def putObjectinBuffer(self, pose: PoseStamped, id: int):
+        count = 0
+        for toy_pose, toy_id in self.toys_buffer:
+            if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
+                if toy_id == id:
+                    count += 1
+        if count < 5:
+            self.toys_buffer.append((pose,id))
+        if count > 4:
+            self.putObject(pose,id)
+            self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
+
+
         
 
     def putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
@@ -205,6 +222,7 @@ class Memory:
         for pose, id in zip(msg.PoseStamped, msg.object_class):
             id = self.object2Id[id]
             if id < 8:
+
                 self.putInDictsIfNotAlreadyIn(pose,id)
             elif id == 8:
                 boxObject = Box(pose, self.id2Object[id] + str(Box.count), id)
@@ -245,7 +263,8 @@ class Memory:
                     # A missclassification has occured
                 #    self.targetHasBecomeInvalid = True
                 return
-        self.putObject(pose, id)
+            
+        self.putObjectinBuffer(pose, id)
     
 
 if __name__ == "__main__":

@@ -43,5 +43,14 @@ class isAtToy(Condition):
         self.service = rospy.ServiceProxy('/atToy', Request)
     def tick(self):
         res = Condition.tick(self)
-        print(res)
+        print("atToy? ", res)
+        return res
+    
+class isPicked(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/isPicked', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print("isPicked?, ", res)
         return res

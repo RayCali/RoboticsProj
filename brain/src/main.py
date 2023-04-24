@@ -17,6 +17,10 @@ if __name__=="__main__":
             Or([
                 isAtToy(),
                 doMoveToToy()
+            ]),
+            Or([
+                isPicked(),
+                doPickup()
             ])
         ])
     )

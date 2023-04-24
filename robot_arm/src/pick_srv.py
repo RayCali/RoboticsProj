@@ -15,16 +15,15 @@ import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
-from msg_srv_pkg.srv import Pick, PickRequest, PickResponse
+from msg_srv_pkg.srv import Pick, PickRequest, PickResponse, Request, RequestResponse, RequestRequest
 from utils import *
 
 class Picker():
 
-    joint_states = None
-    pick_status = None
-
     def __init__(self) -> None:
-        rospy.Service("/pickup", Pick, self.handle_pickup_req)
+        # rospy.Service("/pickup", Pick, self.handle_pickup_req)
+        rospy.Service("/pickToy", Request, self.doPickupToy)
+        rospy.Service("/isPicked", Request, self.isPicked)
 
         self.jointStateSub = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
 
@@ -36,18 +35,57 @@ class Picker():
         tfbroadcaster = tf2_ros.TransformBroadcaster()
         rate = rospy.Rate(10) # 10hz
 
+        self.pickPose_pub = rospy.Publisher('/pick_pose', PoseStamped, queue_size=1)
+        self.doPickSub = rospy.Subscriber('/pick_pose', PoseStamped, self.handle_pickup_req)
 
+        self.joint_states = None
+        self.pick_status = None
+        self.running = False
+        self.pickPose = None
+        self.STATE = FAILURE
+
+        self.pickPose_sub = rospy.Subscriber('/object_finalpose', PoseStamped, self.doSavePickPose)
+
+    
+    def doSavePickPose(self, msg: PoseStamped):
+        self.pickPose = msg
+
+    def isPicked(self, msg: RequestRequest):
+        if self.pick_status == SUCCESS:
+            return RequestResponse(SUCCESS)
+        else:
+            return RequestResponse(FAILURE)
+
+
+    def doPickupToy(self, msg: RequestRequest):
+        if not self.running:
+            if self.pickPose is None or (rospy.Time.now().secs - self.pickPose.header.stamp.secs > 5):
+                return RequestResponse(FAILURE)
+            self.running = True
+            self.STATE = RUNNING
+            self.pickPose_pub.publish(self.pickPose)
+            return RequestResponse(RUNNING)
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+    
     def joint_state_callback(self, msg: JointState):
         self.joint_states = msg
 
 
-    def handle_pickup_req(self, req: PickRequest):
+    def handle_pickup_req(self, msg: PoseStamped):
         rospy.loginfo("Let's do some picking!")
 
         if self.joint_states.position[-1] == gripper_open:
 
             # transform pose given in base_link to arm_base
-            pose_stamped = req.pose
+            pose_stamped = msg
             print("BASELINK_POSE: ", pose_stamped)
             # pose_stamped.pose.position.x = 0.05
             stamp = pose_stamped.header.stamp
@@ -105,6 +143,22 @@ class Picker():
                 self.trajectory_client.wait_for_result()
 
         else:
-            return PickResponse(False, "Gripper is already closed, cannot pick up object.")
+            self.STATE = FAILURE
+            return 
 
-        return PickResponse(True, "Success")
+        self.STATE = SUCCESS
+        return 
+    
+
+if __name__ == "__main__":
+    rospy.init_node("pickup")
+    rospy.loginfo("Starting pickup node")
+    tfBuffer = tf2_ros.Buffer()
+    tflistener = tf2_ros.TransformListener(tfBuffer)
+    try:
+        picker = Picker()
+        
+    except rospy.ROSInterruptException:
+        pass
+    
+    rospy.spin()

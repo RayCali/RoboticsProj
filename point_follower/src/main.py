@@ -43,17 +43,18 @@ class path(object):
         
         self.STATE = FAILURE
         self.running = False
-        self.objectpose_finalpose = None
+        self.objectpose = None
+        self.objectpose_map = None
 
-        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doSaveObjectpose_final, queue_size=1)
+        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
         if not self.running:
-            if self.objectpose_finalpose is None:
+            if self.objectpose_map is None:
                 return RequestResponse(FAILURE) 
             self.running = True
-            self.moveto_pub.publish(self.objectpose_finalpose)
+            self.moveto_pub.publish(self.objectpose_map)
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -67,22 +68,22 @@ class path(object):
 
     def arrivedAtToy(self, req: Request):
         if self.STATE == SUCCESS:
-            self.STATE = FAILURE
+            # self.STATE = FAILURE
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
-    def doSaveObjectpose_final(self, msg: objectPoseStampedLst):
+    def doSaveObjectpose(self, msg: objectPoseStampedLst):
         if len(msg.PoseStamped) == 0:
             rospy.loginfo("No object detected!!!!!!!!!!!!!!")
             exit()
         rospy.loginfo("Object detected")
-        self.objectpose_finalpose = msg.PoseStamped[0]
+        if self.objectpose_map is None or (rospy.Time.now().secs - self.objectpose_map.header.stamp.secs > 1):
+            self.objectpose_map = msg.PoseStamped[0]
 
 
     # def Radius(self, msg:Float64):
     #     self.radius_sub = msg.data
     def distance_to_goal(self,msg):
-        rospy.loginfo("Distance to object: {}".format(msg.PoseStamped[0].pose.position.x))
         #self.distance_to_object = math.sqrt(msg.pose.position.x**2 + msg.pose.position.y**2)
         i = 50
         if self.listen_once:
@@ -102,13 +103,9 @@ class path(object):
             #rospy.loginfo("Label: {}".format(msg.object_class[0]))
     
     
-    
-    
-    
-    
-    
-    
     def tracker(self, msg: PoseStamped):
+        rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        self.STATE = RUNNING
         if not self.done_once:
             self.cam_pose = msg
             self.twist = Twist()
@@ -321,9 +318,11 @@ class path(object):
         self.distance_to_object = 500
         trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
         final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
+        final_pose.header.stamp = rospy.Time.now()
         self.object_finalpose_pub.publish(final_pose)
         rospy.loginfo(self.objectpose)
         self.STATE = SUCCESS
+        return
     
         # self.rate.sleep()
         # try:
