@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
 from msg_srv_pkg.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
+import math
 
 
 
@@ -35,7 +36,8 @@ class SuperMap:
             "occupied": 2,
             "toy": 3,
             "box": 4,
-            "outside of workspace": 5
+            "outside of workspace": 5,
+            "on the line": 6
         }
         
         self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
@@ -56,6 +58,10 @@ class SuperMap:
         self.grid.data[self.grid.data == 3] = 50
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
+        # self.grid.data = []
+        # for i in range(self.grid.info.width):
+        #     for ii in range(self.grid.info.height):
+        #         self.grid.data.append(self.__getProbabilityFromMatrixValue(self.matrix[i,ii]))
         return self.grid
     
     def doPublish(self):
@@ -78,6 +84,8 @@ class SuperMap:
             return 75   # box
         if x== 5:
             return 100  # out
+        if x==6:
+            return 40
         else:
             raise Exception("None value in matrix")
 
@@ -200,6 +208,104 @@ class SuperMap:
                             inside = not inside
             p1x,p1y = p2x,p2y
         return inside
+    def __lineitup(self, poly):
+        prevpoint = None
+        margin = 0.3
+        for i in range(len(poly.points)):
+            if i == 0:
+                prevpoint = poly.points[i]
+            else:
+                if poly.points[i].x < prevpoint.x and poly.points[i].y > prevpoint.y:#negative k
+                    t = prevpoint
+                    b = poly.points[i]
+                    angle = math.atan2(t.x-b.x, t.y-b.y)
+                    minitargetx = b.y + margin*math.cos(angle)
+                    minitargety = b.x + margin*math.sin(angle)
+                    while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.y + margin*math.cos(angle)
+                        minitargety = b.x + margin*math.sin(angle)
+                elif poly.points[i].x < prevpoint.x and poly.points[i].y < prevpoint.y: #positive k
+                    t = prevpoint
+                    b = poly.points[i]
+                    angle = math.atan2(t.y-b.y, t.x-b.x)
+                    minitargetx = b.x + margin*math.cos(angle)
+                    minitargety = b.y + margin*math.sin(angle)
+                    while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.x + margin*math.cos(angle)
+                        minitargety = b.y + margin*math.sin(angle)
+                elif poly.points[i].x > prevpoint.x and poly.points[i].y > prevpoint.y: #positive k
+                    t = poly.points[i]
+                    b = prevpoint
+                    angle = math.atan2(t.y-b.y, t.x-b.x)
+                    minitargetx = b.x + margin*math.cos(angle)
+                    minitargety = b.y + margin*math.sin(angle)
+                    while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.x + margin*math.cos(angle)
+                        minitargety = b.y + margin*math.sin(angle)
+                elif poly.points[i].x > prevpoint.x and poly.points[i].y < prevpoint.y:# negative k
+                    t = poly.points[i]
+                    b = prevpoint
+                    angle = math.atan2(t.x-b.x, t.y-b.y)
+                    minitargetx = b.y + margin*math.cos(angle)
+                    minitargety = b.x + margin*math.sin(angle)
+                    while (t.x-b.x) * (t.x-minitargetx) > 0 and (t.y-b.y) * (t.y-minitargety) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.y + margin*math.cos(angle)
+                        minitargety = b.x + margin*math.sin(angle)
+                elif poly.points[i].x == prevpoint.x:
+                    if poly.points[i].y > prevpoint.y:
+                        t = poly.points[i]
+                        b = prevpoint
+                    else: 
+                        t = prevpoint
+                        b = poly.points[i]
+                    minitargetx = b.x
+                    minitargety = b.y + margin
+                    while (t.y-b.y) * (t.y-minitargety) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.x
+                        minitargety = b.y + margin
+                elif poly.points[i].y == prevpoint.y:
+                    if poly.points[i].x > prevpoint.x:
+                        t = poly.points[i]
+                        b = prevpoint
+                    else: 
+                        t = prevpoint
+                        b = poly.points[i]
+                    minitargetx = b.x + margin
+                    minitargety = b.y
+                    while (t.x-b.x) * (t.x-minitargetx) > 0:
+                        x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                        y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                        self.matrix[y_ind, x_ind] = 6
+                        b.x = minitargetx
+                        b.y = minitargety
+                        minitargetx = b.x + margin
+                        minitargety = b.y
+                prevpoint = poly.points[i]
     
     def __getImage(self) -> np.array:
         image = np.array([[(255, 255, 255) for i in range(self.grid.info.width)] for i in range(self.grid.info.height)], dtype=np.uint8)
