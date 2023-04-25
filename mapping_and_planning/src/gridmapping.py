@@ -63,7 +63,7 @@ class Map(SuperMap):
                 #inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
                 path = mpltPath.Path(poly_real)
                 inside = path.contains_points([[point.pose.position.x,point.pose.position.y]])
-                if not inside:
+                if not inside and self.matrix[j,i] != 6:
                     self.matrix[j,i]=5
             
         self.anchordetected = True
