@@ -48,23 +48,23 @@ class Map(SuperMap):
     def __doWorkspaceCallback(self, msg: Marker):
         poly = msg.points[:-1]
         poly_real = []
-        # for i in range(len(poly)):
-        #     poly_real.append((poly[i].x,poly[i].y))
+        for i in range(len(poly)):
+            poly_real.append((poly[i].x,poly[i].y))
 
-        # for i in range(self.grid.info.width):
-        #     for j in range(self.grid.info.height):
-        #         transform = self.tf_buffer.lookup_transform("arucomap", "map", rospy.Time(0), rospy.Duration(2))
-        #         point = PoseStamped()
-        #         point.pose.position.x = self.grid.info.origin.position.x + self.grid.info.resolution*i
-        #         point.pose.position.y = self.grid.info.origin.position.y + self.grid.info.resolution*j
-        #         point.pose.orientation= Quaternion(0,0,0,1)
-        #         point.header.frame_id="map"
-        #         point =  tf2_geometry_msgs.do_transform_pose(point, transform)
-        #         #inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
-        #         path = mpltPath.Path(poly_real)
-        #         inside = path.contains_points([[point.pose.position.x,point.pose.position.y]])
-        #         if not inside:
-        #             self.matrix[j,i]=5
+        for i in range(self.grid.info.width):
+            for j in range(self.grid.info.height):
+                transform = self.tf_buffer.lookup_transform("arucomap", "map", rospy.Time(0), rospy.Duration(2))
+                point = PoseStamped()
+                point.pose.position.x = self.grid.info.origin.position.x + self.grid.info.resolution*i
+                point.pose.position.y = self.grid.info.origin.position.y + self.grid.info.resolution*j
+                point.pose.orientation= Quaternion(0,0,0,1)
+                point.header.frame_id="map"
+                point =  tf2_geometry_msgs.do_transform_pose(point, transform)
+                #inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
+                path = mpltPath.Path(poly_real)
+                inside = path.contains_points([[point.pose.position.x,point.pose.position.y]])
+                if not inside:
+                    self.matrix[j,i]=5
             
         self.anchordetected = True
         
