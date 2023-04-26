@@ -204,25 +204,28 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
                 if switch:
-                    if self.twist.linear.x < 0.5 and distance>self.twist.linear.x**2/(2*self.deceleration):
+                    if self.twist.linear.x < 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration):
                         self.twist.linear.x += self.acceleration
                         # rospy.loginfo(self.twist.linear.x)
 
-                    elif self.twist.linear.x >= 0.5 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
-                        self.twist.linear.x = 0.5
+                    elif self.twist.linear.x >= 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
+                        self.twist.linear.x = 0.6
 
                     else:
                         self.twist.linear.x -= self.deceleration
                         # rospy.loginfo("Decelerating")
                         # rospy.loginfo(self.twist.linear.x)
                 else:
-                    self.twist.linear.x = 0.2
+                    self.twist.linear.x = 0.15
 
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
+                    # if switch:
                     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    # else:
+                    # self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.updated_first_pose, self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
@@ -251,7 +254,7 @@ class path(object):
                     latest_pose.header.frame_id = "map"
                     latest_pose.pose.position.x = trans.transform.translation.x
                     latest_pose.pose.position.y = trans.transform.translation.y
-                    condition = distance > 0.1
+                    condition = distance > 0.08
 
                     
                 else: 
@@ -260,12 +263,16 @@ class path(object):
                 rospy.loginfo(distance)
                 if math.sqrt(self.inc_x**2 + self.inc_y**2) < 0.3 and switch:
                     self.listen_once=True
+                    self.twist.linear.x = 0
+                    self.twist.angular.z = 0
+                    self.pub_twist.publish(self.twist)
+                    rospy.sleep(1)
                     while self.listen_once:
                         self.twist.linear.x = 0
                         self.twist.angular.z = 0
                         self.pub_twist.publish(self.twist)
                     
-                    condition = distance > 0.1
+                    condition = distance > 0.08
                     switch = False
                     trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
                     latest_pose = PoseStamped()
@@ -279,32 +286,36 @@ class path(object):
             self.pub_twist.publish(self.twist)
             trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
             final_pose_map = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            while math.atan2(self.inc_y, self.inc_x)< -0.01: # or math.atan2(inc_y, inc_x) < -0.2:
+            self.inc_x = final_pose_map.pose.position.x
+            self.inc_y = final_pose_map.pose.position.y
+
+
+            while math.atan2(self.inc_y, self.inc_x)< -0.03: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = -0.7
+                self.twist.angular.z = -0.5
                 #rospy.loginfo("Turning right")
-                #rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map, self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
-            while math.atan2(self.inc_y, self.inc_x) > 0.01: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x) > 0.03: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = 0.7
+                self.twist.angular.z = 0.5
                 #rospy.loginfo("Turning left")
-                #rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
+                rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map, self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
@@ -318,12 +329,15 @@ class path(object):
         self.distance_to_object = 500
         trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
         final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
+        factor = abs(final_pose.pose.position.x / final_pose.pose.position.y)
+        extra_dist_x = 0.025
+        extra_dist_y = extra_dist_x/factor
         if final_pose.pose.position.y<0:
-            final_pose.pose.position.y = final_pose.pose.position.y - 0.005
-            final_pose.pose.position.x = final_pose.pose.position.x + 0.005
+            final_pose.pose.position.y = final_pose.pose.position.y - extra_dist_y
+            final_pose.pose.position.x = final_pose.pose.position.x + extra_dist_x
         else:
-            final_pose.pose.position.y = final_pose.pose.position.y + 0.005
-            final_pose.pose.position.x = final_pose.pose.position.x + 0.005
+            final_pose.pose.position.y = final_pose.pose.position.y + extra_dist_y
+            final_pose.pose.position.x = final_pose.pose.position.x + extra_dist_x
         final_pose.header.stamp = rospy.Time.now()
         self.object_finalpose_pub.publish(final_pose)
         rospy.loginfo(self.objectpose)
