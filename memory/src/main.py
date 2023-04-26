@@ -13,7 +13,7 @@ from objects import Plushie, Cube, Ball, Box, Movable, Toy
 from typing import Dict
 from utilities import normalized
 from msg_srv_pkg.msg import objectPoseStampedLst
-from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse, Pick, PickResponse
+from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
@@ -62,7 +62,7 @@ class Memory:
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
 
-        self.moveto_srv = rospy.Service("/moveto", Moveto, self.doMoveTo)
+        # self.moveto_srv = rospy.Service("/moveto", Moveto, self.doMoveTo)
         self.isLocalized_srv = rospy.Service("/isLocalized", Request, self.getIsLocalized)
         self.doLocalize_srv = rospy.Service("/doLocalize", Request, self.doLocalize)
 
@@ -70,7 +70,7 @@ class Memory:
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
-        self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
+        # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         
@@ -79,24 +79,24 @@ class Memory:
         self.targetHasBecomeInvalid = False
         self.xThreshold = 0.10
         self.yThreshold = 0.10
-        self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
+        # self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
         self.anchordetected = False
     
-    def getIsFound(self, req):
+    def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:
             print("Found a toy")
             return RequestResponse(SUCCESS)
         print("NO TOY!")
         return RequestResponse(FAILURE)
     
-    def doInformOfPick(self, req):
-        if self.alreadyPickingUpAnObjectSinceBefore:
-            return Pick(RUNNING)
-        else:
-            self.alreadyPickingUpAnObjectSinceBefore = True
-    def doMoveToGoal(self, req):
+    # def doInformOfPick(self, req):
+    #     if self.alreadyPickingUpAnObjectSinceBefore:
+    #         return Pick(RUNNING)
+    #     else:
+    #         self.alreadyPickingUpAnObjectSinceBefore = True
+    def doMoveToGoal(self, req: RequestRequest):
         return RequestResponse(RUNNING)    
-    def getIsInFrontToy(self, req):
+    def getIsInFrontToy(self, req: RequestRequest):
         InFrontThreshold_x = 0.15
         InFrontThreshold_y = 0.15
         try:
@@ -110,9 +110,9 @@ class Memory:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
-    def getIsPicked(self, req):
-        return RequestResponse(FAILURE)
-    def getNotPair(self, req):
+    # def getIsPicked(self, req):
+    #     return RequestResponse(FAILURE)
+    def getNotPair(self, req: RequestRequest):
         # TODO: check if there is a valid box-object pair in the memory and return FAILURE if there IS and SUCCESS if ther IS NOT.
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
@@ -137,37 +137,37 @@ class Memory:
         
         return RequestResponse(STATUS)
     
-    def doLocalize(self, req):
+    def doLocalize(self, req: RequestRequest):
         if not self.anchordetected:
             return RequestResponse(RUNNING)
         return RequestResponse(SUCCESS)
-    def getIsLocalized(self, req):
+    def getIsLocalized(self, req: RequestRequest):
         if self.anchordetected:
             print("anchor detected")
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
-    def doSetAnchorAsDetected(self, msg):
+    def doSetAnchorAsDetected(self, msg: MarkerArray):
         self.anchordetected = True
     
-    def doMoveTo(self, req):
-        # TODO: the move to service needs the following functionality
-        # 1) During approach verify that the object is where we found it 
-        # 2) If the object is gone, tell the map to whipe that area and set it to free
-        # 3) If the object is reclassified, change the object class and return failure
+    # def doMoveTo(self, req):
+    #     # TODO: the move to service needs the following functionality
+    #     # 1) During approach verify that the object is where we found it 
+    #     # 2) If the object is gone, tell the map to whipe that area and set it to free
+    #     # 3) If the object is reclassified, change the object class and return failure
         
-        if self.targetHasBecomeInvalid:
-            self.targetHasBecomeInvalid = False
-            return Moveto(FAILURE)
-        req = Moveto()
-        req.goal = self.targetToy.poseStamped
+    #     if self.targetHasBecomeInvalid:
+    #         self.targetHasBecomeInvalid = False
+    #         return Moveto(FAILURE)
+    #     req = Moveto()
+    #     req.goal = self.targetToy.poseStamped
 
-        res = self.pathPlanner_proxy(req)
-        STATUS = res.status
-        if STATUS == FAILURE:
-            # If status returned failure then the goal is unreachable. We need to select a new goal
-            self.targetToy.unreachable = True
-            self.targetToy = None
-        return MovetoResponse(STATUS)
+    #     res = self.pathPlanner_proxy(req)
+    #     STATUS = res.status
+    #     if STATUS == FAILURE:
+    #         # If status returned failure then the goal is unreachable. We need to select a new goal
+    #         self.targetToy.unreachable = True
+    #         self.targetToy = None
+    #     return MovetoResponse(STATUS)
     
     def putObject(self, pose: PoseStamped, id: int):
         object: Movable

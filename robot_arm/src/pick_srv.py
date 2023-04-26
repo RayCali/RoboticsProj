@@ -14,8 +14,7 @@ import math
 import actionlib
 from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
-from std_srvs.srv import Trigger, TriggerRequest, TriggerResponse
-from msg_srv_pkg.srv import Pick, PickRequest, PickResponse, Request, RequestResponse, RequestRequest
+from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from utils import *
 
 class Picker():
@@ -98,7 +97,9 @@ class Picker():
                 return
             print("POSE_BASE: ", pose_base)
             if pose_base.pose.position.x < 0.15:
-                return PickResponse(False, "Object too close to robot")
+                rospy.loginfo("Object too close to base, service call failed!!!")
+                self.STATE = FAILURE
+                return
             # go to hover position
             pos_hover = [pose_base.pose.position.x - 0.02, pose_base.pose.position.y, 0.0]
             q_hover = analyticalIK_lock4(pos_hover)

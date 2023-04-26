@@ -58,11 +58,9 @@ add_message_files(
   objectPoseStampedLst.msg
 )
 
-## Generate services in the 'srv' folder
+## Generate services in the 'srv' folder boom
 add_service_files(
   FILES
-  Moveto.srv
-  Pick.srv
   Request.srv
 )
 

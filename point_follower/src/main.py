@@ -14,7 +14,7 @@ import tf2_geometry_msgs
 import math
 import numpy as np
 import tf
-from msg_srv_pkg.srv import Node, Moveto, MovetoResponse, MovetoRequest, NoCollision, NoCollisionRequest, NoCollisionResponse, Request, RequestRequest, RequestResponse
+from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
@@ -26,7 +26,7 @@ class path(object):
         self.object_finalpose_pub = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
-        self.s =rospy.ServiceProxy('/no_collision', NoCollision)
+        self.s =rospy.ServiceProxy('/no_collision', Request)
         self.done_once = False
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -355,7 +355,7 @@ class path(object):
 if __name__ == "__main__":
     rospy.init_node("point_follower")
     rospy.loginfo("Starting path_tracker node")
-    getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
+    # getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
     tfBuffer = tf2_ros.Buffer()
     tflistener = tf2_ros.TransformListener(tfBuffer)
     try:

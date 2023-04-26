@@ -8,7 +8,7 @@ from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
-from msg_srv_pkg.srv import Request, RequestResponse
+from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
@@ -185,7 +185,7 @@ class SuperMap:
         for i in range(-10,10,1):
             self.matrix[y+i,x] = 2
     
-    def __nocollision(self,req:Request):
+    def __nocollision(self,req:RequestRequest):
         global latestscan
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
