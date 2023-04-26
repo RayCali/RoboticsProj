@@ -46,7 +46,7 @@ class path(object):
         self.objectpose = None
         self.objectpose_map = None
 
-        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+        self.detection_sub = rospy.Subscriber("/toyPoseMap", PoseStamped, self.doSaveObjectpose, queue_size=1)
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
@@ -72,13 +72,13 @@ class path(object):
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
-    def doSaveObjectpose(self, msg: objectPoseStampedLst):
-        if len(msg.PoseStamped) == 0:
-            rospy.loginfo("No object detected!!!!!!!!!!!!!!")
-            exit()
+    def doSaveObjectpose(self, msg: PoseStamped):
+        # if len(msg) == 0:
+        #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
+        #     exit()
         rospy.loginfo("Object detected")
         if self.objectpose_map is None or (rospy.Time.now().secs - self.objectpose_map.header.stamp.secs > 1):
-            self.objectpose_map = msg.PoseStamped[0]
+            self.objectpose_map = msg
 
 
     # def Radius(self, msg:Float64):
@@ -167,7 +167,7 @@ class path(object):
             self.pub_twist.publish(self.twist)
             self.rate.sleep()
             rospy.sleep(1)
-            self.acceleration = 0.01
+            self.acceleration = 0.05
             self.deceleration = 0.05
             try:
                 self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
@@ -204,19 +204,19 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
                 if switch:
-                    if self.twist.linear.x < 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration):
+                    if self.twist.linear.x < 0.5 and distance>self.twist.linear.x**2/(2*self.deceleration):
                         self.twist.linear.x += self.acceleration
                         # rospy.loginfo(self.twist.linear.x)
 
-                    elif self.twist.linear.x >= 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
-                        self.twist.linear.x = 0.6
+                    elif self.twist.linear.x >= 0.5 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
+                        self.twist.linear.x = 0.5
 
                     else:
                         self.twist.linear.x -= self.deceleration
                         # rospy.loginfo("Decelerating")
                         # rospy.loginfo(self.twist.linear.x)
                 else:
-                    self.twist.linear.x = 0.15
+                    self.twist.linear.x = 0.2
 
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
@@ -279,7 +279,7 @@ class path(object):
             self.pub_twist.publish(self.twist)
             trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
             final_pose_map = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            while math.atan2(self.inc_y, self.inc_x)< -0.005: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x)< -0.01: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
                 #rospy.loginfo("Turning right")
@@ -295,7 +295,7 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
-            while math.atan2(self.inc_y, self.inc_x) > 0.005: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x) > 0.01: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.7
                 #rospy.loginfo("Turning left")
@@ -318,6 +318,12 @@ class path(object):
         self.distance_to_object = 500
         trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
         final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
+        if final_pose.pose.position.y<0:
+            final_pose.pose.position.y = final_pose.pose.position.y - 0.005
+            final_pose.pose.position.x = final_pose.pose.position.x + 0.005
+        else:
+            final_pose.pose.position.y = final_pose.pose.position.y + 0.005
+            final_pose.pose.position.x = final_pose.pose.position.x + 0.005
         final_pose.header.stamp = rospy.Time.now()
         self.object_finalpose_pub.publish(final_pose)
         rospy.loginfo(self.objectpose)
