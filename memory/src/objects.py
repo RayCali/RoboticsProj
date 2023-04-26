@@ -11,6 +11,7 @@ class Movable:
         self.poseStamped: PoseStamped = pose
         self.name: str = None
         self.id: int = id
+        self.unreachable = False
 
 class Toy(Movable):
     count = 0

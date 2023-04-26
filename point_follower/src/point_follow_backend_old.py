@@ -278,7 +278,7 @@ class path(object):
 if __name__ == "__main__":
     rospy.init_node("point_follower")
     rospy.loginfo("Starting path_tracker node")
-    getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
+    # getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
     tfBuffer = tf2_ros.Buffer()
     tflistener = tf2_ros.TransformListener(tfBuffer)
     try:

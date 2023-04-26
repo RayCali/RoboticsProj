@@ -1,0 +1,24 @@
+->
+|    ?
+|    |    (isLocalized)
+|    |    [doLocalize()]
+|    ?
+|    |    (isNotPair)
+|    |    ->
+|    |    |    ?
+|    |    |    |    (isPicked)
+|    |    |    |    (isInFrontToy)
+|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    ?
+|    |    |    |    (isPicked)
+|    |    |    |    [doPickup()]
+|    |    |    ?
+|    |    |    |    (isInFrontBox)
+|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    ?
+|    |    |    |    (isPlaced)
+|    |    |    |    [doPlace()]
+|    |    |    (isNotPair)
+|    ?
+|    |    (isExplored)
+|    |    [doExplore()]

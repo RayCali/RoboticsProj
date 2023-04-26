@@ -46,7 +46,7 @@ class Detector(nn.Module):
         # output of mobilenet_v2 will be 1280x23x40 for 720x1280 input images
         # output of mobilenet_v2 will be 1280x15x20 for 480x640 input images 
 
-        self.head = nn.Conv2d(in_channels=1280, out_channels=14, kernel_size=1)
+        self.head = nn.Conv2d(in_channels=1280, out_channels=13, kernel_size=1)
         # 1x1 Convolution to reduce channels to out_channels without changing H and W
 
         # 1280x15x20 -> 5x15x20, where each element 5 channel tuple corresponds to

@@ -61,11 +61,7 @@ add_message_files(
 ## Generate services in the 'srv' folder boom
 add_service_files(
   FILES
-  Moveto.srv
-  Node.srv
-  Pick.srv
-  Place.srv
-  NoCollision.srv
+  Request.srv
 )
 
 ## Generate actions in the 'action' folder

@@ -1,0 +1,15 @@
+<launch>
+    <arg name="motor_left_port" default="4"/>
+    <arg name="motor_right_port" default="2"/>
+    
+    <arg name="imu_port" default="0"/>
+    <node pkg="control" type="cartesian_controller.py" name="cartesian_controller" output="screen"/>
+    <node pkg="localization" type="startup.py" name="aruco_node" output="screen"/>
+    <node pkg="control" type="inside_workspace.py" name="inside_workspace" output="screen"/>
+    <node pkg="mapping_and_planning" type="main.py" name="mapping_and_planning" output="screen"/>
+    <node pkg="mapping_and_planning" type="simulating_grumpy.py" name="simulating_grumpy" output="screen"/>
+    <include file="$(find odometry)/launch/odometry.launch"></include>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="arm_base_publisher" args="-0.085 -0.05 0.059 0 0 0 1 base_link arm_base" />
+</launch>
+

@@ -8,8 +8,8 @@ from sensor_msgs.msg import LaserScan
 import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
-from msg_srv_pkg.srv import NoCollision, NoCollisionResponse, NoCollisionRequest
-
+from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
+SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
 class SuperMap:
@@ -18,7 +18,7 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-        s = rospy.Service('/no_collision', NoCollision, self.__nocollision)
+        s = rospy.Service('/no_collision', Request, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
         
@@ -38,7 +38,7 @@ class SuperMap:
             "outside of workspace": 5
         }
         
-        self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the center/origin of the grid 
+        self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the real-world pose of the
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
@@ -56,6 +56,7 @@ class SuperMap:
         self.grid.data[self.grid.data == 3] = 50
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
+
         return self.grid
     
     def doPublish(self):
@@ -133,9 +134,6 @@ class SuperMap:
 
                 
             self.grid.header.stamp = rospy.Time.now()
-    def __doEmptyScanCallback(self):
-
-        return
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []
@@ -175,14 +173,25 @@ class SuperMap:
         for i in range(lower, lower + boxSize, 1):
             for ii in range(lower, lower + boxSize, 1):
                 self.matrix[i, ii] = 1
+
+        lower = int(min(self.grid.info.width, self.grid.info.height) / 2)
+        transform = self.tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
+        offset = 0
+        x = transform.transform.translation.x + 1 + offset - self.grid.info.origin.position.x
+        y = transform.transform.translation.y - self.grid.info.origin.position.y
+        x = int(x/self.grid.info.resolution)
+        y = int(y/self.grid.info.resolution)
+        
+        for i in range(-10,10,1):
+            self.matrix[y+i,x] = 2
     
-    def __nocollision(self,req:NoCollisionRequest):
+    def __nocollision(self,req:RequestRequest):
         global latestscan
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
-                    return NoCollisionResponse(False)
-        return NoCollisionResponse(True)
+                    return RequestResponse(FAILURE)
+        return RequestResponse(SUCCESS)
 
 
     def point_inside_polygon(self,x,y,poly):

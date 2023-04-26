@@ -6,6 +6,9 @@ from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 from typing import List
 import matplotlib.path as mpltPath
+from config import SUCCESS, RUNNING, FAILURE
+from visualization_msgs.msg import Marker
+
 class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         super().__init__(plot, width,height,resolution)
@@ -14,7 +17,7 @@ class Map(SuperMap):
         self.class_dictionary = {
             "Binky" : 3,
             "Hugo" : 3,
-            "Slushy" : 3,
+            "Slush" : 3,
             "Muddles": 3,
             "Kiki": 3,
             "Oakie": 3,
@@ -67,27 +70,3 @@ class Map(SuperMap):
                     self.matrix[j,i]=5
             
         self.anchordetected = True
-        
-        
-        # workspace = msg.points[:-1]
-        # index = 3
-        # point = PoseStamped()
-        # point.pose.position.x = workspace[index].x
-        # point.pose.position.y = workspace[index].y
-        # point.pose.orientation = Quaternion(0,0,0,1)
-        # point.header.frame_id= "arucomap"
-        # transform = self.tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
-        # point =  tf2_geometry_msgs.do_transform_pose(point, transform)
-        # roll,pitch,yaw = tf_conversions.transformations.euler_from_quaternion([0,0,0,1])
-        # yaw = yaw + math.pi/2
-        # q = tf_conversions.transformations.quaternion_from_euler(roll,pitch,yaw)
-        # rospy.loginfo(q)
-        # # q = Quaternion(0,0,0,1)
-        # self.grid.info.origin = Pose(Point(point.pose.position.x, point.pose.position.y, 0.0), Quaternion(q[0],q[1],q[2],q[3]))
-        
-        # for pose in msg.poses:
-        #     x = pose.position.x
-        #     y = pose.position.y
-        #     x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-        #     y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-        #     self.matrix[y_ind, x_ind] = 2
