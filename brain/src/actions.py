@@ -5,10 +5,13 @@ import rospy
 from std_srvs.srv import SetBool
 from msg_srv_pkg.srv import Request
 
-class doExplore(Action):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy("Explore/srv", Request)
+# class doExplore(Action):
+#     def __init__(self) -> None:
+#         super().__init__()
+#         self.service = rospy.ServiceProxy("doExplore", Request)
+#         res = super().tick()
+#         print("doExplore: ", res)
+#         return res
 
 class doLocalize(Action):
     def __init__(self) -> None:

@@ -63,8 +63,14 @@ class Memory:
         self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
 
         # self.moveto_srv = rospy.Service("/moveto", Moveto, self.doMoveTo)
+
+        # self.isExplored_srv = rospy.Service("/isExplored", Request, self.getIsExplored)
+        # self.doExplore_srv = rospy.Service("/doExplore", Request, self.doExplore)
+
         self.isLocalized_srv = rospy.Service("/isLocalized", Request, self.getIsLocalized)
         self.doLocalize_srv = rospy.Service("/doLocalize", Request, self.doLocalize)
+
+        
 
         self.isnotpair_srv = rospy.Service("/notpair", Request, self.getNotPair)
 
@@ -82,6 +88,11 @@ class Memory:
         self.yThreshold = 0.10
         # self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
         self.anchordetected = False
+    
+    # def doExplore(self, req: RequestRequest):
+    #     return RequestResponse(SUCCESS)
+    
+    # def getIsExplored(self, req: RequestRequest):
     
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:

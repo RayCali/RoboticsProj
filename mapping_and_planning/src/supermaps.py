@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import tf_conversions
 from geometry_msgs.msg import PoseStamped
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
+from global_explorer import getMostValuedCell 
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
@@ -21,7 +22,7 @@ class SuperMap:
         s = rospy.Service('/no_collision', Request, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
-        
+        self.ones = True
         self.matrix = np.zeros((width, height), dtype=np.int8)
         
         self.grid = OccupancyGrid()
@@ -46,8 +47,8 @@ class SuperMap:
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
     
         
-        if plot:
-            self.__doDrawBox()
+        # if plot:
+        #     self.__doDrawBox()
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()
         self.grid.data[self.grid.data == 0] = 20
@@ -56,6 +57,8 @@ class SuperMap:
         self.grid.data[self.grid.data == 3] = 50
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
+        if self.ones:
+            explorer_info = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height))
 
         return self.grid
     
@@ -134,6 +137,9 @@ class SuperMap:
 
                 
             self.grid.header.stamp = rospy.Time.now()
+        
+            
+
     def __doDrawFreespace(self, r:float, x0: float, y0: float, x1: float, y1:float, x_1_ind:int, y_1_ind:int):
         R = int(r / self.grid.info.resolution)
         indices = []
@@ -164,7 +170,7 @@ class SuperMap:
             rospy.loginfo("  INVALID VALUE FOUND IN THE GRID MATRIX")
             raise Exception("INVALID VALUE FOUND IN THE GRID MATRIX") 
         pass
-    
+        
 
     def __doDrawBox(self):
         boxSize = int(min(self.grid.info.width, self.grid.info.height) / 10) 

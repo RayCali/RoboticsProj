@@ -12,6 +12,10 @@ class isLocalized(Condition):
         res = Condition.tick(self)
         return res
 
+# class isExplored(Condition):
+#     def __init__(self) -> None:
+#         super().__init__()
+#         self.service = rospy.ServiceProxy('isExplored', Request)
 
 class isNotPair(Condition):
     def __init__(self) -> None:

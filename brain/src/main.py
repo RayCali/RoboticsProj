@@ -9,6 +9,10 @@ from utilities import Root, And, Or
 if __name__=="__main__":
     root = Root(
         And([
+            # Or([
+            #     isExplored(),
+            #     doExplore()
+            # ]),
             Or([
                 isLocalized(),
                 doLocalize()
