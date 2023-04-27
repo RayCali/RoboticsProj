@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import numpy as np
 from typing import List
+import rospy
+from gridmapping import Map
 # https://cs231n.github.io/convolutional-networks/
 F = 10  # receptive field
 S = 10   # stride
@@ -55,3 +57,21 @@ def getHeuristicMap(matrix: np.array, mask: np.array, W: int, H: int) -> np.arra
             cell_value = heuristic(m, mask, W, H)
             heuiristic_values.append([cell_value, h, w])            
     return heuiristic_values
+
+def getMaskandMatrix():
+    global mask, mask_value, matrix, matrix_value
+    mask = np.array([[0 for i in range(F)] for i in range(F)])
+    mask = np.array([z+1 for z in range(F)] for y in range(F))
+    matrix = np.array([[0 for i in range(11)] for i in range(11)])
+    matrix_value = sum(matrix)
+    mask_value = sum(mask)
+    return mask, mask_value, matrix, matrix_value
+
+if __name__ == "__main__":
+    
+    rospy.init_node("global_test")
+    rospy.loginfo("Global explorer started")
+    width = height = 11
+    getMaskandMatrix()
+    f(mask_value, matrix_value)
+    getMostValuedCell(matrix, width, height)
