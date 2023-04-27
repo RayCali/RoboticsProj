@@ -69,9 +69,9 @@ if __name__ == "__main__":
 
     while not rospy.is_shutdown():
         test_pose = PoseStamped()
-        test_pose.header.frame_id = "base_link"
+        test_pose.header.frame_id = "arm_base"
         test_pose.header.stamp = rospy.Time.now()
-        test_pose.pose.position.x = 0.1
+        test_pose.pose.position.x = 0.16
         test_pose.pose.position.y = 0.0
         test_pose.pose.position.z = -0.035
         test_pose.pose.orientation.x = 0.0

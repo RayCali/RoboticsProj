@@ -15,7 +15,7 @@ from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from utils import *
 
 
-
+camera_position = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
 
 class ArmCam:
     def __init__(self) -> None:

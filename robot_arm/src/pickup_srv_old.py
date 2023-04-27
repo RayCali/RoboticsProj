@@ -53,7 +53,7 @@ def handle_pickup_req(req: PickRequest):
         if pose_base.pose.position.x < 0.15:
             return PickResponse(False, "Object too close to robot")
         # go to hover position
-        pos_hover = [pose_base.pose.position.x - 0.02, pose_base.pose.position.y, 0.0]
+        pos_hover = [pose_base.pose.position.x, pose_base.pose.position.y, 0.01]
         q_hover = analyticalIK_lock4(pos_hover)
 
         # go to desired position
@@ -67,8 +67,7 @@ def handle_pickup_req(req: PickRequest):
         print("Connected to server")
         goal = FollowJointTrajectoryGoal()
         goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-        goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(0.5)),
-                                JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
+        goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(0.5))]
         
         # goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
 
@@ -77,23 +76,23 @@ def handle_pickup_req(req: PickRequest):
 
         trajectory_client.wait_for_result()
         
-        if trajectory_client.get_state() == GoalStatus.SUCCEEDED and True:
-            # pick up object
-            closeGripper = CommandDuration(duration=200.0)
-            closeGripper.data = gripper_closed
-            gripperPub.publish(closeGripper)
+        # if trajectory_client.get_state() == GoalStatus.SUCCEEDED and True:
+        #     # pick up object
+        #     closeGripper = CommandDuration(duration=200.0)
+        #     closeGripper.data = gripper_closed
+        #     gripperPub.publish(closeGripper)
 
-            rospy.sleep(1.0)
+        #     rospy.sleep(1.0)
 
-            # go to hover position
-            goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(0.5))]
-            trajectory_client.send_goal(goal)
-            trajectory_client.wait_for_result()
+        #     # go to hover position
+        #     goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(0.5))]
+        #     trajectory_client.send_goal(goal)
+        #     trajectory_client.wait_for_result()
 
-            # go to home position
-            goal.trajectory.points = [JointTrajectoryPoint(positions=q_home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-            trajectory_client.send_goal(goal)
-            trajectory_client.wait_for_result()
+        #     # go to home position
+        #     goal.trajectory.points = [JointTrajectoryPoint(positions=q_home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
+        #     trajectory_client.send_goal(goal)
+        #     trajectory_client.wait_for_result()
 
     else:
         return PickResponse(False, "Gripper is already closed, cannot pick up object.")
