@@ -42,24 +42,46 @@ class ArmCam:
         self.once = True
 
     def image_callback(self, msg):
-        rospy.loginfo("Huuuuuuu")
-        if self.once:
-            cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
-            
-            blobs_dog = cv2.GaussianBlur(cv_image, (3,3), 0) - cv2.GaussianBlur(cv_image, (15,15), 0)
-    
-            cv_im_gray = cv2.cvtColor(cv_image, cv2.COLOR_RGB2GRAY)
-            thresh = cv2.adaptiveThreshold(cv_im_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 201, 1)
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-            blob = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-            blob = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
-            
-            keypoints = self.blob_detector.detect(blobs_dog)
-            im_with_keypoints = cv2.drawKeypoints(cv_im_gray, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-            im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(blob)
+        cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
-            self.blobPub.publish(im_with_keypoints_ROS)
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.BORDER_REPLICATE, cv2.THRESH_BINARY, 69, 5)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13,13))
+        blob = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15,15))
+        blob = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+        blob = cv2.morphologyEx(blob, cv2.MORPH_DILATE, kernel)
+
+        
+        blob = 255-blob
+        h, w = blob.shape
+        blob[0,:] = blob[:,0] = blob[h-150:h-1,:] = blob[:,w-1] = 255
+
+        # Get contours
+        cnts = cv2.findContours(blob, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+        cnts = list(cnts)
+        for j, cnt in enumerate(cnts):
+            if cv2.contourArea(cnt) < 3500 or cv2.contourArea(cnt) > 30000:
+                cnts[j] = "remove"
+        # filtered_cnts = list(filter(lambda a: a != 2, cnts))
+        filtered_cnts = [cnt for cnt in cnts if cnt != "remove"]
+        # big_contour = max(filtered_cnts, key=cv2.contourArea)
+
+        # test blob size
+        # blob_area_thresh = 1000
+        # # blob_area = cv2.contourArea(big_contour)
+        # if blob_area < blob_area_thresh:
+        #     print("Blob Is Too Small")
+
+        # draw contour
+        result = cv_image.copy()
+        cv2.drawContours(result, filtered_cnts, -1, (0,0,255), 3)
+        
+        im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(result, "bgr8")
+
+        self.blobPub.publish(im_with_keypoints_ROS)
 
             
 
