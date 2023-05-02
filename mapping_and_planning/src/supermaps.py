@@ -234,15 +234,16 @@ class SuperMap:
 
         for i in range(len(poly.points)):
             rospy.loginfo("switch line")
+            x_ind = int((poly.points[i].x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+            y_ind = int((poly.points[i].y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+            self.matrix[y_ind, x_ind] = 6
             if i == 0:
-                rospy.loginfo(poly.points[0])
+                #rospy.loginfo(poly.points[0])
                 continue
             
-            # elif i == 7:
-            #      rospy.loginfo(nr6)
-            #      break
+            
             else:
-                rospy.loginfo(prevpoint[i-1])
+                #rospy.loginfo(prevpoint[i-1])
                 #rospy.loginfo(poly.points[i])
                 
                 if poly.points[i].x < prevpoint[i-1].x and poly.points[i].y > prevpoint[i-1].y:#negative k
