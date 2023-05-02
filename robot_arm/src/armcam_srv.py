@@ -67,21 +67,45 @@ class ArmCam:
                 cnts[j] = "remove"
         # filtered_cnts = list(filter(lambda a: a != 2, cnts))
         filtered_cnts = [cnt for cnt in cnts if cnt != "remove"]
-        # big_contour = max(filtered_cnts, key=cv2.contourArea)
 
-        # test blob size
-        # blob_area_thresh = 1000
-        # # blob_area = cv2.contourArea(big_contour)
-        # if blob_area < blob_area_thresh:
-        #     print("Blob Is Too Small")
+        if len(filtered_cnts) > 0:
+            biggest_contour = max(filtered_cnts, key=cv2.contourArea)
 
-        # draw contour
-        result = cv_image.copy()
-        cv2.drawContours(result, filtered_cnts, -1, (0,0,255), 3)
-        
-        im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(result, "bgr8")
+            rect = cv2.minAreaRect(biggest_contour)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
 
-        self.blobPub.publish(im_with_keypoints_ROS)
+            # Get centroid
+            M = cv2.moments(box)
+            cX = int(M["m10"] / M["m00"])
+            cY = int(M["m01"] / M["m00"])
+
+            d1 = math.sqrt((box[0][0] - box [1][0])**2 + (box[0][1] - box [1][1])**2)
+            d2 = math.sqrt((box[1][0] - box [2][0])**2 + (box[1][1] - box [2][1])**2)
+            
+            if d1 > d2:
+                theta = -(math.atan2(box[0][1] - box[1][1], box[0][0] - box[1][0]) - math.pi/2)
+                theta = theta % math.pi
+                if theta > math.pi/2:
+                    theta = theta - math.pi
+                if theta < -math.pi/2:
+                    theta = theta + math.pi
+            else:
+                theta = -(math.atan2(box[1][1] - box[2][1], box[1][0] - box[2][0]) - math.pi/2)
+                theta = theta % math.pi
+                if theta > math.pi/2:
+                    theta = theta - math.pi
+                if theta < -math.pi/2:
+                    theta = theta + math.pi
+
+            # draw contour
+            result = cv_image.copy()
+            cv2.drawContours(result, [box], -1, (0,0,255), 3)
+            cv2.circle(result, (cX, cY), 7, (0, 255, 0), -1)
+            
+            im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(result, "bgr8")
+
+            self.blobPub.publish(im_with_keypoints_ROS)
 
             
 
