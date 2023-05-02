@@ -40,6 +40,7 @@ if __name__ == "__main__":
     img = cv.imread('/home/robot/calibration_imgs/left0011.jpg')
     h,  w = img.shape[:2]
     newcameramtx, roi = cv.getOptimalNewCameraMatrix(mtx, dist, (w,h), 1, (w,h))
+    print(newcameramtx)
 
     # undistort
     dst = cv.undistort(img, mtx, dist, None, newcameramtx)
