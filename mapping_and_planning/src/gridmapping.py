@@ -8,10 +8,12 @@ from typing import List
 import matplotlib.path as mpltPath
 from config import SUCCESS, RUNNING, FAILURE
 from visualization_msgs.msg import Marker
+from std_msgs.msg import Int64
 
 class Map(SuperMap):
     def __init__(self, plot=False, width=1000, height=1000, resolution=0.1):
         super().__init__(plot, width,height,resolution)
+        self.start_explore = rospy.Publisher("/start_explore", Int64, queue_size=1)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
         self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doObjectCallback)
         self.class_dictionary = {
@@ -70,3 +72,6 @@ class Map(SuperMap):
                     self.matrix[j,i]=5
             
         self.anchordetected = True
+        start = Int64()
+        start.data = 1
+        self.start_explore.publish(start)

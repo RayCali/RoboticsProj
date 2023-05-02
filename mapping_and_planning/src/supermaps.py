@@ -10,6 +10,7 @@ import tf_conversions
 from geometry_msgs.msg import PoseStamped
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from global_explorer import getMostValuedCell 
+from std_msgs.msg import Int64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
@@ -22,9 +23,9 @@ class SuperMap:
         s = rospy.Service('/no_collision', Request, self.__nocollision)
         width = int(width/resolution)
         height = int(height/resolution)
-        self.ones = True
+        self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        
+        self.start_explore = rospy.Subscriber("/start_explore", Int64, self.__doStartExploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -49,6 +50,8 @@ class SuperMap:
         
         # if plot:
         #     self.__doDrawBox()
+    def __doStartExploreCallback(self, msg):
+        self.ones = True
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()
         self.grid.data[self.grid.data == 0] = 20

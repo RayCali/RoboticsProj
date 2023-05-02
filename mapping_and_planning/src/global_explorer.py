@@ -27,17 +27,9 @@ mask: np.array = np.array([[0 for i in range(F)] for i in range(F)])
 
 def f(mask_value: int, matrix_value: int) -> int:
     if mask_value == matrix_value:
-        return 10 #Unknown space
-    elif matrix_value != 2:
-        return 1 #Free space
+        return 1 #Unknown space
     else:
         return 0 #Obstacles
-def heuristic(matrix: np.array, mask: np.array, width: int, height: int) -> int:
-    area_value = 0
-    for h in range(F):
-        for w in range(F):
-            area_value += f(mask[h,w], matrix[h,w])
-    return area_value
 
 def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: float, grid_to_map: Tuple[float, float]) -> List[int]:
     heuiristic_values = getHeuristicMap(matrix, mask, width, height)
@@ -63,6 +55,7 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
             most_valued_cell = cell
         if cell[0]!=1000:
             rospy.loginfo(cell)
+        
         """
         if 1e-1< distance_to_cell_from_grumpy-1.0 < 5e-1:
             
@@ -80,7 +73,6 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
             t.transform.rotation = cell_quat
             tfbroadcaster.sendTransform(t)
         """
-    
     x_cell_in_grid_frame = most_valued_cell[1] * resolution
     y_cell_in_grid_frame = most_valued_cell[2] * resolution
     x_cell_in_map_frame = x_cell_in_grid_frame + grid_to_map[0]
@@ -104,14 +96,31 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
     pose_of_most_valued_cell.transform.rotation = cell_quat
     
     tfbroadcaster.sendTransform(pose_of_most_valued_cell)
+    h = most_valued_cell[1]
+    w = most_valued_cell[2]
+    segment_of_map_that_corresponds_to_this_cell = matrix[h:h+F, w:w+F]
+
     return most_valued_cell
+
+
+    
+def heuristic(matrix: np.array, mask: np.array, width: int, height: int) -> int:
+    area_value = 0
+    for h in range(F):
+        for w in range(F):
+            #area_value += f(mask[h,w], matrix[h,w])
+            area_value += f(mask[w,h], matrix[w,h])
+    return area_value
+
 
 def getHeuristicMap(matrix: np.array, mask: np.array, W: int, H: int) -> np.array:
     heuiristic_values = []
     for h in range(0, H - F, S):
         for w in range(0, W - F, S):
             #rospy.loginfo(matrix[h:h+F, w:w+F])
-            m = matrix[h:h+F, w:w+F]
+            #m = matrix[h:h+F, w:w+F]
+            m = matrix[w:w+F, h:h+F]
+            
             cell_value = heuristic(m, mask, W, H)
             heuiristic_values.append([cell_value, h, w])            
     return heuiristic_values
