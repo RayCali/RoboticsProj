@@ -58,7 +58,7 @@ class SuperMap:
         self.grid.data[self.grid.data == 4] = 75
         self.grid.data[self.grid.data == 5] = 100
         if self.ones:
-            explorer_info = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height))
+            explorer_info = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
 
         return self.grid
     
