@@ -120,7 +120,6 @@ class PathProvider:
             (np.round(o[1] * self.map.grid.info.resolution, 3),
              np.round(o[0] * self.map.grid.info.resolution, 3))
                       for o in obstacles]
-        print(obstacles)
         return obstacles
     def getPoseStamped(self, point: List[float], header: Header) -> PoseStamped:
         ps = PoseStamped()
