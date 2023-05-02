@@ -23,10 +23,12 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlanner_srv = rospy.Service("pathPlanner", Moveto, self.doReturnMovetoResponse)
+        self.pathPlanner_srv = rospy.Service("pathPlanner", Request, self.doReturnMovetoResponse)
 
-        self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped)
+        self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
+
+        self.goal_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoal, queue_size=10)
 
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
         self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
@@ -34,19 +36,24 @@ class PathProvider:
         self.running = False
         self.STATE = RUNNING
     
-    def doReturnMovetoResponse(self, req: Moveto):
+    def getGoal(self, msg: PoseStamped):
+        print("got goal: ", msg)
+        self.goal = msg
+    
+    def doReturnMovetoResponse(self, req: Request):
         if not self.running:
             self.running = True
-            self.moveto_pub.publish(req.goal)
+            self.moveto_pub.publish(self.goal)
+            return RequestResponse(SUCCESS)
         if self.running:
             if self.STATE == RUNNING:
-                return MovetoResponse(RUNNING)
+                return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
-                return MovetoResponse(FAILURE)
+                return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
-                return MovetoResponse(SUCCESS)
+                return RequestResponse(SUCCESS)
         
     def doPlanPath(self, goal: PoseStamped):
         path_msg= Path()
@@ -79,6 +86,7 @@ class PathProvider:
             height=self.map.grid.info.height * self.map.grid.info.resolution,
             grid=self.map.grid
             )
+        print("Planning path")
         rrt.doPath(max_time=10)
         if rrt.getPathFound():
             print("path found")
@@ -106,12 +114,13 @@ class PathProvider:
         return matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace 
 
     def getObstacles(self):
-        x, y = np.where(self.map.matrix == 2)
+        x, y = np.where((self.map.matrix == 2) | (self.map.matrix == 6))
         obstacles = zip(x,y)
         obstacles = [
             (np.round(o[1] * self.map.grid.info.resolution, 3),
              np.round(o[0] * self.map.grid.info.resolution, 3))
                       for o in obstacles]
+        print(obstacles)
         return obstacles
     def getPoseStamped(self, point: List[float], header: Header) -> PoseStamped:
         ps = PoseStamped()

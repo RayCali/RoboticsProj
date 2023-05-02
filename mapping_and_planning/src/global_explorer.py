@@ -4,6 +4,7 @@ import rospy
 import tf2_ros
 from typing import List, Tuple
 from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Point, Quaternion, Vector3
+
 # https://cs231n.github.io/convolutional-networks/
 F = 10  # receptive field
 S = 10   # stride
@@ -77,7 +78,7 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
     y_cell_in_grid_frame = most_valued_cell[2] * resolution
     x_cell_in_map_frame = x_cell_in_grid_frame + grid_to_map[0]
     y_cell_in_map_frame = y_cell_in_grid_frame + grid_to_map[1]
-    print("Most valued cell: ", most_valued_cell, (x_cell_in_map_frame, y_cell_in_map_frame))
+    #print("Most valued cell: ", most_valued_cell, (x_cell_in_map_frame, y_cell_in_map_frame))
 
         
     pose_of_most_valued_cell = TransformStamped()
@@ -100,7 +101,7 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
     w = most_valued_cell[2]
     segment_of_map_that_corresponds_to_this_cell = matrix[h:h+F, w:w+F]
 
-    return most_valued_cell
+    return pose_of_most_valued_cell
 
 
     

@@ -64,11 +64,11 @@ class Map(SuperMap):
                 point.pose.position.y = self.grid.info.origin.position.y + self.grid.info.resolution*j
                 point.pose.orientation= Quaternion(0,0,0,1)
                 point.header.frame_id="map"
-                point =  tf2_geometry_msgs.do_transform_pose(point, transform)
+                #point =  tf2_geometry_msgs.do_transform_pose(point, transform)
                 #inside = self.point_inside_polygon(point.pose.position.x, point.pose.position.y, poly)
                 path = mpltPath.Path(poly_real)
                 inside = path.contains_points([[point.pose.position.x,point.pose.position.y]])
-                if not inside:
+                if not inside and self.matrix[j,i]!=6:
                     self.matrix[j,i]=5
             
         self.anchordetected = True
