@@ -73,7 +73,7 @@ class Memory:
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
-        self.toyPub = rospy.Publisher("/toyPoseMap", PoseStamped, queue_size=10)
+        self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -86,7 +86,13 @@ class Memory:
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:
             print("Found a toy")
-            self.toyPub.publish(self.toys[list(self.toys.keys())[0]].poseStamped)
+            target_toy: Toy =  self.toys[list(self.toys.keys())[0]]
+            object_poses = objectPoseStampedLst()
+            name = target_toy.name
+            ps = target_toy.poseStamped
+            object_poses.PoseStamped.append(ps)
+            object_poses.object_class.append(name)
+            self.toyPub.publish(object_poses)
             return RequestResponse(SUCCESS)
         print("NO TOY!")
         return RequestResponse(FAILURE)
