@@ -3,6 +3,7 @@ import numpy as np
 import rospy
 import tf2_ros
 from typing import List, Tuple
+from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from geometry_msgs.msg import PoseStamped, TransformStamped, Pose, Point, Quaternion, Vector3
 
 # https://cs231n.github.io/convolutional-networks/
@@ -23,7 +24,6 @@ mask: np.array = np.array([ [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
 mask: np.array = np.array([[0 for i in range(F)] for i in range(F)])
-
 
 
 def f(mask_value: int, matrix_value: int) -> int:

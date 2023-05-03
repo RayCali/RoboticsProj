@@ -74,6 +74,8 @@ class Memory:
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         self.toyPub = rospy.Publisher("/toyPoseMap", PoseStamped, queue_size=10)
+
+        self.isExplored_srv = rospy.Service("/isExplored", Request, self.getIsExplored)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -89,6 +91,15 @@ class Memory:
             self.toyPub.publish(self.toys[list(self.toys.keys())[0]].poseStamped)
             return RequestResponse(SUCCESS)
         print("NO TOY!")
+        return RequestResponse(FAILURE)
+    
+    def getIsExplored(self, req: RequestRequest):
+        if self.getNotPair == SUCCESS:
+            print("NO PAIR!")
+            print("START EXPLORING")
+            return RequestResponse(SUCCESS)
+        print("PAIR FOUND!")
+        print("STOP EXPLORING")
         return RequestResponse(FAILURE)
     
     # def doInformOfPick(self, req):

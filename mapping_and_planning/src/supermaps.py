@@ -30,8 +30,11 @@ class SuperMap:
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
+        self.running = True
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore = rospy.Subscriber("/start_explore", Int64, self.__doStartExploreCallback)
+        self.explorer_srv = rospy.Service('/doExplore', Request, self.__doExplore)
+        self.start_explore_sub = rospy.Subscriber('/start_explore', Int64, self.__doStartExploreCallback)
+
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -50,6 +53,7 @@ class SuperMap:
         self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the real-world pose of the
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
+        
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
 
@@ -60,12 +64,26 @@ class SuperMap:
         # if plot:
         #     self.__doDrawBox()
     def __doStartExploreCallback(self, msg):
+        self.STATE = RUNNING
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
         self.goal_pub.publish(ps)
+        self.STATE = SUCCESS
+
+
+    def __doExplore(self, req: RequestRequest):
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()

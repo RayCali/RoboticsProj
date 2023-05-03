@@ -21,6 +21,10 @@ if __name__=="__main__":
             Or([
                 isPicked(),
                 doPickup()
+            ]),
+            Or([
+                isExplored(),
+                doExplore()
             ])
         ])
     )

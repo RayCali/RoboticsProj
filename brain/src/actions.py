@@ -8,7 +8,11 @@ from msg_srv_pkg.srv import Request
 class doExplore(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("Explore/srv", Request)
+        self.service = rospy.ServiceProxy("doExplore", Request)
+    def tick(self):
+        print("doExplore")
+        res = Action.tick(self)
+        return res
 
 class doLocalize(Action):
     def __init__(self) -> None:
