@@ -94,7 +94,6 @@ class PathProvider:
             path: List[List[float, float]] = rrt.getPath()
             for point in path:
                 path_msg.poses.append(self.getPoseStamped(point,header))
-            print(path_msg)
             self.path_pub.publish(path_msg)
             path_msg.poses = []
             path: List[List[float, float]] = rrt.getPathRewired()
@@ -127,4 +126,5 @@ class PathProvider:
         ps.header = header
         ps.pose.position.x = point[0] + self.map.grid.info.origin.position.x
         ps.pose.position.y = point[1] + self.map.grid.info.origin.position.y
-        return 
+        return ps
+        

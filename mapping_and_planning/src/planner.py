@@ -198,3 +198,4 @@ class RRTStar:
             if neighbour.getDistTo(node) < distance:
                 closest, distance = neighbour, neighbour.getDistTo(node)
         return closest
+    

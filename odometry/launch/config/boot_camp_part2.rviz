@@ -103,7 +103,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
-      Frame Timeout: 1
+      Frame Timeout: 20
       Frames:
         All Enabled: false
         arm_base:
@@ -144,6 +144,10 @@ Visualization Manager:
           Value: false
         center_robot:
           Value: false
+        exploration_goal:
+          Value: true
+        goal:
+          Value: true
         imu_link:
           Value: false
         map:
@@ -159,6 +163,10 @@ Visualization Manager:
       Tree:
         map:
           arucomap:
+            {}
+          exploration_goal:
+            {}
+          goal:
             {}
           odom:
             base_link:
@@ -302,7 +310,7 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 25; 255; 0
+      Color: 0; 79; 255
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
@@ -375,7 +383,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 12.201385498046875
+      Distance: 10.370134353637695
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -391,9 +399,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2397974729537964
+      Pitch: 1.229797601699829
       Target Frame: <Fixed Frame>
-      Yaw: 2.8722457885742188
+      Yaw: 3.0622427463531494
     Saved: ~
 Window Geometry:
   ArUco:

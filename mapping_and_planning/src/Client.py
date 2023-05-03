@@ -67,7 +67,11 @@ if __name__ == "__main__":
     pose.position.x = x
     pose.position.y = y
     ps.pose = pose
+
     resp = path_planner(ps)
     """
     path_planner = rospy.ServiceProxy("pathPlanner", Request)
     resp = path_planner(RequestRequest())
+
+
+
