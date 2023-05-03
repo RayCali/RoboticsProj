@@ -23,7 +23,7 @@ if __name__=="__main__":
                 doPickup()
             ]),
             Or([
-                isExplored(),
+                # isExplored(),
                 doExplore()
             ])
         ])

@@ -93,14 +93,14 @@ class Memory:
         print("NO TOY!")
         return RequestResponse(FAILURE)
     
-    def getIsExplored(self, req: RequestRequest):
-        if self.getNotPair == SUCCESS:
-            print("NO PAIR!")
-            print("START EXPLORING")
-            return RequestResponse(SUCCESS)
-        print("PAIR FOUND!")
-        print("STOP EXPLORING")
-        return RequestResponse(FAILURE)
+    # def getIsExplored(self, req: RequestRequest):
+    #     if self.getNotPair == SUCCESS:
+    #         print("NO PAIR!")
+    #         print("START EXPLORING")
+    #         return RequestResponse(SUCCESS)
+    #     print("PAIR FOUND!")
+    #     print("STOP EXPLORING")
+    #     return RequestResponse(FAILURE)
     
     # def doInformOfPick(self, req):
     #     if self.alreadyPickingUpAnObjectSinceBefore:

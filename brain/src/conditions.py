@@ -55,11 +55,11 @@ class isPicked(Condition):
         print("isPicked?, ", res)
         return res
     
-class isExplored(Condition):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy('/isExplored', Request)
-    def tick(self):
-        res = Condition.tick(self)
-        print("isExplored?, ", res)
-        return res
+# class isExplored(Condition):
+#     def __init__(self) -> None:
+#         super().__init__()
+#         self.service = rospy.ServiceProxy('/isExplored', Request)
+#     def tick(self):
+#         res = Condition.tick(self)
+#         print("isExplored?, ", res)
+#         return res
