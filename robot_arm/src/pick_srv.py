@@ -17,9 +17,14 @@ from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryG
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from utils import *
 
-class Picker():
 
+class Picker():
     def __init__(self) -> None:
+        self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
+        self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
+        self.gripper_open = -1.7802358066666664
+        self.gripper_closed = 0.0
+
         # rospy.Service("/pickup", Pick, self.handle_pickup_req)
         rospy.Service("/pickToy", Request, self.doPickupToy)
         rospy.Service("/isPicked", Request, self.isPicked)
@@ -133,7 +138,7 @@ class Picker():
         if self.trajectory_client.get_state() == GoalStatus.SUCCEEDED and True:
             # pick up object
             closeGripper = CommandDuration(duration=200.0)
-            closeGripper.data = gripper_closed
+            closeGripper.data = self.gripper_closed
             self.gripperPub.publish(closeGripper)
 
             rospy.sleep(1.0)
@@ -144,7 +149,7 @@ class Picker():
             self.trajectory_client.wait_for_result()
 
             # go to home position
-            goal.trajectory.points = [JointTrajectoryPoint(positions=q_home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
+            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()
 

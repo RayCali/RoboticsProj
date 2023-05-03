@@ -9,12 +9,6 @@ SUCCESS = 1
 FAILURE = -1
 RUNNING = 0
 
-# home position
-q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-gripper_open = -1.7802358066666664
-gripper_closed = 0.0
-
-
 # Denavit-Hartenberg parameters
 d = [0.015, 0.0, 0.0, 0.0, 0.0]
 a = [0.0, 0.1, 0.096, 0.055, 0.085]
