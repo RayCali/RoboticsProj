@@ -91,21 +91,6 @@ class path(object):
             if len(msg.PoseStamped) == 0:
                 rospy.loginfo("No object detected")
                 exit()
-            self.objectpose = msg.PoseStamped[0]
-            if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or self.objectpose.pose.position.x > 0.4:
-                self.listen_once = True
-            else: 
-                self.listen_once = False
-                trans = tfBuffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(1.0))
-                self.updated_first_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            if i>0:
-                rospy.loginfo("Distance to object: {}".format(self.objectpose.pose.position.x))
-                i = i-1
-            #rospy.loginfo("Label: {}".format(msg.object_class[0]))
-        if self.listen_once:
-            if len(msg.PoseStamped) == 0:
-                rospy.loginfo("No object detected")
-                exit()
             for i in len(msg.PoseStamped):
                 self.objectpose = msg.PoseStamped[i]
                 if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.objectpose_map.object_class[0]: #or felnamn!!!!!
