@@ -7,6 +7,7 @@
 </include>
 
 <node pkg="tf2_ros" type="static_transform_publisher" name="arm_base_publisher" args="-0.085 -0.05 0.059 0 0 0 1 base_link arm_base" />
+<node pkg="tf2_ros" type="static_transform_publisher" name="arm_cam_publisher" args="-0.075 0.0 0.042 0 0 0 1 end_effector arm_cam" />
 
 </launch>
 

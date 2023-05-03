@@ -12,15 +12,19 @@ import math
 import cv2
 from cv_bridge import CvBridge
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
+from msg_srv_pkg.srv import PickPose, PickPoseResponse, PickPoseRequest
 from utils import *
+
 
 
 class ArmCam:
     def __init__(self) -> None:
         rospy.loginfo("Initiating ArmCam instance...")
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber("/usb_cam/image_raw", Image, self.image_callback)
+        # self.image_sub = rospy.Subscriber("/usb_cam/image_raw", Image, self.image_callback)
         self.blobPub = rospy.Publisher("/blob", Image, queue_size=1)
+
+        rospy.Service("/getPickPose", PickPose, self.getPickPose)
 
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -39,8 +43,19 @@ class ArmCam:
         
         self.once = True
 
-    def image_callback(self, msg):
-        cv_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
+        self.Z = 0.221
+
+        self.distortion_factors = [-0.50881066,  0.39447751, -0.00259297, -0.00138649, -0.23784509, 0.0, 0.0, 0.0]
+        self.camera_matrix = [[517.03632655,   0.0, 312.03052029],
+                              [0.0, 516.70216219, 252.01727667],
+                              [0.0, 0.0, 1.0]]
+
+        
+
+    def getPickPose(self, req: PickPoseRequest):
+        image = rospy.wait_for_message("/usb_cam/image_raw", Image)
+
+        cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
         thresh = cv2.adaptiveThreshold(gray, 255, cv2.BORDER_REPLICATE, cv2.THRESH_BINARY, 69, 5)
@@ -50,7 +65,6 @@ class ArmCam:
         blob = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
         blob = cv2.morphologyEx(blob, cv2.MORPH_DILATE, kernel)
-
         
         blob = 255-blob
         h, w = blob.shape
@@ -63,7 +77,6 @@ class ArmCam:
         for j, cnt in enumerate(cnts):
             if cv2.contourArea(cnt) < 3500 or cv2.contourArea(cnt) > 30000:
                 cnts[j] = "remove"
-        # filtered_cnts = list(filter(lambda a: a != 2, cnts))
         filtered_cnts = [cnt for cnt in cnts if cnt != "remove"]
 
         if len(filtered_cnts) > 0:
@@ -104,6 +117,41 @@ class ArmCam:
             im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(result, "bgr8")
 
             self.blobPub.publish(im_with_keypoints_ROS)
+
+            # Get pose in camera frame
+            principal_x = self.camera_matrix[0][2]
+            principal_y = self.camera_matrix[1][2]
+            focal_x = self.camera_matrix[0][0]
+            focal_y = self.camera_matrix[1][1]
+            X = self.Z * (cX - principal_x) / focal_x
+            Y = self.Z * (cY - principal_y) / focal_y
+
+            pose_stamped = PoseStamped()
+            pose_stamped.header.frame_id = "arm_cam"
+            pose_stamped.header.stamp = rospy.Time.now()
+            pose_stamped.pose.position.x = self.Z - 0.015
+            pose_stamped.pose.position.y = -X
+            pose_stamped.pose.position.z = -Y
+            pose_stamped.pose.orientation.x = 0
+            pose_stamped.pose.orientation.y = 0
+            pose_stamped.pose.orientation.z = 0
+            pose_stamped.pose.orientation.w = 1
+
+            print("THETA:  ",theta*180/math.pi)
+
+            resp = PickPoseResponse()
+            resp.success = True
+            resp.pose_stamped = pose_stamped
+            resp.theta = theta
+
+            return resp
+
+
+        else:
+            rospy.loginfo("No contours found")
+            resp = PickPoseResponse()
+            resp.success = False
+            return resp
 
             
 
