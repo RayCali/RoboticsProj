@@ -54,7 +54,7 @@ class RRTStar:
         i = 0
         while True:
             i += 1
-            print(i, len(self.nodes))
+            #print(i, len(self.nodes))
             node = self.getRandomNode()
             if node is None:
                 continue
@@ -198,4 +198,3 @@ class RRTStar:
             if neighbour.getDistTo(node) < distance:
                 closest, distance = neighbour, neighbour.getDistTo(node)
         return closest
-    

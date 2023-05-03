@@ -3,6 +3,7 @@
 import rospy
 from gridmapping import Map
 from provider import PathProvider
+from global_explorer import getMostValuedCell 
 
 if __name__ == "__main__":
 
@@ -11,8 +12,8 @@ if __name__ == "__main__":
     m = Map(True, 11, 11, 0.05)
     p = PathProvider(m)
     rospy.sleep(1)
+    # explorer_info = getMostValuedCell(m.matrix, m.grid.info.width, m.grid.info.height)
     m.doPublish()
     while not rospy.is_shutdown():
         rospy.sleep(0.05)
         m.doPublish()
-        
