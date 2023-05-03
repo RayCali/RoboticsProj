@@ -54,8 +54,8 @@ if __name__ == "__main__":
     ps.pose.position.y = y
 
     rospy.sleep(1)
-    tfbroadcaster.sendTransform(t)
-    goal_pub.publish(ps)
+    #tfbroadcaster.sendTransform(t)
+    #goal_pub.publish(ps)
 
     rospy.sleep(2)
 

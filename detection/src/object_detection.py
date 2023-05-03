@@ -50,7 +50,7 @@ def get_object_position(depthImg, center_x, center_y, img_center_x, img_center_y
 def get_map_pose(position,msg_frame,msg_stamp):
     pose = PoseStamped()
     pose.header.frame_id = msg_frame
-    pose.header.stamp = rospy.Time.now()
+    pose.header.stamp = msg_stamp #rospy.Time.now()
     pose.pose.position.x = position[0]
     pose.pose.position.y = position[1]
     pose.pose.position.z = position[2]
@@ -85,7 +85,7 @@ def get_map_pose(position,msg_frame,msg_stamp):
 def get_baseLink_pose(position,msg_frame,msg_stamp):
     pose = PoseStamped()
     pose.header.frame_id = msg_frame
-    pose.header.stamp = rospy.Time.now()
+    pose.header.stamp = msg_stamp #rospy.Time.now()
     pose.pose.position.x = position[0]
     pose.pose.position.y = position[1]
     pose.pose.position.z = position[2]
@@ -116,8 +116,6 @@ def get_baseLink_pose(position,msg_frame,msg_stamp):
 
 
 def imageCB(msg: Image):
-    # start = rospy.Time.now()
-    # start=start.to_sec()
     image_frame_id  = msg.header.frame_id
     image_stamp = msg.header.stamp
     depthImg_rcvd = False
@@ -238,9 +236,6 @@ def imageCB(msg: Image):
     
     imgPub.publish(pubImg)
 
-    # end = rospy.Time.now()
-    # end = end.to_sec()
-    # rospy.loginfo("Time taken for detection: {}".format(end-start))
     
 
 
