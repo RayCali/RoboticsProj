@@ -87,22 +87,6 @@ class SuperMap:
         self.grid_pub.publish(og)
         rate.sleep()
 
-    def __getProbabilityFromMatrixValue(self, x: int) -> int:
-        if x == 0:      
-            return 20   # unknown space
-        if x == 1:      
-            return 0    # free space
-        if x == 2:
-            return 95  # black(obstacles)
-        if x == 3:
-            return 50   # toy
-        if x == 4:
-            return 75   # box
-        if x== 5:
-            return 100  # out
-        else:
-            raise Exception("None value in matrix")
-
 
     def __doScanCallback(self, msg: LaserScan):
         global latestscan
