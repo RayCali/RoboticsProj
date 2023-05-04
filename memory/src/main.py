@@ -73,7 +73,8 @@ class Memory:
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
-        self.toyPub = rospy.Publisher("/toyPoseMap", PoseStamped, queue_size=10)
+        self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
+        self.goal_name = "lmao"
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -85,8 +86,15 @@ class Memory:
     
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:
-            print("Found a toy")
-            self.toyPub.publish(self.toys[list(self.toys.keys())[0]].poseStamped)
+            target_toy: Toy =  self.toys[list(self.toys.keys())[0]]
+            print("Found a toy", target_toy)
+            object_poses = objectPoseStampedLst()
+            name = target_toy.name
+            ps = target_toy.poseStamped
+            id = target_toy.id
+            object_poses.PoseStamped.append(ps)
+            object_poses.object_class.append(name)
+            self.toyPub.publish(object_poses)
             return RequestResponse(SUCCESS)
         print("NO TOY!")
         return RequestResponse(FAILURE)
@@ -186,8 +194,8 @@ class Memory:
             correctDict= self.balls
         else:
             raise Exception("Invalid object ID: " % str(id))
-        
         name = self.id2Object[id] + "_" + str(objectType.count)
+
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
         self.objects[name] = object
