@@ -291,8 +291,6 @@ if __name__ == "__main__":
 
         rospy.loginfo("Do pick test")
 
-        picker.handle_pickup_req(test_pose)
-        
     except rospy.ROSInterruptException:
         rospy.loginfo("Some error occurred.")
         pass
