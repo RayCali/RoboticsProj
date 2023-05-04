@@ -75,7 +75,7 @@ class Memory:
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         self.toyPub = rospy.Publisher("/toyPoseMap", PoseStamped, queue_size=10)
 
-        self.isExplored_srv = rospy.Service("/isExplored", Request, self.getIsExplored)
+        # self.isExplored_srv = rospy.Service("/isExplored", Request, self.getIsExplored)
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None

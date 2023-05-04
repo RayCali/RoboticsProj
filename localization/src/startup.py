@@ -51,7 +51,8 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     global marker_pub
     rospy.loginfo(os.getcwd())
     points = []
-    with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace.tsv", "r") as f:
+    # with open("/home/robot/dd2419_ws/src/localization/src/exampleworkspace.tsv", "r") as f:
+    with open("/home/robot/dd2419_ws/src/localization/src/demo_workspace.tsv", "r") as f:
         for line in f:
             line = line.strip("\n")
             l = line.split("\t")
@@ -63,9 +64,15 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     polygon.ns = "aruco"
     polygon.id = mark.id
     polygon.type = Marker.LINE_STRIP
+    """
     for i in range(1,len(points)):
         polygon.points.append(Point(float(points[i][0])-4.02,float(points[i][1])-1.21, -t.transform.translation.z))
     polygon.points.append(Point(float(points[1][0])-4.02, float(points[1][1])-1.21,-t.transform.translation.z))
+    """
+    for i in range(1,len(points)):
+        polygon.points.append(Point(float(points[i][0]),float(points[i][1]), -t.transform.translation.z))
+    polygon.points.append(Point(float(points[1][0]), float(points[1][1]),-t.transform.translation.z))
+
     polygon.scale.x = 0.03
     polygon.color.a = 1.0
     polygon.color.r = 1.0
