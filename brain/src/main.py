@@ -9,23 +9,7 @@ from utilities import Root, And, Or
 if __name__=="__main__":
     root = Root(
         And([
-            Or([
-                isLocalized(),
-                doLocalize()
-            ]),
-            isFound(),
-            Or([
-                isAtToy(),
-                doMoveToToy()
-            ]),
-            Or([
-                isPicked(),
-                doPickup()
-            ]),
-            Or([
-                # isExplored(),
-                doExplore()
-            ])
+            isFound()
         ])
     )
     while not rospy.is_shutdown():

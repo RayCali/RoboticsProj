@@ -87,8 +87,9 @@ class Memory:
     
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:
-            print("Found a toy")
-            self.toyPub.publish(self.toys[list(self.toys.keys())[0]].poseStamped)
+            targetToy: Toy = self.toys[list(self.toys.keys())[0]]
+            ps: PoseStamped = targetToy.poseStamped
+            self.toyPub.publish(ps)
             return RequestResponse(SUCCESS)
         print("NO TOY!")
         return RequestResponse(FAILURE)

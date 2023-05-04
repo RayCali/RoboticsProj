@@ -73,11 +73,8 @@ class path(object):
         return RequestResponse(FAILURE)
     
     def doSaveObjectpose(self, msg: PoseStamped):
-        # if len(msg) == 0:
-        #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
-        #     exit()
         rospy.loginfo("Object detected")
-        if self.objectpose_map is None or (rospy.Time.now().secs - self.objectpose_map.header.stamp.secs > 1):
+        if self.objectpose_map is None:
             self.objectpose_map = msg
 
 
