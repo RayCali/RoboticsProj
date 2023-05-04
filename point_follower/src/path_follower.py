@@ -170,11 +170,18 @@ class path(object):
                         self.pub_twist.publish(self.twist)
                         rospy.loginfo("Collision detected")
                         self.STATE = FAILURE
-                    if (rospy.Time.now().secs - latestupdate.secs) >2:
+                    waitingtime = 1
+
+                    if (rospy.Time.now().secs - latestupdate.secs) > 2:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
-                        new
+                        rospy.sleep(1)
+                        latestupdate = rospy.Time.now()
+                        # now = rospy.Time.now()
+                        # while((rospy.Time.now().secs-now.secs)<waitingtime):
+                        #     continue
+                        # latestupdate = rospy.Time.now()
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                             self.goal_pose = tf2_geometry_msgs.do_transform_pose(currentpose, self.trans)
