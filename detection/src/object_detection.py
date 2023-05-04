@@ -159,6 +159,9 @@ def imageCB(msg: Image):
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
+        distancetoobject = object_position[2]
+        if distancetoobject < 0.2 or distancetoobject > 1.5:
+            continue
 
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
             

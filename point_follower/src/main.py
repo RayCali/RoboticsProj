@@ -40,7 +40,7 @@ class path(object):
 
         self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
-        
+        self.goal_name = "lmao"
         self.STATE = FAILURE
         self.running = False
         self.objectpose = None
@@ -77,8 +77,10 @@ class path(object):
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
         rospy.loginfo("Object detected")
-        if self.objectpose_map is None or (rospy.Time.now().secs - self.objectpose_map.header.stamp.secs > 1):
+
+        if self.objectpose_map is None:
             self.objectpose_map = msg
+            self.goal_name = self.objectpose_map.object_class[0][:-2]
             
 
 
@@ -91,9 +93,11 @@ class path(object):
             if len(msg.PoseStamped) == 0:
                 rospy.loginfo("No object detected")
                 exit()
-            for i in len(msg.PoseStamped):
+            for i in range(len(msg.PoseStamped)):
                 self.objectpose = msg.PoseStamped[i]
-                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.objectpose_map.object_class[0]: #or felnamn!!!!!
+                rospy.loginfo(msg.object_class[i])
+                rospy.loginfo(self.objectpose_map.object_class[0])
+                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
                     self.listen_once = True
                 else: 
                     self.listen_once = False
@@ -186,18 +190,18 @@ class path(object):
             latest_pose=None
             distancecondition = 0.08
             while condition:
-                rospy.loginfo("Waiting for service")
-                rospy.wait_for_service('/no_collision')
-                rospy.loginfo("Service found")
-                resp1 = self.s()
-                rospy.loginfo(resp1)
-                #resp1.wait_for_result()
-                if resp1.success is not True:
-                    self.twist.linear.x = 0.0
-                    self.twist.angular.z = 0.0
-                    self.pub_twist.publish(self.twist)
-                    rospy.loginfo("Collision detected")
-                    self.STATE = FAILURE
+                # rospy.loginfo("Waiting for service")
+                # rospy.wait_for_service('/no_collision')
+                # rospy.loginfo("Service found")
+                # resp1 = self.s()
+                # rospy.loginfo(resp1)
+                # #resp1.wait_for_result()
+                # if resp1.success is not True:
+                #     self.twist.linear.x = 0.0
+                #     self.twist.angular.z = 0.0
+                #     self.pub_twist.publish(self.twist)
+                #     rospy.loginfo("Collision detected")
+                #     self.STATE = FAILURE
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
@@ -271,7 +275,7 @@ class path(object):
                     self.twist.linear.x = 0
                     self.twist.angular.z = 0
                     self.pub_twist.publish(self.twist)
-                    rospy.sleep(1)
+                    rospy.sleep(5)
                     self.listen_once=True
                     while self.listen_once:
                         self.twist.linear.x = 0

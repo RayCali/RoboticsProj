@@ -9,9 +9,11 @@ from typing import List
 class Movable:
     def __init__(self, pose: PoseStamped, name: str,  id: int) -> None:
         self.poseStamped: PoseStamped = pose
-        self.name: str = None
+        self.name: str = name
         self.id: int = id
         self.unreachable = False
+    def __str__(self) -> str:
+        return str(self.poseStamped.pose.position.x) + " " + str(self.poseStamped.pose.position.y) + " " + str(self.poseStamped.pose.position.z) + " " + str(self.id) + " " + str(self.name) + " " + str(self.unreachable)
 
 class Toy(Movable):
     count = 0
