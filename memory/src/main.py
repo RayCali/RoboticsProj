@@ -66,7 +66,7 @@ class Memory:
         self.isLocalized_srv = rospy.Service("/isLocalized", Request, self.getIsLocalized)
         self.doLocalize_srv = rospy.Service("/doLocalize", Request, self.doLocalize)
 
-        self.isnotpair_srv = rospy.Service("/notpair", Request, self.getNotPair)
+        self.isnotpair_srv = rospy.Service("/isnotpair", Request, self.getNotPair)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
@@ -74,6 +74,7 @@ class Memory:
 
         self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
+        self.explore_srv = rospy.Service("/doExplore", Request, self.doExplore)
         self.goal_name = "lmao"
         
         self.movingToTargetToy = False
@@ -83,6 +84,9 @@ class Memory:
         self.yThreshold = 0.10
         # self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
         self.anchordetected = False
+
+    def doExplore(self, req: RequestRequest):
+        return RequestResponse(RUNNING)
     
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:
@@ -127,7 +131,18 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        STATUS = SUCCESS
+        if len(self.toys) > 0:
+            target_toy: Toy =  self.toys[list(self.toys.keys())[0]]
+            print("Found a toy", target_toy)
+            object_poses = objectPoseStampedLst()
+            name = target_toy.name
+            ps = target_toy.poseStamped
+            id = target_toy.id
+            object_poses.PoseStamped.append(ps)
+            object_poses.object_class.append(name)
+            self.toyPub.publish(object_poses)
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
         for key in self.boxes:
             box = self.boxes[key]
             if box.hasArucoMarker:

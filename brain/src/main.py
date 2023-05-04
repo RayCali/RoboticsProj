@@ -13,7 +13,7 @@ if __name__=="__main__":
                 isLocalized(),
                 doLocalize()
             ]),
-            isFound(),
+            isNotPair(),
             Or([
                 isAtToy(),
                 doMoveToToy()
@@ -21,6 +21,9 @@ if __name__=="__main__":
             Or([
                 isPicked(),
                 doPickup()
+            ]),
+            Or([
+                doExplore()
             ])
         ])
     )

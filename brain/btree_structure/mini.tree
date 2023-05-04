@@ -8,17 +8,11 @@
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
-|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    [doMoveToToy()]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]
-|    |    |    ?
-|    |    |    |    (isInFrontBox)
-|    |    |    |    [doMoveToGoal(goal)]
-|    |    |    ?
-|    |    |    |    (isPlaced)
-|    |    |    |    [doPlace()]
+|    |    |    |    
 |    |    |    (isNotPair)
 |    ?
-|    |    (isExplored)
 |    |    [doExplore()]

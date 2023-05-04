@@ -30,8 +30,12 @@ class SuperMap:
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
+        self.running = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore = rospy.Subscriber("/start_explore", Int64, self.__doStartExploreCallback)
+        self.explorer_srv = rospy.Service('/doExplore', Request, self.__doStartExploreCallback)
+        
+        # self.start_explore_sub = rospy.Subscriber('/start_explore', Int64, self.__doStartExploreCallback)
+
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -50,8 +54,11 @@ class SuperMap:
         self.grid.info.origin = Pose(Point(-2.0, -6.0, 0.0), Quaternion(0.0, 0.0, 0.0, 1.0)) #This is the real-world pose of the
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
+        
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
+
+        self.explore_pub = rospy.Publisher("/explored", PoseStamped, queue_size=10)
 
         
         # self.grid_sub_detect = rospy.Subscriber("/detection/pose", PoseStamped, self.doDetectCallback)
@@ -59,13 +66,16 @@ class SuperMap:
         
         # if plot:
         #     self.__doDrawBox()
-    def __doStartExploreCallback(self, msg):
-        ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
-        ps: PoseStamped = PoseStamped()
-        ps.header = ts.header
-        ps.pose.position.x = ts.transform.translation.x
-        ps.pose.position.y = ts.transform.translation.y
-        self.goal_pub.publish(ps)
+    def __doStartExploreCallback(self, msg, RequestRequest):
+        self.STATE = RUNNING
+        self.ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
+        self.ps: PoseStamped = PoseStamped()
+        self.ps.header = self.ts.header
+        self.ps.pose.position.x = self.ts.transform.translation.x
+        self.ps.pose.position.y = self.ts.transform.translation.y
+        self.goal_pub.publish(self.ps)
+        self.STATE = SUCCESS
+        return RequestResponse(self.STATE)
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()
