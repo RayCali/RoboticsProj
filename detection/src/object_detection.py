@@ -50,7 +50,7 @@ def get_object_position(depthImg, center_x, center_y, img_center_x, img_center_y
 def get_map_pose(position,msg_frame,msg_stamp):
     pose = PoseStamped()
     pose.header.frame_id = msg_frame
-    pose.header.stamp = rospy.Time.now()
+    pose.header.stamp = msg_stamp #rospy.Time.now()
     pose.pose.position.x = position[0]
     pose.pose.position.y = position[1]
     pose.pose.position.z = position[2]
@@ -85,7 +85,7 @@ def get_map_pose(position,msg_frame,msg_stamp):
 def get_baseLink_pose(position,msg_frame,msg_stamp):
     pose = PoseStamped()
     pose.header.frame_id = msg_frame
-    pose.header.stamp = rospy.Time.now()
+    pose.header.stamp = msg_stamp #rospy.Time.now()
     pose.pose.position.x = position[0]
     pose.pose.position.y = position[1]
     pose.pose.position.z = position[2]
@@ -116,8 +116,6 @@ def get_baseLink_pose(position,msg_frame,msg_stamp):
 
 
 def imageCB(msg: Image):
-    # start = rospy.Time.now()
-    # start=start.to_sec()
     image_frame_id  = msg.header.frame_id
     image_stamp = msg.header.stamp
     depthImg_rcvd = False
@@ -159,10 +157,11 @@ def imageCB(msg: Image):
     
         if depthImg_rcvd:
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
-        distancetoobject = object_position[2]
-        if distancetoobject < 0.2 or distancetoobject > 1.5:
-            continue
 
+            distance_to_object = object_position[2]
+            if distance_to_object > 1.5 or distance_to_object < 0.2:
+                # We have decided that this is a phantom detection and we should ignore it
+                continue
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
             
         for i in range(len(boxes)):
@@ -226,7 +225,7 @@ def imageCB(msg: Image):
             baseLink_pose = get_baseLink_pose(pos,image_frame_id,image_stamp)
             object_poses_baseLink.PoseStamped.append(baseLink_pose)
             object_poses_baseLink.object_class.append(label)
-            rospy.loginfo(baseLink_pose)
+            #rospy.loginfo(baseLink_pose)
 
         except:
             loginfo("Failed to get baseLink pose")
@@ -241,9 +240,6 @@ def imageCB(msg: Image):
     
     imgPub.publish(pubImg)
 
-    # end = rospy.Time.now()
-    # end = end.to_sec()
-    # rospy.loginfo("Time taken for detection: {}".format(end-start))
     
 
 
