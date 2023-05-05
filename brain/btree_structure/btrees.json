@@ -5,8 +5,8 @@
       "doMoveToGoal(goal)": "Move to the goal position (pickup or box for dropoff).",
       "doPickup()": "Pick the object up with the arm (here the robot is stationary and only the arm is moving).",
       "doPlace()": "Place the object in the box.",
-      "doExplore()": "Explore the workspace using the global planner"
-
+      "doExplore()": "Explore the workspace using the global planner",
+      "sendPose2Arm()": "Sends a dummy PoseStamped",
     },
     "conditions": {
       "isLocalized": {},

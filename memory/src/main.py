@@ -58,14 +58,16 @@ class Memory:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
-        self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
-        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
+        self.anchor_sub         = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
+        self.detection_sub      = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
+        self.aruco_sub          = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
+        self.doSavePickPose_pub = rospy.Publisher("/object_finalpose", PoseStamped, queue_size=10)
 
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
         self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
         self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
+        self.doSendPose2Arm_srv = rospy.Service("/srv/doSend2Arm/memory/brain", Request, self.doSendPose2Arm)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
@@ -272,6 +274,19 @@ class Memory:
                 return
             
         self.putObjectinBuffer(pose, id)
+    def doSendPose2Arm(self, req: RequestRequest):
+        ps: PoseStamped = PoseStamped()
+        ps.header.stamp = rospy.Time.now()
+        ps.header.frame_id = "map"
+        ps.pose.position.x = 0
+        ps.pose.position.y = 0
+        ps.pose.position.z = 0
+        ps.pose.orientation.w = 1
+        self.doSavePickPose_pub.publish(ps)
+        rospy.sleep(1)
+        return RequestResponse(True)
+
+
     
 
 if __name__ == "__main__":

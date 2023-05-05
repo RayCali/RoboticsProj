@@ -36,3 +36,12 @@ class doPickup(Action):
         res = super().tick()
         print("doPickup: ", res)
         return res
+
+class doSend2Arm(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doSend2Arm/memory/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doSend2Arm: ", res)
+        return res

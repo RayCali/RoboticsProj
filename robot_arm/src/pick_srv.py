@@ -146,16 +146,18 @@ class Picker():
         t.transform.rotation.w = q[3]
         
         self.tfbroadcaster.sendTransform(t)
-
         rospy.sleep(1.0)
 
         try:
             resp = self.getPickPose_srv()
+            print("resp")
+
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s"%e)
             return
         
         if resp.success:
+
             # get pose of object in arm_base
             resp.pose_stamped.header.stamp = t.header.stamp
             try:
@@ -191,6 +193,7 @@ class Picker():
             self.trajectory_client.wait_for_result()
         else:
             rospy.logerr("Could not get pick pose")
+            self.STATE = FAILURE
             return
 
 
