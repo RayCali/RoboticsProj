@@ -30,7 +30,7 @@ class SuperMap:
         height = int(height/resolution)
         self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore = rospy.Subscriber("/start_explore", Int64, self.__doStartExploreCallback)
+        self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -58,13 +58,15 @@ class SuperMap:
         
         # if plot:
         #     self.__doDrawBox()
-    def __doStartExploreCallback(self, msg):
+    def __doStartExploreCallback(self, req: RequestRequest):
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
         self.goal_pub.publish(ps)
+        return RequestResponse(SUCCESS)
+
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()
@@ -232,7 +234,7 @@ class SuperMap:
                             inside = not inside
             p1x,p1y = p2x,p2y
         return inside
-    def __lineitup(self, msg:Marker):
+    def __lineitup(self, msg: Marker):
         rospy.loginfo("LINE IT UP")
         poly = msg
         pointlist = [[]]
@@ -249,7 +251,7 @@ class SuperMap:
             poly.points[i].x = apoint_new.pose.position.x
             poly.points[i].y = apoint_new.pose.position.y
         prevpoint = poly.points[:-1]
-        nr6 = prevpoint[6]
+        #nr6 = prevpoint[6]
         #rospy.loginfo(prevpoint[6])
         
 

@@ -23,7 +23,7 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlanner_srv = rospy.Service("pathPlanner", Request, self.doReturnMovetoResponse)
+        self.pathPlanner_srv = rospy.Service("/srv/doPlanpath/mapping_and_planning/brain", Request, self.doReturnMovetoResponse)
 
         self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
@@ -35,6 +35,7 @@ class PathProvider:
         self.getObstacles()
         self.running = False
         self.STATE = RUNNING
+        self.goal = None
     
     def getGoal(self, msg: PoseStamped):
         print("got goal: ", msg)
@@ -42,6 +43,8 @@ class PathProvider:
     
     def doReturnMovetoResponse(self, req: Request):
         if not self.running:
+            if self.goal is None:
+                return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.goal)
             return RequestResponse(SUCCESS)

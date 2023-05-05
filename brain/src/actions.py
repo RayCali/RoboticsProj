@@ -27,6 +27,15 @@ class doMoveToToy(Action):
         res = super().tick()
         print("doMoveToToy: ", res)
         return res
+    
+class doMoveToGoal(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveToGoal/point_follower/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doMoveToGoal: ", res)
+        return res
 
 class doPickup(Action):
     def __init__(self) -> None:
@@ -35,4 +44,14 @@ class doPickup(Action):
     def tick(self):
         res = super().tick()
         print("doPickup: ", res)
+        return res
+
+
+class doPlanPath(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doPlanPath: ", res)
         return res

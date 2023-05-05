@@ -49,7 +49,7 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
         x_cell_in_map_frame = x_cell_in_grid_frame + grid_to_map[0]
         y_cell_in_map_frame = y_cell_in_grid_frame + grid_to_map[1]
         distance_to_cell_from_grumpy = np.sqrt((x_grumpy - x_cell_in_map_frame)**2 + (y_grumpy - y_cell_in_map_frame)**2)
-        cell[0] = cell[0]# + 10 - distance_to_cell_from_grumpy        
+        cell[0] = cell[0] + 10 - distance_to_cell_from_grumpy        
         #print(cell[1:], (x_cell_in_grid_frame, y_cell_in_grid_frame), (x_cell_in_map_frame, y_cell_in_map_frame), np.round(distance_to_cell_from_grumpy,1))
 
         if cell[0] > most_valued_cell[0]:
@@ -97,9 +97,6 @@ def getMostValuedCell(matrix: np.array, width: int, height: int, resolution: flo
     pose_of_most_valued_cell.transform.rotation = cell_quat
     
     tfbroadcaster.sendTransform(pose_of_most_valued_cell)
-    h = most_valued_cell[1]
-    w = most_valued_cell[2]
-    segment_of_map_that_corresponds_to_this_cell = matrix[h:h+F, w:w+F]
 
     return pose_of_most_valued_cell
 
