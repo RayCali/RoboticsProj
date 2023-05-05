@@ -88,3 +88,6 @@ While the robot is on the IoT network, it should have a static ip. The last know
 
 # Glitches
 ## catkin packages being unbuilt
+
+# Services, clients and providers
+doExplore, mapping_and_planning -> brain

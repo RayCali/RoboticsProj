@@ -34,9 +34,9 @@ class path(object):
         self.objectpose = PoseStamped()
         self.listen_once = False
         self.updated_first_pose = PoseStamped()
-        self.atToy_srv = rospy.Service("/atToy", Request, self.arrivedAtToy)
+        self.atToy_srv = rospy.Service("/srv/isAtToy/point_follower/brain", Request, self.arrivedAtToy)
 
-        self.moveToToy_srv = rospy.Service('/moveToToy', Request, self.doMoveToToyResponse)
+        self.moveToToy_srv = rospy.Service("/srv/doMoveToToy/point_follower/brain", Request, self.doMoveToToyResponse)
 
         self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
