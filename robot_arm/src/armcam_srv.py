@@ -24,7 +24,7 @@ class ArmCam:
         # self.image_sub = rospy.Subscriber("/usb_cam/image_raw", Image, self.image_callback)
         self.blobPub = rospy.Publisher("/blob", Image, queue_size=1)
 
-        rospy.Service("/getPickPose", PickPose, self.getPickPose)
+        rospy.Service("/srv/getPickPose/arm_camera/pickup", PickPose, self.getPickPose)
 
 
         self.tf_buffer = tf2_ros.Buffer()

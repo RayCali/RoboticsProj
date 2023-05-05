@@ -58,21 +58,18 @@ class Memory:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.anchor_sub = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
-        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
-        self.aruco_sub = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
+        self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
+        self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
+        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
 
-        # self.moveto_srv = rospy.Service("/moveto", Moveto, self.doMoveTo)
-        self.isLocalized_srv = rospy.Service("/isLocalized", Request, self.getIsLocalized)
-        self.doLocalize_srv = rospy.Service("/doLocalize", Request, self.doLocalize)
-
-        self.isnotpair_srv = rospy.Service("/notpair", Request, self.getNotPair)
+        self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
+        self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
+        self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
+        self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
-        # self.isInFrontToy_srv = rospy.Service("/isInFrontToy", Request, self.getIsInFrontToy)
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
-        self.isFound_srv = rospy.Service("/isFound", Request, self.getIsFound)
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
         self.goal_name = "lmao"
         

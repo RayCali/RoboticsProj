@@ -11,7 +11,6 @@ from geometry_msgs.msg import PoseStamped, TransformStamped
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from global_explorer import getMostValuedCell 
 from std_msgs.msg import Int64
-from msg_srv_pkg.srv import Moveto, MovetoResponse
 from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 import math

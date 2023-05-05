@@ -27,11 +27,11 @@ class Picker():
         self.gripper_closed = 0.0
 
         # rospy.Service("/pickup", Pick, self.handle_pickup_req)
-        rospy.Service("/pickToy", Request, self.doPickupToy)
-        rospy.Service("/isPicked", Request, self.isPicked)
+        rospy.Service("/srv/doPickToy/pickup/brain", Request, self.doPickupToy)
+        rospy.Service("/srv/isPicked/pickup/brain", Request, self.isPicked)
 
-        rospy.wait_for_service("/getPickPose")
-        self.getPickPose_srv = rospy.ServiceProxy("/getPickPose", PickPose)
+        rospy.wait_for_service("/srv/getPickPose/arm_camera/pickup")
+        self.getPickPose_srv = rospy.ServiceProxy("/srv/getPickPose/arm_camera/pickup", PickPose)
 
         self.jointStateSub = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
 

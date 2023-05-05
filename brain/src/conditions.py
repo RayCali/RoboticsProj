@@ -7,40 +7,25 @@ from msg_srv_pkg.srv import Request, RequestResponse
 class isLocalized(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/isLocalized', Request)
+        self.service = rospy.ServiceProxy('/srv/isLocalized/memory/brain', Request)
     def tick(self):
         res = Condition.tick(self)
         return res
-
 
 class isNotPair(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('isnotpair', Request)
-
-class isPicked(Condition):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy('isPicked', Request)
-
-class isInFrontToy(Condition):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy('isInFrontToy', Request)
-
+        self.service = rospy.ServiceProxy('/srv/isNotPair/memory/brain', Request)
 
 class isFound(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/isFound', Request)
-    def tick(self):
-        res = Condition.tick(self)
-        return res
+        self.service = rospy.ServiceProxy('/srv/isFound/memory/brain', Request)
     
 class isAtToy(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/atToy', Request)
+        self.service = rospy.ServiceProxy('/srv/isAtToy/point_follower/brain', Request)
     def tick(self):
         res = Condition.tick(self)
         print("atToy? ", res)
@@ -49,7 +34,7 @@ class isAtToy(Condition):
 class isPicked(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/isPicked', Request)
+        self.service = rospy.ServiceProxy('/srv/isPicked/pickup/brain', Request)
     def tick(self):
         res = Condition.tick(self)
         print("isPicked?, ", res)

@@ -8,7 +8,7 @@ import tf2_ros
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped, Pose
-from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestResponse
+from msg_srv_pkg.srv import Request, RequestResponse
 from gridmapping import Map
 from global_explorer import getMostValuedCell
 from nav_msgs.msg import Path
