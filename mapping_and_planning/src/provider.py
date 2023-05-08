@@ -66,7 +66,7 @@ class PathProvider:
         path_msg.header = header
         try:
             # should be from base link to grid
-            transform = self.tf_buffer.lookup_transform("map", "odom", rospy.Time(0), rospy.Duration(2))
+            transform = self.tf_buffer.lookup_transform("map", "center_robot", rospy.Time(0), rospy.Duration(2))
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             rospy.loginfo(e)
         x = transform.transform.translation.x - self.map.grid.info.origin.position.x
