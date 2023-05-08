@@ -18,17 +18,18 @@ from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest, PickPose, 
 from utils import *
 
 
-class Picker():
+class PickAndPlace():
     def __init__(self) -> None:
         self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
         self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
+        self.q_dropoff = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
         self.gripper_closed = 0.0
 
-        # rospy.Service("/pickup", Pick, self.handle_pickup_req)
         rospy.Service("/srv/doPickToy/pickup/brain", Request, self.doPickupToy)
         rospy.Service("/srv/isPicked/pickup/brain", Request, self.isPicked)
+        rospy.Service("/srv/doPlaceToy/place/brain", Request, self.doPlaceToy)
 
         rospy.wait_for_service("/srv/getPickPose/arm_camera/pickup")
         self.getPickPose_srv = rospy.ServiceProxy("/srv/getPickPose/arm_camera/pickup", PickPose)
@@ -44,19 +45,23 @@ class Picker():
         rate = rospy.Rate(10) # 10hz
 
         self.pickPose_pub = rospy.Publisher('/pick_pose', PoseStamped, queue_size=1)
+        self.pickPose_sub = rospy.Subscriber('/object_finalpose', PoseStamped, self.doSavePickPose)
         self.doPickSub = rospy.Subscriber('/pick_pose', PoseStamped, self.handle_pickup_req)
 
+        self.place_pub = rospy.Publisher("/placeToy", bool, queue_size=1)
+        self.place_sub = rospy.Subscriber("/doPlace", bool, self.doSaveIfPlace)
+        self.doPlaceSub = rospy.Subscriber("/placeToy", bool, self.handle_place_req)
+
         self.joint_states = None
-        self.pick_status = None
         self.running = False
         self.pickPose = None
-        self.STATE = FAILURE
+        self.doPlace = False
+        self.pick_STATE = FAILURE
+        self.place_STATE= FAILURE
 
-        self.pickPose_sub = rospy.Subscriber('/object_finalpose', PoseStamped, self.doSavePickPose)
 
-        rospy.sleep(2)
+        rospy.sleep(1)
         T0E = forward_kinematics(list(self.joint_states.position))
-        print(T0E)
         t = TransformStamped()
         t.header.stamp = rospy.Time.now()
         t.header.frame_id = "arm_base"
@@ -77,8 +82,14 @@ class Picker():
     def doSavePickPose(self, msg: PoseStamped):
         self.pickPose = msg
 
+    def doSaveIfPlace(self, msg: bool):
+        self.doPlace = msg
+
+    def joint_state_callback(self, msg: JointState):
+        self.joint_states = msg
+
     def isPicked(self, msg: RequestRequest):
-        if self.pick_status == SUCCESS:
+        if self.pick_STATE == SUCCESS:
             return RequestResponse(SUCCESS)
         else:
             return RequestResponse(FAILURE)
@@ -89,21 +100,37 @@ class Picker():
             if self.pickPose is None or (rospy.Time.now().secs - self.pickPose.header.stamp.secs > 5):
                 return RequestResponse(FAILURE)
             self.running = True
-            self.STATE = RUNNING
+            self.pick_STATE = RUNNING
             self.pickPose_pub.publish(self.pickPose)
             return RequestResponse(RUNNING)
         if self.running:
-            if self.STATE == RUNNING:
+            if self.pick_STATE == RUNNING:
                 return RequestResponse(RUNNING)
-            if self.STATE == SUCCESS:
+            if self.pick_STATE == SUCCESS:
                 self.running = False
                 return RequestResponse(SUCCESS)
-            if self.STATE == FAILURE:
+            if self.pick_STATE == FAILURE:
                 self.running = False
                 return RequestResponse(FAILURE)
-    
-    def joint_state_callback(self, msg: JointState):
-        self.joint_states = msg
+            
+
+    def doPlaceToy(self, msg:RequestRequest):
+        if not self.running:
+            if self.joint_states.position[5] == self.gripper_open:
+                return RequestResponse(FAILURE)
+            self.running = True
+            self.place_STATE = RUNNING
+            self.place_pub.publish(self.doPlace)
+            return RequestResponse(RUNNING)
+        if self.running:
+            if self.place_STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.place_STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
+            if self.place_STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
 
 
     def handle_pickup_req(self, msg: PoseStamped):
@@ -170,11 +197,11 @@ class Picker():
             print("POSE_BASE: ", pose_base)
             if pose_base.pose.position.x < 0.15:
                 rospy.loginfo("Object too close to base, service call failed!!!")
-                self.STATE = FAILURE
+                self.pick_STATE = FAILURE
                 return
             if pose_base.pose.position.x > 0.21:
                 rospy.loginfo("Object too far from base, service call failed!!!")
-                self.STATE = FAILURE
+                self.pick_STATE = FAILURE
                 return
             
             # go to hover position
@@ -192,53 +219,6 @@ class Picker():
         else:
             rospy.logerr("Could not get pick pose")
             return
-
-
-
-
-        # # transform pose given in base_link to arm_base
-        # pose_stamped = msg
-        # print("BASELINK_POSE: ", pose_stamped)
-        # # pose_stamped.pose.position.x = 0.05
-        # stamp = pose_stamped.header.stamp
-
-        # try:
-        #     self.tf_buffer.lookup_transform('arm_base', pose_stamped.header.frame_id, stamp, timeout=rospy.Duration(4.0))
-        #     pose_base = self.tf_buffer.transform(pose_stamped, 'arm_base')
-        # except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-        #     rospy.logerr("Could not get transform")
-        #     return
-        
-        # print("POSE_BASE: ", pose_base)
-        # if pose_base.pose.position.x < 0.15:
-        #     rospy.loginfo("Object too close to base, service call failed!!!")
-        #     self.STATE = FAILURE
-        #     return
-        
-        # # go to hover position
-        # pos_hover = [pose_base.pose.position.x - 0.02, pose_base.pose.position.y, 0.0]
-        # q_hover = analyticalIK_lock4(pos_hover)
-
-        # # go to desired position
-        # pos_pick = [pose_base.pose.position.x, pose_base.pose.position.y, -0.1]
-        # q_pick = analyticalIK_lock4(pos_pick)
-
-        # q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
-
-        # print("wait for server")
-        # self.trajectory_client.wait_for_server()
-        # print("Connected to server")
-        # goal = FollowJointTrajectoryGoal()
-        # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-        # goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=q_dot, time_from_start=rospy.Duration(0.5)),
-        #                         JointTrajectoryPoint(positions=q_pick, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-        
-        # # goal.trajectory.points = [JointTrajectoryPoint(positions=home, velocities=q_dot, time_from_start=rospy.Duration(2.0))]
-
-        # print("Sending goal")
-        # self.trajectory_client.send_goal(goal)
-
-        # self.trajectory_client.wait_for_result()
         
         if self.trajectory_client.get_state() == GoalStatus.SUCCEEDED:
             # pick up object
@@ -248,25 +228,43 @@ class Picker():
 
             rospy.sleep(1.0)
 
-            # go to hover position
+            # go to home position
             goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_observe, velocities=self.q_dot, time_from_start=rospy.Duration(0.5)),
                                       JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(2.0))]
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()
 
-            # go to home position
-            # goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(2.0))]
-            # self.trajectory_client.send_goal(goal)
-            # self.trajectory_client.wait_for_result()
-
         if self.trajectory_client.get_result():
             rospy.loginfo("Picking successful!")
-            self.STATE = SUCCESS
+            self.pick_STATE = SUCCESS
             return
         
-        self.STATE = FAILURE
+        self.pick_pick_pick_STATE = FAILURE
         return 
+    
 
+    def handle_place_req(self, msg:bool):
+        if self.doPlace:
+            goal = FollowJointTrajectoryGoal()
+            goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_dropoff, velocities=self.q_dot, time_from_start=rospy.Duration(0.5))]
+            self.trajectory_client.send_goal(goal)
+            self.trajectory_client.wait_for_result()
+
+            # drop object
+            openGripper = CommandDuration(duration=200.0)
+            openGripper.data = self.gripper_open
+            self.gripperPub.publish(openGripper)
+
+            rospy.sleep(1.0)
+
+            # go to home position
+            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(2.0))]
+            self.trajectory_client.send_goal(goal)
+            self.trajectory_client.wait_for_result()
+
+        self.place_STATE = SUCCESS
+        return
 
         
     
@@ -276,20 +274,7 @@ if __name__ == "__main__":
     rospy.loginfo("Starting pickup node aaaaaaaaa")
     
     try:
-        picker = Picker()
-
-        test_pose = PoseStamped()
-        test_pose.header.frame_id = "arm_base"
-        test_pose.header.stamp = rospy.Time.now()
-        test_pose.pose.position.x = 0.16
-        test_pose.pose.position.y = 0.0
-        test_pose.pose.position.z = -0.035
-        test_pose.pose.orientation.x = 0.0
-        test_pose.pose.orientation.y = 0.0
-        test_pose.pose.orientation.z = 0.0
-        test_pose.pose.orientation.w = 1.0
-
-        rospy.loginfo("Do pick test")
+        picker = PickAndPlace()
 
     except rospy.ROSInterruptException:
         rospy.loginfo("Some error occurred.")
