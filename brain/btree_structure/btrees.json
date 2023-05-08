@@ -6,7 +6,8 @@
       "doPickup()": "Pick the object up with the arm (here the robot is stationary and only the arm is moving).",
       "doPlace()": "Place the object in the box.",
       "doExplore()": "Explore the workspace using the global planner",
-      "doPlanPath()": "Explore the workspace using the global planner"
+      "doPlanPath()": "Explore the workspace using the global planner",
+      "doMoveAlongPath()": "Robot gets the RRT path"
       
 
     },

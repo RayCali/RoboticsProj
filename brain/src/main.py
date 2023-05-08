@@ -9,9 +9,8 @@ from utilities import Root, And, Or
 if __name__=="__main__":
     root = Root(
         And([
-            doExplore(),
             doPlanPath(),
-            doMoveToGoal(),
+            doMoveAlongPath(),
         ])
     )
     while not rospy.is_shutdown():

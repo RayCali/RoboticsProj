@@ -10,7 +10,7 @@ import tf_conversions
 # from torchvision import transforms
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped, Pose, TransformStamped, Quaternion, Vector3
-from msg_srv_pkg.srv import Moveto, MovetoResponse, Request, RequestRequest, RequestResponse
+from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from global_explorer import getMostValuedCell
 from typing import List
 from config import SUCCESS, RUNNING, FAILURE
@@ -22,9 +22,11 @@ if __name__ == "__main__":
     tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) 
     listener = tf2_ros.TransformListener(tf_buffer)
     tfbroadcaster = tf2_ros.TransformBroadcaster()
-    transform = tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0), rospy.Duration(2))
-    x = 6
-    y = 2.5
+    transform = tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+    #x = 1
+    #y = 0.5
+    x = 2.0
+    y = 1
 
 
 
@@ -54,23 +56,14 @@ if __name__ == "__main__":
     ps.pose.position.y = y
 
     rospy.sleep(1)
-    #tfbroadcaster.sendTransform(t)
-    #goal_pub.publish(ps)
+    tfbroadcaster.sendTransform(t)
+    goal_pub.publish(ps)
 
     rospy.sleep(2)
 
     
-    """
-    path_planner = rospy.ServiceProxy("pathPlanner", Moveto)
-    ps = PoseStamped()
-    pose = Pose()
-    pose.position.x = x
-    pose.position.y = y
-    ps.pose = pose
-
-    resp = path_planner(ps)
-    """
-    path_planner = rospy.ServiceProxy("pathPlanner", Request)
+   
+    path_planner = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/brain", Request)
     resp = path_planner(RequestRequest())
 
 

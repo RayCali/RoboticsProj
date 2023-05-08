@@ -55,3 +55,13 @@ class doPlanPath(Action):
         res = super().tick()
         print("doPlanPath: ", res)
         return res
+    
+
+class doMoveAlongPath(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPath/path_follower/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doMoveAlongPath: ", res)
+        return res
