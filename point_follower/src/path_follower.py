@@ -27,7 +27,7 @@ class path(object):
         self.object_finalpose_pub = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
-        # self.s =rospy.ServiceProxy('/no_collision', Request)
+        self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
         self.done_once = False
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -109,6 +109,7 @@ class path(object):
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from map frame to base_link frame")
                     pass
+
                 self.rotation = self.goal_pose.pose.orientation.z
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
@@ -162,6 +163,22 @@ class path(object):
                 distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
                 latestupdate = rospy.Time.now()
                 while distance > 0.02:
+                    
+                    rospy.loginfo("Waiting for service")
+                    rospy.wait_for_service('/srv/no_collision/mapping_and_planning/path_follower')
+                    rospy.loginfo("Service found")
+                    res = self.collision_srv()
+                    rospy.loginfo(res)
+                    rospy.loginfo(res.success == False)
+                    if res.success is not True:
+                        self.twist.linear.x = 0.0
+                        self.twist.angular.z = 0.0
+                        self.pub_twist.publish(self.twist)
+                        rospy.loginfo("Collision detected")
+                        self.STATE = FAILURE
+                        return
+                    rospy.sleep(1)
+                        
                     if (rospy.Time.now().secs - latestupdate.secs) > 2:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0

@@ -24,7 +24,7 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-        s = rospy.Service('/no_collision', Request, self.__nocollision)
+        self.no_collision_srv = rospy.Service('/srv/no_collision/mapping_and_planning/path_follower', Request, self.__nocollision)
         self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
         width = int(width/resolution)
         height = int(height/resolution)
