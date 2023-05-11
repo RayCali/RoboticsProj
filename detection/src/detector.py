@@ -3,6 +3,7 @@ Inspired by
 You only look once: Unified, real-time object detection, Redmon, 2016.
 """
 from typing import List, Optional, Tuple, TypedDict
+from playsound import playsound
 
 import numpy as np
 import torch
@@ -131,22 +132,31 @@ class Detector(nn.Module):
 
                 if maxProbIdx == 0:
                     bb_class = "Binky"
+                    playsound('/home/robot/binkey.mp3')
                 elif maxProbIdx == 1:
                     bb_class = "Hugo"
+                    playsound('/home/robot/hugo.mp3')
                 elif maxProbIdx == 2:
                     bb_class = "Slush"
+                    playsound('/home/robot/slush.mp3')
                 elif maxProbIdx == 3:
                     bb_class = "Muddles"
+                    playsound('/home/robot/muddles.mp3')
                 elif maxProbIdx == 4:
                     bb_class = "Kiki"
+                    playsound('/home/robot/kiki.mp3')
                 elif maxProbIdx == 5:
                     bb_class = "Oakie"
+                    playsound('/home/robot/oakie.mp3')
                 elif maxProbIdx == 6:
                     bb_class = "cube"
+                    playsound('/home/robot/cube.mp3')
                 elif maxProbIdx == 7:
                     bb_class = "ball"
+                    playsound('/home/robot/ball.mp3')
                 elif maxProbIdx == 8:
                     bb_class = "box"
+                    playsound('/home/robot/box.mp3')
 
 
                 img_bbs.append(

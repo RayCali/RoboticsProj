@@ -15,7 +15,7 @@ from nav_msgs.msg import Path
 from planner import Node, RRTStar
 from typing import List
 from config import SUCCESS, RUNNING, FAILURE
-
+from playsound import playsound
 
 
 class PathProvider:
@@ -56,6 +56,7 @@ class PathProvider:
                 return RequestResponse(SUCCESS)
         
     def doPlanPath(self, goal: PoseStamped):
+        playsound('/home/robot/planning.mp3')
         path_msg= Path()
         header = Header()
         header.stamp = rospy.Time.now()

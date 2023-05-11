@@ -14,6 +14,7 @@ from std_msgs.msg import Int64
 from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 import math
+from playsound import playsound
 
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
@@ -59,6 +60,7 @@ class SuperMap:
         # if plot:
         #     self.__doDrawBox()
     def __doStartExploreCallback(self, msg):
+        playsound('/home/robot/exploration.mp3')
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
         ps.header = ts.header
@@ -213,6 +215,7 @@ class SuperMap:
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
+                    playsound('/home/robot/collision.mp3')
                     return RequestResponse(FAILURE)
         return RequestResponse(SUCCESS)
 
@@ -230,6 +233,7 @@ class SuperMap:
                             xinters = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
                         if p1x == p2x or x <= xinters:
                             inside = not inside
+                            playsound('/home/robot/outside.mp3')
             p1x,p1y = p2x,p2y
         return inside
     def __lineitup(self, msg:Marker):
