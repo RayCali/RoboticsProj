@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 import rospy
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
 from sensor_msgs.msg import JointState
+from std_msgs.msg import Bool
 from hiwonder_servo_msgs.msg import CommandDuration
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import tf_conversions
@@ -22,10 +23,10 @@ class PickAndPlace():
     def __init__(self) -> None:
         self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
         self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-        self.q_dropoff = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
+        self.q_dropoff = analyticalIK_lock4([0.2, 0.0, 0.0])
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
-        self.gripper_closed = 0.0
+        self.gripper_closed = 0.05
 
         rospy.Service("/srv/doPickToy/pickup/brain", Request, self.doPickupToy)
         rospy.Service("/srv/isPicked/pickup/brain", Request, self.isPicked)
@@ -48,14 +49,14 @@ class PickAndPlace():
         self.pickPose_sub = rospy.Subscriber('/object_finalpose', PoseStamped, self.doSavePickPose)
         self.doPickSub = rospy.Subscriber('/pick_pose', PoseStamped, self.handle_pickup_req)
 
-        self.place_pub = rospy.Publisher("/placeToy", bool, queue_size=1)
-        self.place_sub = rospy.Subscriber("/doPlace", bool, self.doSaveIfPlace)
-        self.doPlaceSub = rospy.Subscriber("/placeToy", bool, self.handle_place_req)
+        self.place_pub = rospy.Publisher("/placeToy", Bool, queue_size=1)
+        self.place_sub = rospy.Subscriber("/doPlace", Bool, self.doSaveIfPlace)
+        self.doPlaceSub = rospy.Subscriber("/placeToy", Bool, self.handle_place_req)
 
         self.joint_states = None
         self.running = False
-        self.pickPose = None
-        self.doPlace = False
+        self.pickPose = PoseStamped()
+        self.doPlace = True
         self.pick_STATE = FAILURE
         self.place_STATE= FAILURE
 
@@ -78,11 +79,14 @@ class PickAndPlace():
         
         self.tfbroadcaster.sendTransform(t)
 
+        self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        self.twist = Twist()
+
     
     def doSavePickPose(self, msg: PoseStamped):
         self.pickPose = msg
 
-    def doSaveIfPlace(self, msg: bool):
+    def doSaveIfPlace(self, msg: Bool):
         self.doPlace = msg
 
     def joint_state_callback(self, msg: JointState):
@@ -97,7 +101,7 @@ class PickAndPlace():
 
     def doPickupToy(self, msg: RequestRequest):
         if not self.running:
-            if self.pickPose is None or (rospy.Time.now().secs - self.pickPose.header.stamp.secs > 5):
+            if self.pickPose is None: # or (rospy.Time.now().secs - self.pickPose.header.stamp.secs > 5):
                 return RequestResponse(FAILURE)
             self.running = True
             self.pick_STATE = RUNNING
@@ -201,6 +205,8 @@ class PickAndPlace():
                 return
             if pose_base.pose.position.x > 0.21:
                 rospy.loginfo("Object too far from base, service call failed!!!")
+                # self.twist.linear.x = pose_base.pose.position.x - 0.18
+                # self.pub_twist.publish(self.twist)
                 self.pick_STATE = FAILURE
                 return
             
@@ -230,7 +236,7 @@ class PickAndPlace():
 
             # go to home position
             goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_observe, velocities=self.q_dot, time_from_start=rospy.Duration(0.5)),
-                                      JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(2.0))]
+                                      JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(1.0))]
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()
 
@@ -239,7 +245,7 @@ class PickAndPlace():
             self.pick_STATE = SUCCESS
             return
         
-        self.pick_pick_pick_STATE = FAILURE
+        self.pick_STATE = FAILURE
         return 
     
 
@@ -259,11 +265,12 @@ class PickAndPlace():
             rospy.sleep(1.0)
 
             # go to home position
-            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(2.0))]
+            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(0.69))]
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()
 
         self.place_STATE = SUCCESS
+        self.pick_STATE = FAILURE
         return
 
         
@@ -274,8 +281,9 @@ if __name__ == "__main__":
     rospy.loginfo("Starting pickup node aaaaaaaaa")
     
     try:
+        rospy.loginfo("Creating PickAndPlace object")
         picker = PickAndPlace()
-
+        rospy.loginfo("PickAndPlace object created")
     except rospy.ROSInterruptException:
         rospy.loginfo("Some error occurred.")
         pass
