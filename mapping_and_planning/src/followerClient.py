@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import os
 
 import numpy as np
 import math
@@ -16,17 +17,24 @@ from typing import List
 from config import SUCCESS, RUNNING, FAILURE
 from nav_msgs.msg import Path
 
+table =  {
+            -1: "FAILURE",
+            0: "RUNNING",
+            1: "SUCCESS"
+        }
+
 
 if __name__ == "__main__":
 
     rospy.init_node("path_client")
+    os.system('cls' if os.name == 'nt' else 'clear')
     proxy = rospy.ServiceProxy("/srv/doMoveAlongPath/path_follower/brain", Request)
     while not rospy.is_shutdown():
         res = proxy(RequestRequest())
-        print(res)
+        rospy.loginfo("Result: "+ table[res.success])
         rospy.sleep(1)
-        if res.success == SUCCESS:
+        if res.success == SUCCESS or res.success == FAILURE:
             break
         
-    print("Done!")
+    rospy.loginfo("Done!")
 

@@ -21,6 +21,7 @@ SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 class path(object):
     def __init__(self):
+        self.tfbroadcaster = tf2_ros.TransformBroadcaster()
         # ROS Publishers
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         #self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal, queue_size=1)
@@ -96,6 +97,15 @@ class path(object):
                 rospy.loginfo(to_log)
                 rospy.loginfo(point)
 
+                t = TransformStamped()
+                t.header.stamp = rospy.Time.now()
+                t.header.frame_id = "map"
+                t.child_frame_id = "next_node"
+                t.transform.translation.x = point.pose.position.x
+                t.transform.translation.y = point.pose.position.y
+                t.transform.rotation.w = 1
+                self.tfbroadcaster.sendTransform(t)
+
                 rospy.sleep(1)
                 self.twist = Twist()
                 currentpose = PoseStamped()
@@ -170,20 +180,20 @@ class path(object):
                     res = self.collision_srv()
                     rospy.loginfo(res)
                     rospy.loginfo(res.success == False)
-                    if res.success is not True:
+                    if res.success != SUCCESS:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
                         rospy.loginfo("Collision detected")
                         self.STATE = FAILURE
                         return
-                    rospy.sleep(1)
+                    #rospy.sleep(1)
                         
                     if (rospy.Time.now().secs - latestupdate.secs) > 2:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
-                        rospy.sleep(1)
+                        #rospy.sleep(1)
                         latestupdate = rospy.Time.now()
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
