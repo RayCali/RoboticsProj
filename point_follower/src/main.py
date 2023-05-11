@@ -16,6 +16,7 @@ import numpy as np
 import tf
 from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from std_msgs.msg import Float64
+from playsound import playsound
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 class path(object):
@@ -77,6 +78,7 @@ class path(object):
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
         rospy.loginfo("Object detected")
+        playsound('/home/robot/objectdetected.mp3')
 
         if self.objectpose_map is None:
             self.objectpose_map = msg
@@ -112,6 +114,7 @@ class path(object):
     
     def tracker(self, msg: PoseStamped):
         rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        playsound('/home/robot/moveto.mp3')
         self.STATE = RUNNING
         if not self.done_once:
             self.cam_pose = msg
