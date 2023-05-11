@@ -29,6 +29,7 @@ class path(object):
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
+        self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
         self.done_once = False
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -92,8 +93,12 @@ class path(object):
             path.poses = path.poses[1:]
             rospy.loginfo("My path is: ")
             rospy.loginfo(msg)
+            node_nr = Float64()
+            node_nr.data = -1
             for point in path.poses:
+                node_nr.data += 1
                 to_log = "moving to next node" + str(np.round(point.pose.position.x,3)) + " " + str(np.round(point.pose.position.y,3))  
+                self.publish_node.publish(node_nr)
                 rospy.loginfo(to_log)
                 rospy.loginfo(point)
 
