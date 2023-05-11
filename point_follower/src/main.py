@@ -78,7 +78,7 @@ class path(object):
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
         rospy.loginfo("Object detected")
-        playsound('/home/robot/objectdetected.mp3')
+        playsound('/home/robot/dd2419_ws/src/speaker/objectdetected.mp3')
 
         if self.objectpose_map is None:
             self.objectpose_map = msg
@@ -114,7 +114,7 @@ class path(object):
     
     def tracker(self, msg: PoseStamped):
         rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        playsound('/home/robot/moveto.mp3')
+        playsound('/home/robot/dd2419_ws/src/speaker/moveto.mp3')
         self.STATE = RUNNING
         if not self.done_once:
             self.cam_pose = msg
