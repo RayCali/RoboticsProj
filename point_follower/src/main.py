@@ -100,21 +100,19 @@ class path(object):
         # if len(msg) == 0:
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
-        rospy.loginfo("Object detected")
 
-        if self.objectpose_map is None:
-            self.objectpose_map = msg
-            self.goal_name = self.objectpose_map.object_class[0][:-2]
+        self.objectpose_map = msg
+        self.goal_name = self.objectpose_map.object_class[0][:-2]
+        rospy.loginfo("Object detected")
 
     def doSaveBoxpose(self, msg: objectPoseStampedLst):
         # if len(msg) == 0:
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
-        rospy.loginfo("Object detected")
-
-        if self.boxpose_map is None:
-            self.boxpose_map = msg
-            self.goal_name = self.boxpose_map.object_class[0]
+        rospy.loginfo("Box detected")
+        self.boxpose_map = msg
+        self.goal_name = self.boxpose_map.object_class[0]
+        
             
 
 
@@ -131,7 +129,7 @@ class path(object):
                 self.objectpose = msg.PoseStamped[i]
                 rospy.loginfo(msg.object_class[i])
                 rospy.loginfo(self.objectpose_map.object_class[0])
-                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
+                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i][:-2]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
                     self.listen_once = True
                 else: 
                     self.listen_once = False
