@@ -10,12 +10,27 @@ if __name__=="__main__":
     root = Root(
         And([
             Or([
-                isPicked(),
-                doPickup()
+                isLocalized(),
+                doLocalize()
             ]),
-            doPlace()
+            Or([
+                isNotPair(),
+                And([
+                    Or([
+                        isAtToy(),
+                        doMoveToToy()
+                    ]),
+                    Or([
+                        isPicked(),
+                        doPickup()
+                    ]),
+                    doMoveToBox(),
+                    doPlace()
+                ])
+            ])
         ])
     )
+    
     while not rospy.is_shutdown():
         rospy.init_node("behavior_tree")
         root.tick()

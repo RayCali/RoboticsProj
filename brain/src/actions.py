@@ -27,6 +27,15 @@ class doMoveToToy(Action):
         res = super().tick()
         print("doMoveToToy: ", res)
         return res
+    
+class doMoveToBox(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveToBox/point_follower/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doMoveToBox: ", res)
+        return res
 
 class doPickup(Action):
     def __init__(self) -> None:

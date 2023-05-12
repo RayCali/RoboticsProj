@@ -16,6 +16,10 @@ class isNotPair(Condition):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy('/srv/isNotPair/memory/brain', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print("isNotPair? ", res)
+        return res
 
 class isFound(Condition):
     def __init__(self) -> None:

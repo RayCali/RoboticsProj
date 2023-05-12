@@ -3,6 +3,7 @@ import rospy
 import numpy as np
 from numpy import dot, array
 import tf2_ros
+import tf2_geometry_msgs
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
 from sensor_msgs.msg import LaserScan
@@ -49,7 +50,7 @@ class Memory:
             "box"    : 8
         }
         self.arucoId2Box = {
-            0 : "Box_Plushies",
+            3 : "Box_Plushies",
             1 : "Box_Balls",
             2 : "Box_Cubes",
             500 : "Anchor"
@@ -71,6 +72,7 @@ class Memory:
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
+        self.boxPub = rospy.Publisher("/boxPoseMap", objectPoseStampedLst, queue_size=10)
         self.goal_name = "lmao"
         
         self.movingToTargetToy = False
@@ -128,20 +130,41 @@ class Memory:
         for key in self.boxes:
             box = self.boxes[key]
             if box.hasArucoMarker:
+                boxPose = objectPoseStampedLst()
+                objectPose = objectPoseStampedLst()
+                print(box.name)
                 if box.name == "Box_Plushies":
+                    print(self.plushies)
                     if len(self.plushies) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.plushies[self.plushies.keys()[0]]
+                        self.targetToy = self.plushies[list(self.plushies.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
+                        
+
                 elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.balls[self.balls.keys()[0]]
+                        self.targetToy = self.balls[list(self.balls.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
 
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.cubes[self.cubes.keys()[0]]
+                        self.targetToy = self.cubes[list(self.cubes.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
         
+            self.toyPub.publish(objectPose)
+            print(objectPose)
+            self.boxPub.publish(boxPose)
         return RequestResponse(STATUS)
     
     def doLocalize(self, req: RequestRequest):
@@ -243,7 +266,11 @@ class Memory:
             if marker.id == 500:
                 self.anchordetected = True
                 continue
-            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id], marker.id)
+            boxPose_cam = PoseStamped()
+            boxPose_cam.pose = marker.pose.pose
+            transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
+            boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_cam, transform)
+            boxObject = Box(boxPose_map, self.arucoId2Box[marker.id], marker.id)
             boxObject.hasArucoMarker = True
             self.putBoxInDict(boxObject)
 
@@ -252,7 +279,7 @@ class Memory:
             objectPos = self.objects[object_name].poseStamped.pose.position
             boxPos = boxObject.poseStamped.pose.position
             if self.getWithinRange(objectPos, boxPos):
-                if not object.hasArucoMarker and boxObject.hasArucoMarker:
+                if boxObject.hasArucoMarker:
                     replace = True
                     self.putBox(boxObject,replace,object_name)
                     return

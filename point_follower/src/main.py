@@ -37,24 +37,48 @@ class path(object):
         self.atToy_srv = rospy.Service("/srv/isAtToy/point_follower/brain", Request, self.arrivedAtToy)
 
         self.moveToToy_srv = rospy.Service("/srv/doMoveToToy/point_follower/brain", Request, self.doMoveToToyResponse)
+        self.moveToBox_srv = rospy.Service("/srv/doMoveToBox/point_follower/brain", Request, self.doMoveToBoxResponse)
 
         self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
+
         self.goal_name = "lmao"
         self.STATE = FAILURE
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
+        self.boxpose_map = None
 
         self.detection_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+        self.boxpose_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.doSaveBoxpose, queue_size=1)
+
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
         if not self.running:
+            rospy.loginfo("Do move to toy called.")
             if self.objectpose_map is None:
+                rospy.loginfo("No object received!!!!!!!!!!!!!!")
                 return RequestResponse(FAILURE) 
             self.running = True
             self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
+            return RequestResponse(RUNNING)
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
+            
+    def doMoveToBoxResponse(self, req: RequestRequest):
+        if not self.running:
+            if self.boxpose_map is None:
+                return RequestResponse(FAILURE) 
+            self.running = True
+            self.moveto_pub.publish(self.boxpose_map.PoseStamped[0])
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -81,6 +105,16 @@ class path(object):
         if self.objectpose_map is None:
             self.objectpose_map = msg
             self.goal_name = self.objectpose_map.object_class[0][:-2]
+
+    def doSaveBoxpose(self, msg: objectPoseStampedLst):
+        # if len(msg) == 0:
+        #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
+        #     exit()
+        rospy.loginfo("Object detected")
+
+        if self.boxpose_map is None:
+            self.boxpose_map = msg
+            self.goal_name = self.boxpose_map.object_class[0]
             
 
 
