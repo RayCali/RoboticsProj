@@ -22,11 +22,12 @@ from utils import *
 class PickAndPlace():
     def __init__(self) -> None:
         self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
+        self.q_observe = [0.0, -0.261799, -1.309, -math.pi/2, 0.0]
         self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
         self.q_dropoff = analyticalIK_lock4([0.2, 0.0, 0.0])
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
-        self.gripper_closed = 0.05
+        self.gripper_closed = 0.0
 
         rospy.Service("/srv/doPickToy/pickup/brain", Request, self.doPickupToy)
         rospy.Service("/srv/isPicked/pickup/brain", Request, self.isPicked)
@@ -189,6 +190,8 @@ class PickAndPlace():
         if resp.success:
             # get pose of object in arm_base
             resp.pose_stamped.header.stamp = t.header.stamp
+            alpha = resp.pose_stamped.pose.orientation.y
+            print("ALPHA: ", alpha)
             try:
                 rospy.loginfo("Waiting for transform from arm_base to object in frame: %s"%resp.pose_stamped.header.frame_id)
                 self.tf_buffer.lookup_transform('arm_base', resp.pose_stamped.header.frame_id, t.header.stamp, timeout=rospy.Duration(5.0))
@@ -203,7 +206,7 @@ class PickAndPlace():
                 rospy.loginfo("Object too close to base, service call failed!!!")
                 self.pick_STATE = FAILURE
                 return
-            if pose_base.pose.position.x > 0.21:
+            if pose_base.pose.position.x > 0.22:
                 rospy.loginfo("Object too far from base, service call failed!!!")
                 # self.twist.linear.x = pose_base.pose.position.x - 0.18
                 # self.pub_twist.publish(self.twist)
@@ -211,12 +214,16 @@ class PickAndPlace():
                 return
             
             # go to hover position
+            pos_hover = [pose_base.pose.position.x, pose_base.pose.position.y, 0.0]
+            q_hover = analyticalIK_lock4(pos_hover, resp.theta, alpha)
+
             pos_pick = [pose_base.pose.position.x, pose_base.pose.position.y, -0.1]
-            q_pick = analyticalIK_lock4(pos_pick, resp.theta)
+            q_pick = analyticalIK_lock4(pos_pick, resp.theta, alpha)
 
             goal = FollowJointTrajectoryGoal()
             goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
-            goal.trajectory.points = [JointTrajectoryPoint(positions=q_pick, velocities=self.q_dot, time_from_start=rospy.Duration(0.5))]
+            goal.trajectory.points = [JointTrajectoryPoint(positions=q_hover, velocities=self.q_dot, time_from_start=rospy.Duration(0.5)),
+                                      JointTrajectoryPoint(positions=q_pick, velocities=self.q_dot, time_from_start=rospy.Duration(1.0))]
 
             print("Sending goal")
             self.trajectory_client.send_goal(goal)
@@ -228,14 +235,14 @@ class PickAndPlace():
         
         if self.trajectory_client.get_state() == GoalStatus.SUCCEEDED:
             # pick up object
-            closeGripper = CommandDuration(duration=200.0)
+            closeGripper = CommandDuration(duration=1000.0)
             closeGripper.data = self.gripper_closed
             self.gripperPub.publish(closeGripper)
 
             rospy.sleep(1.0)
 
             # go to home position
-            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_observe, velocities=self.q_dot, time_from_start=rospy.Duration(0.5)),
+            goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_dropoff, velocities=self.q_dot, time_from_start=rospy.Duration(0.5)),
                                       JointTrajectoryPoint(positions=self.q_home, velocities=self.q_dot, time_from_start=rospy.Duration(1.0))]
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()

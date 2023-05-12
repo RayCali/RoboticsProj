@@ -30,9 +30,9 @@ class ArmCam:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
-        self.once = True
+        self.ball_radius = 0.045/2
 
-        self.Z = 0.221
+        self.Z = 0.182# 0.221
 
         self.distortion_factors = np.array([-0.50881066,  0.39447751, -0.00259297, -0.00138649, -0.23784509, 0.0, 0.0, 0.0])
         self.camera_matrix = np.array([[517.03632655,   0.0, 312.03052029],
@@ -72,8 +72,7 @@ class ArmCam:
 
         
         blob = 255-blob3
-        h, w = blob.shape
-        blob[0,:] = blob[:,0] = blob[h-20:h-1,:] = blob[:,w-1] = 255
+        blob[y+h-27:y+h,x:x+w] = blob[y,x:x+w] = blob[y:y+h,x] = blob[y:y+h,x+h-1] = 255
 
         # Get contours
         cnts = cv2.findContours(blob, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -122,6 +121,9 @@ class ArmCam:
             result = dst.copy()
             cv2.drawContours(result, [box], -1, (255,0,0), 2)
             cv2.circle(result, (cX, cY), 2, (0, 255, 0), -1)
+            # principal_x = newcameramtx[0,2]
+            # principal_y = newcameramtx[1,2]
+            # cv2.circle(result, (int(principal_x), int(principal_y)), 10, (0, 255, 0), -1)
             
             im_with_keypoints_ROS = self.bridge.cv2_to_imgmsg(result, "rgb8")
 
@@ -135,6 +137,22 @@ class ArmCam:
             X = self.Z * (cX - principal_x) / focal_x
             Y = self.Z * (cY - principal_y) / focal_y
 
+            alpha_x = math.atan2(self.Z, X)
+            alpha_y = math.atan2(self.Z, -Y)
+
+            dx = self.ball_radius * math.cos(alpha_x)
+            dy = self.ball_radius * math.cos(alpha_y)
+
+            print("Alpha X: ",alpha_x*180/math.pi)
+            print("Alpha Y: ",alpha_y*180/math.pi)
+            print("X: ",X)
+            print("Y: ",Y)
+            print("DX: ",dx)
+            print("DY: ",dy)
+
+            # X = X + dx
+            # Y = Y - dy
+
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = "arm_cam"
             pose_stamped.header.stamp = rospy.Time.now()
@@ -142,7 +160,7 @@ class ArmCam:
             pose_stamped.pose.position.y = -X
             pose_stamped.pose.position.z = -Y
             pose_stamped.pose.orientation.x = 0
-            pose_stamped.pose.orientation.y = 0
+            pose_stamped.pose.orientation.y = alpha_y
             pose_stamped.pose.orientation.z = 0
             pose_stamped.pose.orientation.w = 1
 
