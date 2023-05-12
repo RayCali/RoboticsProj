@@ -177,7 +177,7 @@ class path(object):
                 condition = math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05
                 distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
                 latestupdate = rospy.Time.now()
-                while distance > 0.02:
+                while distance > 0.03:
                     
                     rospy.loginfo("Waiting for service")
                     rospy.wait_for_service('/srv/no_collision/mapping_and_planning/path_follower')
@@ -194,7 +194,7 @@ class path(object):
                         return
                     #rospy.sleep(1)
                         
-                    if (rospy.Time.now().secs - latestupdate.secs) > 2:
+                    if (rospy.Time.now().secs - latestupdate.secs) > 1:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
@@ -246,6 +246,30 @@ class path(object):
                     to_log = "Distance to next node: " + str(np.round(distance, 3))
                     rospy.loginfo(to_log)
             self.done_once = True
+        
+        #spin base_link exactly 360 degrees
+        
+        base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
+        anglelist = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
+        currentyaw = anglelist[2]
+        latesttime = rospy.Time.now()
+        while currentyaw - anglelist[2] < 5 and currentyaw - anglelist[2] > -5:
+            rospy.loginfo(currentyaw - anglelist[2])
+            self.twist.angular.z = 0.7
+            self.pub_twist.publish(self.twist)
+            self.rate.sleep()
+            try:
+                base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
+                roll,pitch,currentyaw = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
+            except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+                rospy.logerr("Failed to transform point from map frame to base_link frame")
+                pass
+            if (rospy.Time.now().secs - latesttime.secs) > 1:
+                self.twist.linear.x = 0.0
+                self.twist.angular.z = 0.0
+                self.pub_twist.publish(self.twist)
+                rospy.sleep(1)
+                latesttime = rospy.Time.now()
         self.STATE = SUCCESS
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0

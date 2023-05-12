@@ -27,7 +27,8 @@ import matplotlib.path as mpltPath
 from config import SUCCESS, RUNNING, FAILURE
 from visualization_msgs.msg import Marker
 from std_msgs.msg import Int64
-
+from nav_msgs.msg import Path
+from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 class Map():
@@ -38,6 +39,8 @@ class Map():
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.no_collision_srv = rospy.Service('/srv/no_collision/mapping_and_planning/path_follower', Request, self.__nocollision)
         self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
+        self.save_sub   = rospy.Subscriber('/rewired', Path, self.__savepath)
+        self.nodenr_sub   = rospy.Subscriber('/path_follower/node', Float64, self.__savenode)
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
@@ -235,13 +238,28 @@ class Map():
             self.matrix[y+i,x] = 2
     
     def __nocollision(self,req:RequestRequest):
-        global latestscan
+        global latestscan, path, nodenr
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
                     return RequestResponse(FAILURE)
+        position_with_toys = np.where(self.matrix == 3)
+        currentnode = path.poses[int(nodenr)]
+        base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+        for i in range(len(position_with_toys[0])):
+            p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
+            p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
+            p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
+            d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
+            if d < 0.5: #will depend on covariance
+                return RequestResponse(FAILURE)
         return RequestResponse(SUCCESS)
-
+    def __savenode(self,msg):
+        global nodenr
+        nodenr = msg.data
+    def __savepath(self,msg):
+        global path
+        path = msg
 
     def point_inside_polygon(self,x,y,poly):
         n = len(poly)
