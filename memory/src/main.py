@@ -78,7 +78,7 @@ class Memory:
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
-        self.goal_name = "lmao"
+      
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
