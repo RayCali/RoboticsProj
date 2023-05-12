@@ -40,7 +40,7 @@ def forward_kinematics(q):
 
     return T_0E
 
-def analyticalIK_lock4(position, theta=None):
+def analyticalIK_lock4(position, theta=None, alpha=None):
     """
     Inverse kinematics for robot arm.
     input:
@@ -61,7 +61,11 @@ def analyticalIK_lock4(position, theta=None):
     q1 = math.atan2(y, x)
     if theta is not None:
         q5 = -theta - q1
-        print("Q5: ",q5*180/math.pi)
+
+    # try to align arm with object
+#     if alpha is not None and q5 > -0.2 and q5 < 0.2:
+#         q4 = -alpha
+#         print("Q4: ",q4*180/math.pi)   
 
     # compute q3 and q2
     l0 = d[0]
@@ -80,15 +84,10 @@ def analyticalIK_lock4(position, theta=None):
     q2 = -math.atan2(x, z) - math.atan2(l2_eff*math.sin(q3_eff), l1 + l2_eff*math.cos(q3_eff))
 
     angle_offset = math.acos((l2_eff**2+l2**2-(l3+l4)**2)/(2*l2_eff*l2))
-    print("inner angle: ",angle_offset)
     q3 = q3_eff + angle_offset
-    print("eff:", [q1, q2, q3_eff, q4, q5])
     q = [q1, q2, q3, q4, q5]
 
     x_ = -l1*math.sin(q2) - l2_eff*math.sin(q2+q3)
     z_ = l1*math.cos(q2) + l2_eff*math.cos(q2+q3) + l0
-
-    print(q)
-    print([x_,z_])
     
     return q

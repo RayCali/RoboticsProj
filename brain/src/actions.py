@@ -36,3 +36,12 @@ class doPickup(Action):
         res = super().tick()
         print("doPickup: ", res)
         return res
+
+class doPlace(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlaceToy/place/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doPlace: ", res)
+        return res
