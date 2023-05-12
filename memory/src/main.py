@@ -16,6 +16,7 @@ from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
+from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
 class Memory:
     def __init__(self):
@@ -26,6 +27,8 @@ class Memory:
         self.toys: Dict[Toy] = {}
         self.toys_buffer = []
         self.boxes: Dict[Box] = {}
+        self.ones = False
+        self.two = False
         self.id2Object = {
            0 : "Binky",
            1 : "Hugo",

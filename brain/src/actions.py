@@ -19,14 +19,14 @@ class doLocalize(Action):
         print("doLocalize: ", res)
         return res
 
-class doMoveToToy(Action):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doMoveToToy/point_follower/brain", Request)
-    def tick(self):
-        res = super().tick()
-        print("doMoveToToy: ", res)
-        return res
+# class doMoveToToy(Action):
+#     def __init__(self) -> None:
+#         super().__init__()
+#         self.service = rospy.ServiceProxy("/srv/doMoveToToy/point_follower/brain", Request)
+#     def tick(self):
+#         res = super().tick()
+#         print("doMoveToToy: ", res)
+#         return res
     
 class doMoveToGoal(Action):
     def __init__(self) -> None:

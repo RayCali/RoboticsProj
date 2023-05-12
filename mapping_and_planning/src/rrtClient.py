@@ -44,10 +44,10 @@ if __name__ == "__main__":
     pose_in_mapframe = tf2_geometry_msgs.do_transform_pose(pose_in_arucomapframe, transform)
 
 
-    #x = 1
-    #y = 0.5
-    x = 0 + transform.transform.translation.x
-    y = 1 + transform.transform.translation.y
+    x = 1
+    y = 0.5
+    # x = 0 + transform.transform.translation.x
+    # y = 1 + transform.transform.translation.y
 
 
 

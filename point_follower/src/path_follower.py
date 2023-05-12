@@ -198,7 +198,7 @@ class path(object):
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
-                        #rospy.sleep(1)
+                        rospy.sleep(1)
                         latestupdate = rospy.Time.now()
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))

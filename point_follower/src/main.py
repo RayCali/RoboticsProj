@@ -17,6 +17,7 @@ import tf
 from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
+from playsound import playsound
 
 class path(object):
     def __init__(self):
@@ -112,6 +113,7 @@ class path(object):
     
     def tracker(self, msg: PoseStamped):
         rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # playsound('/home/robot/dd2419_ws/src/speaker/src/MoveToToy.mp3')
         self.STATE = RUNNING
         if not self.done_once:
             self.cam_pose = msg
