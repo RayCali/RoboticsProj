@@ -45,9 +45,9 @@ class Memory:
             "Muddles": 3,
             "Kiki"   : 4,
             "Oakie"  : 5,
-            "cube"   : 6,
-            "ball"   : 7,
-            "box"    : 8
+            "Cube"   : 6,
+            "Ball"   : 7,
+            "Box"    : 8
         }
         self.arucoId2Box = {
             3 : "Box_Plushies",
@@ -66,7 +66,7 @@ class Memory:
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
         self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
-        self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
+        # self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
@@ -127,7 +127,7 @@ class Memory:
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
         STATUS = SUCCESS
-        for key in self.boxes:
+        for key in self.boxes.copy():
             box = self.boxes[key]
             if box.hasArucoMarker:
                 boxPose = objectPoseStampedLst()
