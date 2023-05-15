@@ -54,3 +54,11 @@ class doPlace(Action):
         res = super().tick()
         print("doPlace: ", res)
         return res
+class spin(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/spin/beyblade/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("spin: ", res)
+        return res
