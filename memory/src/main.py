@@ -17,6 +17,7 @@ from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
+from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
 class Memory:
     def __init__(self):
@@ -215,7 +216,7 @@ class Memory:
         else:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
-
+        # self.name_id = objectType.count
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
         self.objects[name] = object
@@ -233,6 +234,36 @@ class Memory:
         if count > 14:
             self.putObject(pose,id)
             self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
+            
+            if id == 0:
+                playsound('/home/robot/Downloads/Binky.mp3')
+
+            if id == 1:
+                playsound('/home/robot/Downloads/Hugo.mp3')
+
+            if id == 2:
+                playsound('/home/robot/Downloads/Slush.mp3')
+
+            if id == 3:
+                playsound('/home/robot/Downloads/Muddles.mp3')
+
+            if id == 4:
+                playsound('/home/robot/Downloads/Kiki.mp3')
+
+            if id == 5:
+                playsound('/home/robot/Downloads/Oakie.mp3')
+            
+            if id == 6:
+                playsound('/home/robot/Downloads/cube.mp3')
+
+            if id == 7:
+                playsound('/home/robot/Downloads/ball.mp3')
+
+            if id == 8:
+                playsound('/home/robot/Downloads/box.mp3')
+
+            
+                
 
 
         

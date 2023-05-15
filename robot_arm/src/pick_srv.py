@@ -17,7 +17,7 @@ from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest, PickPose, PickPoseResponse, PickPoseRequest
 from utils import *
-
+from playsound import playsound
 
 class PickAndPlace():
     def __init__(self) -> None:
@@ -259,6 +259,7 @@ class PickAndPlace():
 
     def handle_place_req(self, msg:bool):
         if self.doPlace:
+            playsound('/home/robot/Downloads/place.mp3')
             goal = FollowJointTrajectoryGoal()
             goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
             goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_dropoff, velocities=self.q_dot, time_from_start=rospy.Duration(0.5))]
