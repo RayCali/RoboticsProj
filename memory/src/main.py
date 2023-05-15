@@ -3,6 +3,7 @@ import rospy
 import numpy as np
 from numpy import dot, array
 import tf2_ros
+import tf2_geometry_msgs
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
 from sensor_msgs.msg import LaserScan
@@ -16,12 +17,7 @@ from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
-from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
-latesttime_cube = 0
-latesttime_ball = 0
-latesttime_plushie = 0
-
 class Memory:
     def __init__(self):
         self.objects: Dict[Movable]= {}
@@ -31,8 +27,6 @@ class Memory:
         self.toys: Dict[Toy] = {}
         self.toys_buffer = []
         self.boxes: Dict[Box] = {}
-        self.ones = False
-        self.two = False
         self.id2Object = {
            0 : "Binky",
            1 : "Hugo",
@@ -51,12 +45,12 @@ class Memory:
             "Muddles": 3,
             "Kiki"   : 4,
             "Oakie"  : 5,
-            "cube"   : 6,
-            "ball"   : 7,
-            "box"    : 8
+            "Cube"   : 6,
+            "Ball"   : 7,
+            "Box"    : 8
         }
         self.arucoId2Box = {
-            0 : "Box_Plushies",
+            3 : "Box_Plushies",
             1 : "Box_Balls",
             2 : "Box_Cubes",
             500 : "Anchor"
@@ -72,13 +66,15 @@ class Memory:
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
         self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
-        self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
+        # self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
-      
+        self.boxPub = rospy.Publisher("/boxPoseMap", objectPoseStampedLst, queue_size=10)
+        self.targetpub = rospy.Publisher("/targetPoseMap", objectPoseStampedLst, queue_size=10)
+        self.goal_name = "lmao"
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -132,23 +128,44 @@ class Memory:
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
         STATUS = SUCCESS
-        for key in self.boxes:
+        for key in self.boxes.copy():
             box = self.boxes[key]
             if box.hasArucoMarker:
+                boxPose = objectPoseStampedLst()
+                objectPose = objectPoseStampedLst()
+                print(box.name)
                 if box.name == "Box_Plushies":
+                    print(self.plushies)
                     if len(self.plushies) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.plushies[self.plushies.keys()[0]]
+                        self.targetToy = self.plushies[list(self.plushies.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
+                        
+
                 elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.balls[self.balls.keys()[0]]
+                        self.targetToy = self.balls[list(self.balls.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
 
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
                         STATUS = FAILURE
-                        self.targetToy = self.cubes[self.cubes.keys()[0]]
+                        self.targetToy = self.cubes[list(self.cubes.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
         
+            self.toyPub.publish(objectPose)
+            print(objectPose)
+            self.boxPub.publish(boxPose)
         return RequestResponse(STATUS)
     
     def doLocalize(self, req: RequestRequest):
@@ -184,7 +201,6 @@ class Memory:
     #     return MovetoResponse(STATUS)
     
     def putObject(self, pose: PoseStamped, id: int):
-        global latesttime_ball, latesttime_cube
         object: Movable
         objectType = None
         correctDict = None
@@ -200,21 +216,6 @@ class Memory:
         else:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
-        # if name[:-2] == "cube": #and name[-1]== 1:
-        #     if rospy.Time.now().secs - latesttime_cube > 3:
-        #         playsound("cube.mp3")
-        #         latesttime_cube = rospy.Time.now().secs
-
-        # if name[:-2] == "ball": #and name[-1]== 1:
-        #     if rospy.Time.now().secs - latesttime_ball > 3:
-        #         playsound("ball.mp3")
-        #         latesttime_ball = rospy.Time.now().secs
-        
-        # for name in objectType:
-        #     if name  == "Plushie": #and name[-1]== 1:
-        #         if rospy.Time.now().secs - latesttime_plushie > 3:
-        #             playsound("plushie.mp3")
-        #             latesttime_cube = rospy.Time.now().secs
 
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
@@ -266,7 +267,11 @@ class Memory:
             if marker.id == 500:
                 self.anchordetected = True
                 continue
-            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id], marker.id)
+            boxPose_cam = PoseStamped()
+            boxPose_cam.pose = marker.pose.pose
+            transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
+            boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_cam, transform)
+            boxObject = Box(boxPose_map, self.arucoId2Box[marker.id], marker.id)
             boxObject.hasArucoMarker = True
             self.putBoxInDict(boxObject)
 
@@ -275,7 +280,7 @@ class Memory:
             objectPos = self.objects[object_name].poseStamped.pose.position
             boxPos = boxObject.poseStamped.pose.position
             if self.getWithinRange(objectPos, boxPos):
-                if not object.hasArucoMarker and boxObject.hasArucoMarker:
+                if boxObject.hasArucoMarker:
                     replace = True
                     self.putBox(boxObject,replace,object_name)
                     return

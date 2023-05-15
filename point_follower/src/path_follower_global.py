@@ -39,7 +39,7 @@ class path(object):
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
         self.explore = True
-        self.movePath_srv = rospy.Service('/srv/doMoveAlongPath/path_follower/brain', Request, self.doMovePathResponse)
+        self.movePath_srv = rospy.Service('/srv/doMoveAlongPathGlobal/path_follower_global/brain', Request, self.doMovePathResponse)
 
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
@@ -254,10 +254,15 @@ class path(object):
             currentyaw = anglelist[2]
             latesttime = rospy.Time.now()
             condition = np.abs(currentyaw - anglelist[2]) < 5
+            switch = False
             while condition:
                 rospy.loginfo(currentyaw - anglelist[2])
                 if np(currentyaw - anglelist[2]) > 3:
-                    condition = np.abs(currentyaw - anglelist[2]) < 0.1
+                    switch = True
+                if switch:    
+                    condition = np.abs(currentyaw - anglelist[2]) > 0.1
+                else:
+                    condition = np.abs(currentyaw - anglelist[2]) < 5
                 self.twist.angular.z = 0.7
                 self.pub_twist.publish(self.twist)
                 self.rate.sleep()
@@ -308,7 +313,7 @@ class path(object):
         #     self.done_once = False
 
 if __name__ == "__main__":
-    rospy.init_node("path_follower")
+    rospy.init_node("path_follower_global")
     rospy.loginfo("Starting path_tracker node")
     # getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
     tfBuffer = tf2_ros.Buffer()

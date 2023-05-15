@@ -8,13 +8,13 @@
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
-|    |    |    |    [pathFollowerPoint]
+|    |    |    |    [pathFollowerLocal]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]
 |    |    |    ?
 |    |    |    |    (isInFrontBox)
-|    |    |    |    [pathFollowerPoint]
+|    |    |    |    [pathFollowerLocal]
 |    |    |    ?
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]
