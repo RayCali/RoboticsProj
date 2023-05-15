@@ -23,14 +23,18 @@ class path(object):
 
         self.moveToToy_srv = rospy.Service("/srv/spin/beyblade/brain", Request, self.doMoveToToyResponse)
         self.running=False
-        self.STATE = RUNNING    
+        self.STATE = FAILURE
+        self.twist = Twist()
+        self.spinpub = rospy.Publisher("/spin", Twist, queue_size=1)
+        self.spinsub = rospy.Subscriber("/spin", Twist, self.spin)
+        self.pub_twist = rospy.Publisher("/cmd_vel", Twist, queue_size=1)
 
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
         if not self.running:
             self.running = True
-            self.spin()
+            self.spinpub.publish(self.twist)
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -41,7 +45,8 @@ class path(object):
             if self.STATE == SUCCESS:
                 self.running = False
                 return RequestResponse(SUCCESS)
-    def spin(self):
+    def spin(self, msg):
+        rospy.loginfo("im in")
         base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
         anglelist = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
         currentyaw = anglelist[2]
@@ -50,7 +55,7 @@ class path(object):
         switch = False
         while condition:
             rospy.loginfo(currentyaw - anglelist[2])
-            if np(currentyaw - anglelist[2]) > 3:
+            if np.abs(currentyaw - anglelist[2]) > 3:
                 switch = True
             if switch:    
                 condition = np.abs(currentyaw - anglelist[2]) > 0.1
@@ -58,7 +63,7 @@ class path(object):
                 condition = np.abs(currentyaw - anglelist[2]) < 5
             self.twist.angular.z = 0.7
             self.pub_twist.publish(self.twist)
-            self.rate.sleep()
+            rospy.Rate(20).sleep()
             try:
                 base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
                 roll,pitch,currentyaw = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
@@ -78,8 +83,8 @@ class path(object):
         return
  
 if __name__ == "__main__":
-    rospy.init_node("point_follower")
-    rospy.loginfo("Starting path_tracker node")
+    rospy.init_node("beyblade")
+    rospy.loginfo("Starting beyblade node")
     # getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
     tfBuffer = tf2_ros.Buffer()
     tflistener = tf2_ros.TransformListener(tfBuffer)

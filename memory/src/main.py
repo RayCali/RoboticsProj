@@ -232,9 +232,6 @@ class Memory:
         if count < 15:
             self.toys_buffer.append((pose,id))
         if count > 14:
-            self.putObject(pose,id)
-            self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
-            
             if id == 0:
                 playsound('/home/robot/Downloads/Binky.mp3')
 
@@ -262,6 +259,10 @@ class Memory:
             if id == 8:
                 playsound('/home/robot/Downloads/box.mp3')
 
+            self.putObject(pose,id)
+            self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
+            
+  
             
                 
 
