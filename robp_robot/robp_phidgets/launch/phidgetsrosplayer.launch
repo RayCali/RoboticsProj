@@ -24,7 +24,7 @@
   </include>
 
   <include file="$(find robp_phidgets)/launch/spatial.launch">
-    <arg name="manager" value="$(arg manager)"/>
+    <arg name="manager" 0alue="$(arg manager)"/>
     <arg name="port" default="$(arg imu_port)"/>
   </include>
 

@@ -18,7 +18,7 @@ from actionlib import GoalStatus
 from control_msgs.msg import FollowJointTrajectoryAction, FollowJointTrajectoryGoal
 #from robot_arm.srv import Place, PlaceResponse, PlaceRequest
 from msg_srv_pkg.srv import Place, PlaceResponse, PlaceRequest
-
+from playsound import playsound
 from utils import *
 
 
@@ -40,6 +40,7 @@ def joint_state_callback(msg: JointState):
     joint_states = msg
 
 def handle_place_req(req: PlaceRequest):
+    # playsound('/home/robot/dd2419_ws/src/speaker/src/place.mp3')
     global dropoff
     dropoff.header.stamp = rospy.Time.now()
     if joint_states.position[-1] == gripper_closed:

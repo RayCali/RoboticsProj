@@ -2,10 +2,13 @@
     "actions": {
       "doLocalize()": "Do localisation, i.e. reduce the uncertainty of the robot's position.",
       "doExplore()": "During exploration Grumpy goes trhough the workspace looking for objects and boxes until he has found at least one object and its corresponding box.",
-      "doMoveToGoal(goal)": "Move to the goal position (pickup or box for dropoff).",
+      "doMoveToGoal()": "Move to the goal position (pickup or box for dropoff).",
       "doPickup()": "Pick the object up with the arm (here the robot is stationary and only the arm is moving).",
       "doPlace()": "Place the object in the box.",
-      "doExplore()": "Explore the workspace using the global planner"
+      "doExplore()": "Explore the workspace using the global planner",
+      "doPlanPath()": "Explore the workspace using the global planner",
+      "doMoveAlongPath()": "Robot gets the RRT path"
+      
 
     },
     "conditions": {

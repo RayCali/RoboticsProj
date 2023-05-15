@@ -7,15 +7,18 @@ from actions import *
 from utilities import Root, And, Or
 
 if __name__=="__main__":
-    root = Root(
+    root = Root( 
         And([
-            Or([
-                isPicked(),
-                doPickup()
-            ]),
-            doPlace()
+            doPlanPath(),
+            doMoveAlongPath(),
         ])
     )
+    # root = Root(
+    #     And([
+    #         isPicked(),
+    #         doMoveToGoal(),
+    #     ])
+    # )
     while not rospy.is_shutdown():
         rospy.init_node("behavior_tree")
         root.tick()

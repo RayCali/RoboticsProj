@@ -14,7 +14,8 @@ from std_msgs.msg import Int64
 from visualization_msgs.msg import Marker
 import tf2_geometry_msgs
 import math
-
+from nav_msgs.msg import Path
+from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
 
 
@@ -24,13 +25,17 @@ class SuperMap:
         self.anchordetected = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-        s = rospy.Service('/no_collision', Request, self.__nocollision)
+        self.no_collision_srv = rospy.Service('/srv/no_collision/mapping_and_planning/path_follower', Request, self.__nocollision)
         self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
+        self.save_sub   = rospy.Subscriber('/rewired', Path, self.__savepath)
+        self.nodenr_sub   = rospy.Subscriber('/path_follower/node', Float64, self.__savenode)
+        self.currentnode = 0
+        self.currentpath = Path()
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore = rospy.Subscriber("/start_explore", Int64, self.__doStartExploreCallback)
+        self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -58,13 +63,15 @@ class SuperMap:
         
         # if plot:
         #     self.__doDrawBox()
-    def __doStartExploreCallback(self, msg):
+    def __doStartExploreCallback(self, req: RequestRequest):
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
         self.goal_pub.publish(ps)
+        return RequestResponse(SUCCESS)
+
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
         self.grid.data = self.matrix.flatten()
@@ -209,13 +216,30 @@ class SuperMap:
             self.matrix[y+i,x] = 2
     
     def __nocollision(self,req:RequestRequest):
-        global latestscan
+        global latestscan, path, nodenr
+        print("Collision called")
+        is_there_obstacle = False
         for i in range (len(latestscan.ranges)):
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
                     return RequestResponse(FAILURE)
+        position_with_toys = np.where(self.matrix == 3)
+        currentnode = path.PoseStamped[nodenr]
+        base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+        for i in range(len(position_with_toys[0])):
+            p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
+            p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
+            p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
+            d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
+            if d < 0.5: #will depend on covariance
+                return RequestResponse(FAILURE)
         return RequestResponse(SUCCESS)
-
+    def __savenode(self,msg):
+        global nodenr
+        nodenr = msg.data
+    def __savepath(self,msg):
+        global path
+        path = msg
 
     def point_inside_polygon(self,x,y,poly):
         n = len(poly)
@@ -232,11 +256,9 @@ class SuperMap:
                             inside = not inside
             p1x,p1y = p2x,p2y
         return inside
-    def __lineitup(self, msg:Marker):
-        rospy.loginfo("LINE IT UP")
+    def __lineitup(self, msg: Marker):
         poly = msg
         pointlist = [[]]
-        rospy.loginfo(poly)
         margin = 0.3
         trans = self.tf_buffer.lookup_transform("map", "arucomap", rospy.Time(0))
         for i in range(len(poly.points)):
@@ -249,12 +271,11 @@ class SuperMap:
             poly.points[i].x = apoint_new.pose.position.x
             poly.points[i].y = apoint_new.pose.position.y
         prevpoint = poly.points[:-1]
-        nr6 = prevpoint[6]
+        #nr6 = prevpoint[6]
         #rospy.loginfo(prevpoint[6])
         
 
         for i in range(len(poly.points)):
-            rospy.loginfo("switch line")
             x_ind = int((poly.points[i].x - self.grid.info.origin.position.x) / self.grid.info.resolution)
             y_ind = int((poly.points[i].y - self.grid.info.origin.position.y) / self.grid.info.resolution)
             self.matrix[y_ind, x_ind] = 6
@@ -268,7 +289,6 @@ class SuperMap:
                 #rospy.loginfo(poly.points[i])
                 
                 if poly.points[i].x < prevpoint[i-1].x and poly.points[i].y > prevpoint[i-1].y:#negative k
-                    rospy.loginfo(prevpoint[i-1])
                     tx = prevpoint[i-1].x
                     ty = prevpoint[i-1].y
                     bx = poly.points[i].x
@@ -276,7 +296,6 @@ class SuperMap:
                     angle = math.atan2(ty-by, tx-bx)
                     minitargetx = bx + margin*math.cos(angle)
                     minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo("1")
                     while (tx-bx) * (tx-minitargetx) > 0 and (ty-by) * (ty-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -285,9 +304,7 @@ class SuperMap:
                         by = minitargety
                         minitargetx = bx + margin*math.cos(angle)
                         minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo(prevpoint[i-1])
                 elif poly.points[i].x < prevpoint[i-1].x and poly.points[i].y < prevpoint[i-1].y: #positive k
-                    rospy.loginfo(prevpoint[i-1])
                     tx = prevpoint[i-1].x
                     ty = prevpoint[i-1].y
                     bx = poly.points[i].x
@@ -295,7 +312,6 @@ class SuperMap:
                     angle = math.atan2(ty-by, tx-bx)
                     minitargetx = bx + margin*math.cos(angle)
                     minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo("2")
                     while (tx-bx) * (tx-minitargetx) > 0 and (ty-by) * (ty-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -304,9 +320,7 @@ class SuperMap:
                         by = minitargety
                         minitargetx = bx + margin*math.cos(angle)
                         minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo(prevpoint[i-1])
                 elif poly.points[i].x > prevpoint[i-1].x and poly.points[i].y > prevpoint[i-1].y: #positive k
-                    rospy.loginfo(prevpoint[i-1])
                     tx = poly.points[i].x
                     ty = poly.points[i].y
                     bx = prevpoint[i-1].x
@@ -314,7 +328,6 @@ class SuperMap:
                     angle = math.atan2(ty-by, tx-bx)
                     minitargetx = bx + margin*math.cos(angle)
                     minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo("3")
                     while (tx-bx) * (tx-minitargetx) > 0 and (ty-by) * (ty-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -323,19 +336,17 @@ class SuperMap:
                         by = minitargety
                         minitargetx = bx + margin*math.cos(angle)
                         minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo(prevpoint[i-1])
                 elif poly.points[i].x > prevpoint[i-1].x and poly.points[i].y < prevpoint[i-1].y:# negative k
-                    rospy.loginfo(prevpoint[i-1])
+                 
                     tx = poly.points[i].x
                     ty = poly.points[i].y
                     bx = prevpoint[i-1].x
                     by = prevpoint[i-1].y
-                    rospy.loginfo(prevpoint[i-1])
-                    rospy.loginfo(poly.points[i])
+                   
                     angle = math.atan2(ty-by, tx-bx)
                     minitargetx = bx + margin*math.cos(angle)
                     minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo("4")
+                    
                     while (tx-bx) * (tx-minitargetx) > 0 and (ty-by) * (ty-minitargety) > 0:
                         x_ind = int((minitargetx - self.grid.info.origin.position.x) / self.grid.info.resolution)
                         y_ind = int((minitargety - self.grid.info.origin.position.y) / self.grid.info.resolution)
@@ -344,7 +355,7 @@ class SuperMap:
                         by = minitargety
                         minitargetx = bx + margin*math.cos(angle)
                         minitargety = by + margin*math.sin(angle)
-                    rospy.loginfo(prevpoint[i-1])
+                  
                 elif poly.points[i].x == prevpoint[i-1].x:
                     if poly.points[i].y > prevpoint[i-1].y:
                         tx = poly.points[i].x

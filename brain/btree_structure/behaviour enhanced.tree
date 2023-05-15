@@ -1,0 +1,26 @@
+->
+|    ?
+|    |    (isLocalized)
+|    |    [doLocalize()]
+|    ?
+|    |    (isNotPair)
+|    |    ->
+|    |    |    ?
+|    |    |    |    (isPicked)
+|    |    |    |    (isInFrontToy)
+|    |    |    |    [pathFollowerPoint]
+|    |    |    ?
+|    |    |    |    (isPicked)
+|    |    |    |    [doPickup()]
+|    |    |    ?
+|    |    |    |    (isInFrontBox)
+|    |    |    |    [pathFollowerPoint]
+|    |    |    ?
+|    |    |    |    (isPlaced)
+|    |    |    |    [doPlace()]
+|    |    |    (isNotPair)
+|    ?
+|    |    (isExplored)
+|    |    ->
+            |   [findMostValuedCell]
+            |   [pathFollowerGlobal]

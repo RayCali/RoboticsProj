@@ -17,6 +17,7 @@ import tf
 from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
 from std_msgs.msg import Float64
 SUCCESS, RUNNING, FAILURE = 1, 0, -1
+from playsound import playsound
 
 class path(object):
     def __init__(self):
@@ -36,7 +37,7 @@ class path(object):
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/srv/isAtToy/point_follower/brain", Request, self.arrivedAtToy)
 
-        self.moveToToy_srv = rospy.Service("/srv/doMoveToToy/point_follower/brain", Request, self.doMoveToToyResponse)
+        self.moveToToy_srv = rospy.Service("/srv/doMoveToGoal/point_follower/brain", Request, self.doMoveToToyResponse)
 
         self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
@@ -45,7 +46,7 @@ class path(object):
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
-
+        # /srv/doMoveToGoal/point_follower/brain
         self.detection_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
     
 
@@ -112,6 +113,7 @@ class path(object):
     
     def tracker(self, msg: PoseStamped):
         rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        # playsound('/home/robot/dd2419_ws/src/speaker/src/MoveToToy.mp3')
         self.STATE = RUNNING
         if not self.done_once:
             self.cam_pose = msg

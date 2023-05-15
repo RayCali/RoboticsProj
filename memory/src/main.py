@@ -16,7 +16,12 @@ from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from config import SUCCESS, RUNNING, FAILURE
+from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
+latesttime_cube = 0
+latesttime_ball = 0
+latesttime_plushie = 0
+
 class Memory:
     def __init__(self):
         self.objects: Dict[Movable]= {}
@@ -26,6 +31,8 @@ class Memory:
         self.toys: Dict[Toy] = {}
         self.toys_buffer = []
         self.boxes: Dict[Box] = {}
+        self.ones = False
+        self.two = False
         self.id2Object = {
            0 : "Binky",
            1 : "Hugo",
@@ -71,7 +78,7 @@ class Memory:
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
 
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
-        self.goal_name = "lmao"
+      
         
         self.movingToTargetToy = False
         self.targetToy: Toy = None
@@ -177,6 +184,7 @@ class Memory:
     #     return MovetoResponse(STATUS)
     
     def putObject(self, pose: PoseStamped, id: int):
+        global latesttime_ball, latesttime_cube
         object: Movable
         objectType = None
         correctDict = None
@@ -192,6 +200,21 @@ class Memory:
         else:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
+        # if name[:-2] == "cube": #and name[-1]== 1:
+        #     if rospy.Time.now().secs - latesttime_cube > 3:
+        #         playsound("cube.mp3")
+        #         latesttime_cube = rospy.Time.now().secs
+
+        # if name[:-2] == "ball": #and name[-1]== 1:
+        #     if rospy.Time.now().secs - latesttime_ball > 3:
+        #         playsound("ball.mp3")
+        #         latesttime_ball = rospy.Time.now().secs
+        
+        # for name in objectType:
+        #     if name  == "Plushie": #and name[-1]== 1:
+        #         if rospy.Time.now().secs - latesttime_plushie > 3:
+        #             playsound("plushie.mp3")
+        #             latesttime_cube = rospy.Time.now().secs
 
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
