@@ -94,6 +94,7 @@ class PickAndPlace():
         self.joint_states = msg
 
     def isPicked(self, msg: RequestRequest):
+        print("PICKSTATE: ", self.pick_STATE)
         if self.pick_STATE == SUCCESS:
             return RequestResponse(SUCCESS)
         else:

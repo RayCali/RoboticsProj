@@ -142,11 +142,11 @@ class Detector(nn.Module):
                 elif maxProbIdx == 5:
                     bb_class = "Oakie"
                 elif maxProbIdx == 6:
-                    bb_class = "cube"
+                    bb_class = "Cube"
                 elif maxProbIdx == 7:
-                    bb_class = "ball"
+                    bb_class = "Ball"
                 elif maxProbIdx == 8:
-                    bb_class = "box"
+                    bb_class = "Box"
 
 
                 img_bbs.append(

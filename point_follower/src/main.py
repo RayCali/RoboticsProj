@@ -39,8 +39,8 @@ class path(object):
         self.moveToToy_srv = rospy.Service("/srv/doMoveToToy/point_follower/brain", Request, self.doMoveToToyResponse)
         self.moveToBox_srv = rospy.Service("/srv/doMoveToBox/point_follower/brain", Request, self.doMoveToBoxResponse)
 
-        self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
-        self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
+        self.moveto_pub = rospy.Publisher('/toyPose', objectPoseStampedLst, queue_size=1)
+        self.moveto_sub = rospy.Subscriber('/toyPose', objectPoseStampedLst, self.tracker, queue_size=1)
 
         self.goal_name = "lmao"
         self.STATE = FAILURE
@@ -61,7 +61,8 @@ class path(object):
                 rospy.loginfo("No object received!!!!!!!!!!!!!!")
                 return RequestResponse(FAILURE) 
             self.running = True
-            self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
+            self.done_once = False
+            self.moveto_pub.publish(self.objectpose_map)
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -75,10 +76,12 @@ class path(object):
             
     def doMoveToBoxResponse(self, req: RequestRequest):
         if not self.running:
+            rospy.loginfo("Do move to box called.")
             if self.boxpose_map is None:
                 return RequestResponse(FAILURE) 
             self.running = True
-            self.moveto_pub.publish(self.boxpose_map.PoseStamped[0])
+            self.done_once = False
+            self.moveto_pub.publish(self.boxpose_map)
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -102,16 +105,16 @@ class path(object):
         #     exit()
 
         self.objectpose_map = msg
-        self.goal_name = self.objectpose_map.object_class[0][:-2]
-        rospy.loginfo("Object detected")
+        # self.goal_name = self.objectpose_map.object_class[0][:-2]
+        # rospy.loginfo("Object detected")
 
     def doSaveBoxpose(self, msg: objectPoseStampedLst):
         # if len(msg) == 0:
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
-        rospy.loginfo("Box detected")
+        # rospy.loginfo("Box detected")
         self.boxpose_map = msg
-        self.goal_name = self.boxpose_map.object_class[0]
+        # self.goal_name = self.boxpose_map.object_class[0]
         
             
 
@@ -127,9 +130,10 @@ class path(object):
                 exit()
             for i in range(len(msg.PoseStamped)):
                 self.objectpose = msg.PoseStamped[i]
-                rospy.loginfo(msg.object_class[i])
-                rospy.loginfo(self.objectpose_map.object_class[0])
-                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i][:-2]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
+                rospy.loginfo("objectname: {}".format(msg.object_class[i]))
+                rospy.loginfo("GOAL NAME: {}".format(self.goal_name))
+                # rospy.loginfo(self.objectpose_map.object_class[0])
+                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
                     self.listen_once = True
                 else: 
                     self.listen_once = False
@@ -142,11 +146,17 @@ class path(object):
             #rospy.loginfo("Label: {}".format(msg.object_class[0]))
     
     
-    def tracker(self, msg: PoseStamped):
-        rospy.loginfo("MOVE TO TOY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    def tracker(self, msg: objectPoseStampedLst):
+        rospy.loginfo("MOVE TO {}!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!".format(msg.object_class[0]))
         self.STATE = RUNNING
+        self.goal_name = msg.object_class[0]
+        if self.goal_name.split("_")[0][0] != "Box":
+            self.goal_name = self.goal_name.split("_")[:-1][0]
+        else:
+            self.goal_name = self.goal_name.split("_")[0][0]
+        
         if not self.done_once:
-            self.cam_pose = msg
+            self.cam_pose = msg.PoseStamped[0]
             self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
