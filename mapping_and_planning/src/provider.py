@@ -5,7 +5,7 @@ import math
 import rospy
 from rospy import loginfo
 import tf2_ros
-
+from msg_srv_pkg.msg import objectPoseStampedLst
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped, Pose
 from msg_srv_pkg.srv import Request, RequestResponse
@@ -23,30 +23,73 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlanner_srv = rospy.Service("/srv/doPlanpath/mapping_and_planning/brain", Request, self.doReturnMovetoResponse)
-
+        self.pathPlannerEx_srv = rospy.Service("/srv/doPlanpathExplore/mapping_and_planning/brain", Request, self.doReturnMovetoResponse)
+        self.pathPlannerToy_srv = rospy.Service("/srv/doPlanpathToy/mapping_and_planning/brain", Request, self.doReturnMovetoResponseToy)
+        self.pathPlannerBox_srv = rospy.Service("/srv/doPlanpathBox/mapping_and_planning/brain", Request, self.doReturnMovetoResponseBox)
+        
         self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
 
-        self.goal_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoal, queue_size=10)
-
+        self.goal_Ex_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoalEx, queue_size=10)
+        self.goal_toy_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.getToy, queue_size=10)
+        self.goal_box_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.getBox, queue_size=10)
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
         self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
         self.getObstacles()
         self.running = False
         self.STATE = RUNNING
-        self.goal = None
+        self.goal_Ex = None
+        self.goal_toy = None
+        self.goal_box = None
     
-    def getGoal(self, msg: PoseStamped):
+    def getGoalEx(self, msg: PoseStamped):
         print("got goal: ", msg)
-        self.goal = msg
+        self.goal_Ex = msg
+    def getToy(self, msg: objectPoseStampedLst):
+        print("got goal: ", msg)
+        self.goal_toy = msg.PoseStamped[0]
+    def getBox(self, msg: objectPoseStampedLst):
+        print("got goal: ", msg)
+        self.goal_box = msg.PoseStamped[0]
     
     def doReturnMovetoResponse(self, req: Request):
         if not self.running:
-            if self.goal is None:
+            if self.goal_Ex is None:
                 return RequestResponse(FAILURE)
             self.running = True
-            self.moveto_pub.publish(self.goal)
+            self.moveto_pub.publish(self.goal_Ex)
+            return RequestResponse(SUCCESS)
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
+    def doReturnMovetoResponseToy(self, req: Request):
+        if not self.running:
+            if self.goal_toy is None:
+                return RequestResponse(FAILURE)
+            self.running = True
+            self.moveto_pub.publish(self.goal_toy)
+            return RequestResponse(SUCCESS)
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
+    def doReturnMovetoResponseBox(self, req: Request):
+        if not self.running:
+            if self.goal_box is None:
+                return RequestResponse(FAILURE)
+            self.running = True
+            self.moveto_pub.publish(self.goal_box)
             return RequestResponse(SUCCESS)
         if self.running:
             if self.STATE == RUNNING:

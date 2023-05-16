@@ -47,9 +47,13 @@ class path(object):
         self.detection_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.doSaveToyPose, queue_size=1)
         self.boxpose_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.doSaveBoxPose, queue_size=1)
         self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
-        self.target_pose = PoseStamped()
+        self.target_pose = None
         self.done_once = False
         self.lastnode = False
+        self.toy = None
+        self.box = None
+        self.box_pose = None
+        self.toy_pose = None
         self.target = None
         self.STATE = FAILURE
         self.running = False
@@ -64,6 +68,10 @@ class path(object):
             if self.Path is None:
                 return RequestResponse(FAILURE) 
             self.running = True
+            if self.toy is None:
+                return RequestResponse(FAILURE)
+            self.target = self.toy
+            self.target_pose = self.toy_pose
             self.moveto_pub.publish(self.Path)
             return RequestResponse(RUNNING)
         if self.running:
@@ -80,8 +88,10 @@ class path(object):
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
-            if self.target is None:
+            if self.box is None:
                 return RequestResponse(FAILURE) 
+            self.target = self.box
+            self.target_pose = self.box_pose
             self.running = True
             self.done_once = False
             self.moveto_pub.publish(self.Path)
@@ -108,11 +118,11 @@ class path(object):
             self.Path= msg
 
     def doSaveToyPose(self, msg: objectPoseStampedLst):
-        self.target = msg.object_class[0][:-2]
-        self.target_pose = msg.PoseStamped[0]
+        self.toy = msg.object_class[0][:-2]
+        self.toy_pose = msg.PoseStamped[0]
     def doSaveBoxPose(self, msg: objectPoseStampedLst):
-        self.target = "box"
-        self.target_pose = msg.PoseStamped[0]
+        self.box = "box"
+        self.box_pose = msg.PoseStamped[0]
     
     def distance_to_goal(self, msg: objectPoseStampedLst):
         if self.last_node:
@@ -307,6 +317,11 @@ class path(object):
         self.done_once = False
         self.lastnode = False
         self.target = None
+        self.target_pose = None
+        self.toy = None
+        self.box = None
+        self.box_pose = None
+        self.toy_pose = None
         self.STATE = FAILURE
         self.running = False
         self.objectpose = None
