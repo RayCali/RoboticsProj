@@ -70,7 +70,8 @@ class Map():
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
 
 
-
+        self.startExplore_STATE = FAILURE
+        self.stopExplore_STATE = FAILURE
 
         self.start_explore = rospy.Publisher("/start_explore", Int64, queue_size=1)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
@@ -103,18 +104,19 @@ class Map():
         if not self.running:
             return RequestResponse(RUNNING)
         if self.running:
-            if self.STATE == RUNNING:
+            if self.startExplore_STATE == RUNNING:
                 ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
                 ps: PoseStamped = PoseStamped()
                 ps.header = ts.header
                 ps.pose.position.x = ts.transform.translation.x
                 ps.pose.position.y = ts.transform.translation.y
                 self.goal_pub.publish(ps)
-                return RequestResponse(SUCCESS)
-            if self.STATE == FAILURE:
+                self.startExplore_STATE = SUCCESS
+                return RequestResponse(RUNNING)
+            if self.startExplore_STATE == FAILURE:
                 self.running = False
                 return RequestResponse(FAILURE)
-            if self.STATE == SUCCESS:
+            if self.startExplore_STATE == SUCCESS:
                 self.running = False
                 return RequestResponse(SUCCESS)
     
@@ -122,15 +124,16 @@ class Map():
         if not self.running:
             return RequestResponse(RUNNING)
         if self.running:
-            if self.STATE == RUNNING:
+            if self.stopExplore_STATE == RUNNING:
                 stopExplore = Int64()
                 stopExplore.data = 1
                 self.stop_explore_pub.publish(stopExplore)
-                return RequestResponse(SUCCESS)
-            if self.STATE == FAILURE:
+                self.stopExplore_STATE = SUCCESS
+                return RequestResponse(RUNNING)
+            if self.stopExplore_STATE == FAILURE:
                 self.running = False
                 return RequestResponse(FAILURE)
-            if self.STATE == SUCCESS:
+            if self.stopExplore_STATE == SUCCESS:
                 self.running = False
                 return RequestResponse(SUCCESS)
 
