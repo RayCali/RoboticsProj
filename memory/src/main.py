@@ -16,6 +16,7 @@ from utilities import normalized
 from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
+from std_msgs.msg import Bool
 from config import SUCCESS, RUNNING, FAILURE
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
 class Memory:
@@ -66,7 +67,7 @@ class Memory:
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
         self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
-        # self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
+        self.reset_srv          = rospy.Service("/srv/doReset/memory/brain", Request, self.doReset)
 
         # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
         # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
@@ -74,6 +75,7 @@ class Memory:
         self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
         self.boxPub = rospy.Publisher("/boxPoseMap", objectPoseStampedLst, queue_size=10)
         self.targetpub = rospy.Publisher("/targetPoseMap", objectPoseStampedLst, queue_size=10)
+        self.reset_behaviour_pub = rospy.Publisher("/RESET", Bool, queue_size=10)
         self.goal_name = "lmao"
         
         self.movingToTargetToy = False
@@ -83,6 +85,13 @@ class Memory:
         self.yThreshold = 0.10
         # self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
         self.anchordetected = False
+
+        self.STATE_RESET = FAILURE
+
+    def doReset(self, req: RequestRequest):
+        self.STATE_RESET = RUNNING
+        self.reset_behaviour_pub.publish(Bool(True))
+        return RequestResponse(SUCCESS)
     
     def getIsFound(self, req: RequestRequest):
         if len(self.toys) > 0:

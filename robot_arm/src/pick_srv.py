@@ -54,10 +54,12 @@ class PickAndPlace():
         self.place_sub = rospy.Subscriber("/doPlace", Bool, self.doSaveIfPlace)
         self.doPlaceSub = rospy.Subscriber("/placeToy", Bool, self.handle_place_req)
 
+        self.reset_sub = rospy.Subscriber("/RESET", Bool, self.handle_reset_req)
+
         self.joint_states = None
         self.running = False
         self.pickPose = PoseStamped()
-        self.doPlace = True
+        self.doPlace = False
         self.pick_STATE = FAILURE
         self.place_STATE= FAILURE
 
@@ -83,7 +85,16 @@ class PickAndPlace():
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         self.twist = Twist()
 
-    
+
+    def handle_reset_req(self, msg: Bool):
+        if msg.data:
+            self.pick_STATE = FAILURE
+            self.place_STATE = FAILURE
+            self.running = False
+            self.doPlace = False
+            self.pickPose = PoseStamped()
+
+
     def doSavePickPose(self, msg: PoseStamped):
         self.pickPose = msg
 

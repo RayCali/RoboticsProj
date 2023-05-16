@@ -46,32 +46,56 @@ class doPickup(Action):
         print("doPickup: ", res)
         return res
 
-
-class doPlanPath(Action):
+class doPlanPathExplore(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanpathExplore/mapping_and_planning/brain", Request)
     def tick(self):
         res = super().tick()
-        print("doPlanPath: ", res)
+        print("doPlanPathExplore: ", res)
         return res
     
-
+class doPlanPathToy(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlanpathToy/mapping_and_planning/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doPlanPathToy: ", res)
+        return res
+    
+class doPlanPathBox(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlanpathBox/mapping_and_planning/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doPlanPathBox: ", res)
+        return res
+    
 class doMoveAlongPathGlobal(Action):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doMoveAlongPathGlobal/path_follower_global/brain", Request)
     def tick(self):
         res = super().tick()
-        print("doMoveAlongPath: ", res)
+        print("doMoveAlongPathGlobal: ", res)
 
-class doMoveAlongPathLocal(Action):
+class doMoveAlongPathToy(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathLocal/path_follower_local/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower_local/brain", Request)
     def tick(self):
         res = super().tick()
-        print("doMoveAlongPath: ", res)
+        print("doMoveAlongPathToy: ", res)
+    
+class doMoveAlongPathBox(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doMoveAlongPathBox: ", res)
 
 class doPlace(Action):
     def __init__(self) -> None:
@@ -80,4 +104,14 @@ class doPlace(Action):
     def tick(self):
         res = super().tick()
         print("doPlace: ", res)
+        return res
+    
+
+class doReset(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doReset/memory/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doReset: ", res)
         return res
