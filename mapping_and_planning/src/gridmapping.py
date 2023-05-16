@@ -87,23 +87,52 @@ class Map():
             "box": 4,
 
         }
+    # def __doStartExploreCallback(self, req: RequestRequest):
+    #     ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
+    #     ps: PoseStamped = PoseStamped()
+    #     stopExplore = Int64()
+    #     stopExplore.data = 0
+    #     self.stop_explore_pub.publish(stopExplore)
+    #     ps.header = ts.header
+    #     ps.pose.position.x = ts.transform.translation.x
+    #     ps.pose.position.y = ts.transform.translation.y
+    #     self.goal_pub.publish(ps)
+    #     return RequestResponse(SUCCESS)
+    
     def __doStartExploreCallback(self, req: RequestRequest):
-        ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
-        ps: PoseStamped = PoseStamped()
-        stopExplore = Int64()
-        stopExplore.data = 0
-        self.stop_explore_pub.publish(stopExplore)
-        ps.header = ts.header
-        ps.pose.position.x = ts.transform.translation.x
-        ps.pose.position.y = ts.transform.translation.y
-        self.goal_pub.publish(ps)
-        return RequestResponse(SUCCESS)
+        if not self.running:
+            return RequestResponse(RUNNING)
+        if self.running:
+            if self.STATE == RUNNING:
+                ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
+                ps: PoseStamped = PoseStamped()
+                ps.header = ts.header
+                ps.pose.position.x = ts.transform.translation.x
+                ps.pose.position.y = ts.transform.translation.y
+                self.goal_pub.publish(ps)
+                return RequestResponse(SUCCESS)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
     
     def __stopExploreCallback(self, req: RequestRequest):
-        stopExplore = Int64()
-        stopExplore.data = 1
-        self.stop_explore_pub.publish(stopExplore)
-        return RequestResponse(SUCCESS)
+        if not self.running:
+            return RequestResponse(RUNNING)
+        if self.running:
+            if self.STATE == RUNNING:
+                stopExplore = Int64()
+                stopExplore.data = 1
+                self.stop_explore_pub.publish(stopExplore)
+                return RequestResponse(SUCCESS)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
 
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
