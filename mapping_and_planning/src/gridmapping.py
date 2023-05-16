@@ -41,11 +41,13 @@ class Map():
         self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.__savepath)
         self.nodenr_sub   = rospy.Subscriber('/path_follower/node', Float64, self.__savenode)
+        self.stop_explore_pub = rospy.Publisher("/stopexploring", Int64, queue_size=1)
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
         self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
+        self.stop_explore_srv = rospy.Service("/srv/stopExplore/mapping_and_planning/brain", Request, self.__stopExploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -88,10 +90,19 @@ class Map():
     def __doStartExploreCallback(self, req: RequestRequest):
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
+        stopExplore = Int64()
+        stopExplore.data = 0
+        self.stop_explore_pub.publish(stopExplore)
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
         self.goal_pub.publish(ps)
+        return RequestResponse(SUCCESS)
+    
+    def __stopExploreCallback(self, req: RequestRequest):
+        stopExplore = Int64()
+        stopExplore.data = 1
+        self.stop_explore_pub.publish(stopExplore)
         return RequestResponse(SUCCESS)
 
 
