@@ -28,25 +28,25 @@ class path(object):
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.s =rospy.ServiceProxy('/no_collision', Request)
-        self.done_once = False
-        self.rate = rospy.Rate(20)
-        # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
-        self.objectpose = PoseStamped()
-        self.listen_once = False
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/srv/isAtToy/point_follower/brain", Request, self.arrivedAtToy)
 
         self.moveToToy_srv = rospy.Service("/srv/doMoveToGoal/point_follower/path_follower_local", Request, self.doMoveToToyResponse)
-
-        # self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
-        # self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
+        # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
+        self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
+        self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
+        self.detection_sub = rospy.Subscriber("/targetPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+        self.done_once = False
+        self.rate = rospy.Rate(20)
+        self.objectpose = None
+        self.listen_once = False
         self.goal_name = "lmao"
         self.STATE = FAILURE
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
-        # /srv/doMoveToGoal/point_follower/brain
-        self.detection_sub = rospy.Subscriber("/targetPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+    
+        
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
@@ -54,7 +54,7 @@ class path(object):
             if self.objectpose_map is None:
                 return RequestResponse(FAILURE) 
             self.running = True
-            self.tracker(self.objectpose_map.PoseStamped[0])
+            self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
             if self.STATE == SUCCESS:
                 self.running = False
                 return RequestResponse(SUCCESS)
@@ -76,10 +76,6 @@ class path(object):
 
         if self.objectpose_map is None:
             self.objectpose_map = msg
-            if self.objectpose_map.object_class[0][0:3] != "Box":
-                self.goal_name = self.objectpose_map.object_class[0][:-2]
-            else:
-                self.goal_name = self.objectpose_map.object_class[0]
 
 
     # def Radius(self, msg:Float64):
@@ -355,7 +351,10 @@ class path(object):
         rospy.loginfo(self.objectpose)
         self.STATE = SUCCESS
         self.done_once = False
+        self.objectpose = None
+        self.listen_once = False
         self.goal_name = "lmao"
+        self.STATE = FAILURE
         self.running = False
         self.objectpose = None
         self.objectpose_map = None

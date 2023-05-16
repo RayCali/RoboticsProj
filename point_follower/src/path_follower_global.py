@@ -30,12 +30,9 @@ class path(object):
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
-        self.done_once = False
-        self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
-        self.radius_sub = float(1)
-        self.objectpose = PoseStamped()
-        self.listen_once = False
+
+
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
         self.explore = True
@@ -44,11 +41,7 @@ class path(object):
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
-        
-        self.STATE = FAILURE
-        self.running = False
-        self.objectpose = None
-        self.Path = None
+       
 
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
@@ -282,6 +275,11 @@ class path(object):
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
+        self.done_once = False
+        self.rate = rospy.Rate(20)
+        self.STATE = FAILURE
+        self.running = False
+        self.Path = None
         return
     
         # self.rate.sleep()
