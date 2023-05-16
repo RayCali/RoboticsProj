@@ -36,8 +36,8 @@ class PathProvider:
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
         self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
         self.getObstacles()
-        self.running = False
         self.STATE = RUNNING
+        self.running = False
         self.goal_Ex = None
         self.goal_toy = None
         self.goal_box = None
@@ -80,9 +80,15 @@ class PathProvider:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
                 return RequestResponse(SUCCESS)
     def doReturnMovetoResponseBox(self, req: Request):
         if not self.running:
@@ -96,6 +102,7 @@ class PathProvider:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
+                
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False

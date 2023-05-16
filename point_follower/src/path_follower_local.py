@@ -322,7 +322,7 @@ class path(object):
         self.box = None
         self.box_pose = None
         self.toy_pose = None
-        self.STATE = FAILURE
+
         self.running = False
         self.objectpose = None
         self.Path = None

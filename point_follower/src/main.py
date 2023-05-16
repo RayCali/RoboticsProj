@@ -354,7 +354,6 @@ class path(object):
         self.objectpose = None
         self.listen_once = False
         self.goal_name = "lmao"
-        self.STATE = FAILURE
         self.running = False
         self.objectpose = None
         self.objectpose_map = None

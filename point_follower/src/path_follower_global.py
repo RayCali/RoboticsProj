@@ -277,7 +277,6 @@ class path(object):
         self.pub_twist.publish(self.twist)
         self.done_once = False
         self.rate = rospy.Rate(20)
-        self.STATE = FAILURE
         self.running = False
         self.Path = None
         return
