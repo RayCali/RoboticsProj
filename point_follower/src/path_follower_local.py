@@ -84,7 +84,7 @@ class path(object):
                 self.running = False
                 return RequestResponse(SUCCESS)
     
-    def doMoveToBoxResponse(self, req: RequestRequest):
+    def doMoveToBoxResponseBox(self, req: RequestRequest):
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
