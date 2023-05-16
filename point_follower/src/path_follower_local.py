@@ -125,10 +125,13 @@ class path(object):
         self.box_pose = msg.PoseStamped[0]
     
     def distance_to_goal(self, msg: objectPoseStampedLst):
-        if self.last_node:
-            if self.target == msg.object_class[0]:
-                if math.sqrt((self.target_pose.pose.position.x - msg.PoseStamped[0].pose.position.x)**2 + (self.target_pose.pose.position.y - msg.PoseStamped[0].pose.position.y)**2) < 0.1:
-                    self.timetocallthebigguns = True
+        if self.lastnode:
+            try:
+                if self.target == msg.object_class[0]:
+                    if math.sqrt((self.target_pose.pose.position.x - msg.PoseStamped[0].pose.position.x)**2 + (self.target_pose.pose.position.y - msg.PoseStamped[0].pose.position.y)**2) < 0.1:
+                        self.timetocallthebigguns = True
+            except IndexError:
+                pass
     
     
     def tracker(self, msg: Path):
@@ -156,7 +159,7 @@ class path(object):
                 t.transform.rotation.w = 1
                 self.tfbroadcaster.sendTransform(t)
                 if point == path.poses[-1]:
-                    self.last_node = True
+                    self.lastnode = True
                 
                 rospy.sleep(1)
                 self.twist = Twist()

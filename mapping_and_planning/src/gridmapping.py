@@ -254,16 +254,16 @@ class Map():
             if latestscan.ranges[i] < 0.5:
                 if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
                     return RequestResponse(FAILURE)
-        position_with_toys = np.where(self.matrix == 3)
-        currentnode = path.poses[int(nodenr)]
-        base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
-        for i in range(len(position_with_toys[0])):
-            p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
-            p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
-            p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
-            d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
-            if d < 0.5: #will depend on covariance
-                return RequestResponse(FAILURE)
+        # position_with_toys = np.where(self.matrix == 3)
+        # currentnode = path.poses[int(nodenr)]
+        # base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+        # for i in range(len(position_with_toys[0])):
+        #     p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
+        #     p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
+        #     p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
+        #     d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
+        #     if d < 0.5: #will depend on covariance
+        #         return RequestResponse(FAILURE)
         return RequestResponse(SUCCESS)
     def __savenode(self,msg):
         global nodenr

@@ -115,3 +115,12 @@ class doReset(Action):
         res = super().tick()
         print("doReset: ", res)
         return res
+    
+class stopExplore(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/stopExplore/mapping_and_planning/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("stopExplore: ", res)
+        return res

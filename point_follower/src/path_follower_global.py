@@ -36,14 +36,17 @@ class path(object):
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.stop_explore_pub = rospy.Subscriber("/stopexploring", Int64, queue_size=1, callback=self.stop_explore)
         self.stop_exploring = 0
+        self.rate = rospy.Rate(20)
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
         self.explore = True
         self.movePath_srv = rospy.Service('/srv/doMoveAlongPathGlobal/path_follower_global/brain', Request, self.doMovePathResponse)
-
+        self.running = False
+        self.Path = None
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
+        self.done_once = False
        
 
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
@@ -73,7 +76,6 @@ class path(object):
         return RequestResponse(FAILURE)
     
     def doSaveObjectpose(self, msg: Path):
-        rospy.loginfo("Object detected")
         if self.Path is None:
             self.Path= msg
     def stop_explore(self, msg: Int64):
