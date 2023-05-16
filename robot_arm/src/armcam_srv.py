@@ -23,6 +23,7 @@ class ArmCam:
         self.bridge = CvBridge()
         # self.image_sub = rospy.Subscriber("/usb_cam/image_raw", Image, self.image_callback)
         self.blobPub = rospy.Publisher("/blob", Image, queue_size=1)
+        self.proofPub = rospy.Publisher("/proof", Image, queue_size=1)
 
         rospy.Service("/srv/getPickPose/arm_camera/pickup", PickPose, self.getPickPose)
 
@@ -43,6 +44,7 @@ class ArmCam:
 
     def getPickPose(self, req: PickPoseRequest):
         image = rospy.wait_for_message("/usb_cam/image_raw", Image)
+        self.proofPub(Image)
 
         cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
         h,  w = cv_image.shape[:2]

@@ -9,7 +9,7 @@ import tf_conversions
 import ros_numpy as rnp
 import torch
 from torchvision import transforms
-from torchvision.utils import draw_bounding_boxes
+from torchvision.utils import draw_bounding_boxes, save_image
 from torchvision.io import read_image
 from scipy.ndimage import binary_erosion, binary_dilation
 from sensor_msgs.msg import Image
@@ -240,7 +240,42 @@ def imageCB(msg: Image):
     
     imgPub.publish(pubImg)
 
+
+def proofCB(msg: Image):
+    cv_image = bridge.imgmsg_to_cv2(msg, "rgb8")
+    image = transforms.ToTensor()(cv_image) # shape: (3,720,1280)
+    image = transforms.Normalize(
+        mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+    )(image)
+    image = image.unsqueeze(0)
+    image = image.to(DEVICE)
+
+    with torch.no_grad():
+        inference = detectionModel(image).cpu() # size: (15,20,5)
+    bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
+
+    max_bbx = None
+    max_score = 0
+    for bbx in bbs:
+        score = bbx["score"]
+        if score > max_score:
+            max_score = score
+            max_bbx = bbx
+
+    boxes = torch.cat([max_bbx])
+    np_image = rnp.numpify(msg) # shape: (480, 640, 3)
+    image = torch.from_numpy(np_image).permute(2,0,1)
+    image = draw_bounding_boxes(image, boxes, width=5,
+                          colors="green",labels=[max_bbx["category"]],
+                          fill=False,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=50)
+    name = '/home/robot/DD2419_ws/' +"ID:"+ str(max_bbx["category"]) + "@" + str(msg.header.stamp.secs) + ".png"
+    save_image(image, name)
+
     
+
+
+    return
+
 
 
 if __name__=="__main__":
@@ -253,6 +288,7 @@ if __name__=="__main__":
     bridge = CvBridge()
 
     imageSub = rospy.Subscriber("/camera/color/image_raw", Image, imageCB,queue_size=10, buff_size=2**24)
+    proofSub = rospy.Subscriber("proof", Image, proofCB, queue_size=1,  buff_size=2**24)
 
     posesPub = rospy.Publisher("/detection/pose", objectPoseStampedLst, queue_size=10)
     imgPub = rospy.Publisher("detection/overlaid_bbs", Image, queue_size=10)
