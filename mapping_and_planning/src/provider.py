@@ -41,6 +41,9 @@ class PathProvider:
         self.goal_Ex = None
         self.goal_toy = None
         self.goal_box = None
+        self.planned_Ex = False
+        self.planned_toy = False
+        self.planned_box = False
     
     def getGoalEx(self, msg: PoseStamped):
         print("got goal: ", msg)
@@ -53,28 +56,39 @@ class PathProvider:
         self.goal_box = msg.PoseStamped[0]
     
     def doReturnMovetoResponse(self, req: Request):
+        if self.planned_Ex:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.goal_Ex is None:
                 return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.goal_Ex)
-            return RequestResponse(SUCCESS)
+            return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
+                self.planned_Ex = True
                 return RequestResponse(SUCCESS)
     def doReturnMovetoResponseToy(self, req: Request):
+        if self.planned_toy:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.goal_toy is None:
                 return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.goal_toy)
-            return RequestResponse(SUCCESS)
+            return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
@@ -89,23 +103,32 @@ class PathProvider:
                 self.goal_Ex = None
                 self.goal_toy = None
                 self.goal_box = None
+                self.planned_toy = True
                 return RequestResponse(SUCCESS)
     def doReturnMovetoResponseBox(self, req: Request):
+        if self.planned_box:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.goal_box is None:
                 return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.goal_box)
-            return RequestResponse(SUCCESS)
+            return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
-                
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.goal_Ex = None
+                self.goal_toy = None
+                self.goal_box = None
+                self.planned_box = True
                 return RequestResponse(SUCCESS)
         
     def doPlanPath(self, goal: PoseStamped):
