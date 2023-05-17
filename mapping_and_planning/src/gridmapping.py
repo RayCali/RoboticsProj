@@ -69,7 +69,7 @@ class Map():
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
 
-
+        self.running = False
         self.startExplore_STATE = FAILURE
         self.stopExplore_STATE = FAILURE
 
@@ -102,6 +102,8 @@ class Map():
     
     def __doStartExploreCallback(self, req: RequestRequest):
         if not self.running:
+            self.running = True
+            self.startExplore_STATE = RUNNING
             return RequestResponse(RUNNING)
         if self.running:
             if self.startExplore_STATE == RUNNING:
@@ -122,6 +124,8 @@ class Map():
     
     def __stopExploreCallback(self, req: RequestRequest):
         if not self.running:
+            self.running = True
+            self.stopExplore_STATE = RUNNING
             return RequestResponse(RUNNING)
         if self.running:
             if self.stopExplore_STATE == RUNNING:
