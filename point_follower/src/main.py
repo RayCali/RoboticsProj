@@ -45,18 +45,20 @@ class path(object):
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
+        self.arrrived = False
     
         
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
-        if not self.running:
+        if not self.running and not self.arrrived:
             if self.objectpose_map is None:
                 return RequestResponse(FAILURE) 
             self.running = True
             self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
             if self.STATE == SUCCESS:
                 self.running = False
+                self.arrrived = True
                 return RequestResponse(SUCCESS)
             if self.STATE == FAILURE:
                 self.running = False

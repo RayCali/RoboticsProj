@@ -60,10 +60,14 @@ class path(object):
         self.objectpose = None
         self.Path = None
         self.timetocallthebigguns = False
+        self.arrivedAtToy = False
+        self.arrivedAtBox = False
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
     def doMovePathResponseToy(self, req: RequestRequest):
+        if self.arrivedAtToy:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
@@ -82,9 +86,12 @@ class path(object):
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.arrivedAtToy = True
                 return RequestResponse(SUCCESS)
     
     def doMovePathResponseBox(self, req: RequestRequest):
+        if self.arrivedAtBox:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
@@ -104,6 +111,7 @@ class path(object):
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.arrivedAtBox = True
                 return RequestResponse(SUCCESS)
 
     def arrivedAtEnd(self, req: Request):

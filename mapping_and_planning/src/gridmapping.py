@@ -48,6 +48,8 @@ class Map():
         self.matrix = np.zeros((width, height), dtype=np.int8)
         self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
         self.stop_explore_srv = rospy.Service("/srv/stopExplore/mapping_and_planning/brain", Request, self.__stopExploreCallback)
+        self.explore_pub= rospy.Publisher("/explore", Int64, queue_size=1)
+        self.explore_sub = rospy.Subscriber("/explore", Int64, self.__exploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -70,6 +72,7 @@ class Map():
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
 
         self.running = False
+        self.received_mostvaluedcell = False
         self.startExplore_STATE = FAILURE
         self.stopExplore_STATE = FAILURE
 
@@ -100,27 +103,34 @@ class Map():
     #     self.goal_pub.publish(ps)
     #     return RequestResponse(SUCCESS)
     
+    def __exploreCallback(self, msg: Int64):
+        ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
+        ps: PoseStamped = PoseStamped()
+        ps.header = ts.header
+        ps.pose.position.x = ts.transform.translation.x
+        ps.pose.position.y = ts.transform.translation.y
+        self.goal_pub.publish(ps)
+        self.startExplore_STATE = SUCCESS
+        return
     def __doStartExploreCallback(self, req: RequestRequest):
+        if self.received_mostvaluedcell:
+            return RequestResponse(SUCCESS)
         if not self.running:
             self.running = True
             self.startExplore_STATE = RUNNING
+            self.explore_pub.publish(Int64())
             return RequestResponse(RUNNING)
         if self.running:
             if self.startExplore_STATE == RUNNING:
-                ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
-                ps: PoseStamped = PoseStamped()
-                ps.header = ts.header
-                ps.pose.position.x = ts.transform.translation.x
-                ps.pose.position.y = ts.transform.translation.y
-                self.goal_pub.publish(ps)
-                self.startExplore_STATE = SUCCESS
                 return RequestResponse(RUNNING)
             if self.startExplore_STATE == FAILURE:
                 self.running = False
                 return RequestResponse(FAILURE)
             if self.startExplore_STATE == SUCCESS:
                 self.running = False
+                self.received_mostvaluedcell = True
                 return RequestResponse(SUCCESS)
+        
     
     def __stopExploreCallback(self, req: RequestRequest):
         if not self.running:
