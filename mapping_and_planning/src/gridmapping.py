@@ -70,8 +70,9 @@ class Map():
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
         self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
-
-        self.running = False
+        self.stopped_explore = False
+        self.running_Ex = False
+        self.running_stopEx = False
         self.received_mostvaluedcell = False
         self.startExplore_STATE = FAILURE
         self.stopExplore_STATE = FAILURE
@@ -86,9 +87,9 @@ class Map():
             "Muddles": 3,
             "Kiki": 3,
             "Oakie": 3,
-            "cube": 3,
-            "ball": 3,
-            "box": 4,
+            "Cube": 3,
+            "Ball": 3,
+            "Box": 4,
 
         }
     # def __doStartExploreCallback(self, req: RequestRequest):
@@ -115,29 +116,31 @@ class Map():
     def __doStartExploreCallback(self, req: RequestRequest):
         if self.received_mostvaluedcell:
             return RequestResponse(SUCCESS)
-        if not self.running:
-            self.running = True
+        if not self.running_Ex:
+            self.running_Ex = True
             self.startExplore_STATE = RUNNING
             self.explore_pub.publish(Int64())
             return RequestResponse(RUNNING)
-        if self.running:
+        if self.running_Ex:
             if self.startExplore_STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.startExplore_STATE == FAILURE:
-                self.running = False
+                self.running_Ex = False
                 return RequestResponse(FAILURE)
             if self.startExplore_STATE == SUCCESS:
-                self.running = False
+                self.running_Ex = False
                 self.received_mostvaluedcell = True
                 return RequestResponse(SUCCESS)
         
     
     def __stopExploreCallback(self, req: RequestRequest):
-        if not self.running:
-            self.running = True
+        if self.stopped_explore:
+            return RequestResponse(SUCCESS)
+        if not self.running_stopEx:
+            self.running_stopEx = True
             self.stopExplore_STATE = RUNNING
             return RequestResponse(RUNNING)
-        if self.running:
+        if self.running_stopEx:
             if self.stopExplore_STATE == RUNNING:
                 stopExplore = Int64()
                 stopExplore.data = 1
@@ -145,10 +148,11 @@ class Map():
                 self.stopExplore_STATE = SUCCESS
                 return RequestResponse(RUNNING)
             if self.stopExplore_STATE == FAILURE:
-                self.running = False
+                self.running_stopEx = False
                 return RequestResponse(FAILURE)
             if self.stopExplore_STATE == SUCCESS:
-                self.running = False
+                self.running_stopEx = False
+                self.stopped_explore = True
                 return RequestResponse(SUCCESS)
 
 
@@ -296,10 +300,10 @@ class Map():
     
     def __nocollision(self,req:RequestRequest):
         global latestscan, path, nodenr
-        for i in range (len(latestscan.ranges)):
-            if latestscan.ranges[i] < 0.5:
-                if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
-                    return RequestResponse(FAILURE)
+        # for i in range (len(latestscan.ranges)):
+        #     if latestscan.ranges[i] < 0.5:
+        #         if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
+        #             return RequestResponse(FAILURE)
         # position_with_toys = np.where(self.matrix == 3)
         # currentnode = path.poses[int(nodenr)]
         # base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))

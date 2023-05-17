@@ -313,7 +313,7 @@ class path(object):
         
         #call point follower
         point_to_follow=objectPoseStampedLst()
-        point_to_follow.objectClass.append(self.target)
+        point_to_follow.object_class.append(self.target)
         point_to_follow.PoseStamped.append(self.target_pose)
         self.target_pub.publish(point_to_follow)
         state = self.point_follower()

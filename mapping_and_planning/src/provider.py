@@ -177,7 +177,7 @@ class PathProvider:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.rewired_pub.publish(path_msg)
             self.running = False
-            self.STATE == SUCCESS
+            self.STATE = SUCCESS
             return            
             
 

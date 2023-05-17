@@ -35,9 +35,9 @@ class Memory:
            3 : "Muddles",
            4 : "Kiki",
            5 : "Oakie",
-           6 : "cube",
-           7 : "ball",
-           8 : "box",
+           6 : "Cube",
+           7 : "Ball",
+           8 : "Box",
         }
         self.object2Id = {
             "Binky"  : 0,
@@ -51,8 +51,8 @@ class Memory:
             "Box"    : 8
         }
         self.arucoId2Box = {
-            3 : "Box_Plushies",
-            1 : "Box_Balls",
+            1 : "Box_Plushies",
+            3 : "Box_Balls",
             2 : "Box_Cubes",
             500 : "Anchor"
         }
@@ -62,7 +62,7 @@ class Memory:
 
         self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
-        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
+        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco, queue_size=1)
 
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
@@ -165,6 +165,7 @@ class Memory:
 
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
+                        rospy.loginfo("Getting Cube and Box cube poses.")
                         STATUS = FAILURE
                         self.targetToy = self.cubes[list(self.cubes.keys())[0]]
                         boxPose.PoseStamped.append(box.poseStamped)
@@ -172,9 +173,10 @@ class Memory:
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
                         objectPose.object_class.append(self.targetToy.name)
         
-            self.toyPub.publish(objectPose)
-            print(objectPose)
-            self.boxPub.publish(boxPose)
+                self.toyPub.publish(objectPose)
+                rospy.loginfo("No PAIR status: {}".format(STATUS))
+                self.boxPub.publish(boxPose)
+
         return RequestResponse(STATUS)
     
     def doLocalize(self, req: RequestRequest):
