@@ -15,10 +15,8 @@ if __name__=="__main__":
             ]),
             Or([
                 isNotPair(),
-            ])
+            ]),
             doPlanPathExplore(),
-            
-
         ])
     )
     # root = Root(

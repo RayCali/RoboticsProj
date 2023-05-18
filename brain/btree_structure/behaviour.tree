@@ -16,7 +16,7 @@
 |    |    |    |    [doPickup()]
 |    |    |    ?
 |    |    |    |    (isInFrontBox)
-|    |    |    |    [doMoveAlongPath]
+|    |    |    |    [doMoveAlongPath()]
 |    |    |    ?
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]
