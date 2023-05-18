@@ -6,6 +6,9 @@
 |    |    (isNotPair)
 |    |    ->
 |    |    |    ?
+|    |    |    |    (isNotExploring)
+|    |    |    |    [doInterruptExplorer]
+|    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
 |    |    |    |    [doMoveToGoal(goal)]

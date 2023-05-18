@@ -68,18 +68,18 @@ class PathProvider:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 self.planned_Ex = True
                 return RequestResponse(SUCCESS)
+    def reset(self):
+        self.running = False
+        self.goal_Ex = None
+        self.goal_toy = None
+        self.goal_box = None
+
     def doReturnMovetoResponseToy(self, req: Request):
         if self.planned_toy:
             return RequestResponse(SUCCESS)
@@ -93,16 +93,10 @@ class PathProvider:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 self.planned_toy = True
                 return RequestResponse(SUCCESS)
     def doReturnMovetoResponseBox(self, req: Request):
@@ -118,16 +112,10 @@ class PathProvider:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
-                self.running = False
-                self.goal_Ex = None
-                self.goal_toy = None
-                self.goal_box = None
+                self.reset()
                 self.planned_box = True
                 return RequestResponse(SUCCESS)
         

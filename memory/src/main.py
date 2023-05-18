@@ -136,7 +136,6 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        STATUS = SUCCESS
         for key in self.boxes.copy():
             box = self.boxes[key]
             if box.hasArucoMarker:
@@ -146,38 +145,44 @@ class Memory:
                 if box.name == "Box_Plushies":
                     print(self.plushies)
                     if len(self.plushies) > 0:
-                        STATUS = FAILURE
                         self.targetToy = self.plushies[list(self.plushies.keys())[0]]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
                         objectPose.object_class.append(self.targetToy.name)
+                        self.toyPub.publish(objectPose)
+                        self.boxPub.publish(boxPose)
+                        return RequestResponse(FAILURE)
+
                         
 
                 elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
-                        STATUS = FAILURE
                         self.targetToy = self.balls[list(self.balls.keys())[0]]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
                         objectPose.object_class.append(self.targetToy.name)
+                        self.toyPub.publish(objectPose)
+                        self.boxPub.publish(boxPose)
+                        return RequestResponse(FAILURE)
+
 
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
-                        rospy.loginfo("Getting Cube and Box cube poses.")
-                        STATUS = FAILURE
                         self.targetToy = self.cubes[list(self.cubes.keys())[0]]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
                         objectPose.object_class.append(self.targetToy.name)
-        
-                self.toyPub.publish(objectPose)
-                rospy.loginfo("No PAIR status: {}".format(STATUS))
-                self.boxPub.publish(boxPose)
+                        self.toyPub.publish(objectPose)
+                        self.boxPub.publish(boxPose)
+                        return RequestResponse(FAILURE)
 
-        return RequestResponse(STATUS)
+                self.boxPub.publish(boxPose)
+                rospy.loginfo("No PAIR status: {}".format(SUCCESS))
+
+        return RequestResponse(SUCCESS)
     
     def doLocalize(self, req: RequestRequest):
         if not self.anchordetected:
