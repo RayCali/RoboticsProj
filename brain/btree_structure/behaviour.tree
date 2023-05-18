@@ -6,6 +6,8 @@
 |    |    (isNotPair)
 |    |    ->
 |    |    |    ?
+|    |    |    |    (isNotExploring)
+|    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
 |    |    |    |    [doMoveToGoal(goal)]
@@ -19,6 +21,7 @@
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]
 |    |    |    (isNotPair)
-|    ?
-|    |    (isExplored)
-|    |    [doExplore()]
+|    ->
+|    |    (isNotExploring)
+|    |    [doPlanPath()]
+|    |    [doMoveAlongPath()]

@@ -14,6 +14,7 @@
     "conditions": {
       "isLocalized": {},
       "isExplored": {},
+      "isNotExploring": "Checks if the robot is exploring and prevents the rest of the BT from executing if it is",
       "isValidPath": "Check if there is a valid path between current position and goal position.",
       "isPicked": "Check to see if the object was actually picked up.",
       "isPlaced": "Check to see if the object was actually placed.",

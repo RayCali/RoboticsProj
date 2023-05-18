@@ -9,8 +9,16 @@ from utilities import Root, And, Or
 if __name__=="__main__":
     root = Root( 
         And([
-            doPlanPath(),
-            doMoveAlongPath(),
+            Or([
+                isLocalized(),
+                doLocalize()
+            ]),
+            Or([
+                isNotPair(),
+            ])
+            doPlanPathExplore(),
+            
+
         ])
     )
     # root = Root(

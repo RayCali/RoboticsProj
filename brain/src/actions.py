@@ -72,3 +72,12 @@ class doPlace(Action):
         res = super().tick()
         print("doPlace: ", res)
         return res
+
+class doPlanPathExplore(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlanpathExplore/mapping_and_planning/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doPlanPathExplore: ", res)
+        return res
