@@ -13,7 +13,9 @@
 |    |    |    |    ?
 |    |    |    |    |    (isPlanned)
 |    |    |    |    |    [doPlanPath()]
-|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    ?   
+|    |    |    |    |    (isMoving)
+|    |    |    |    |    [doMoveToGoal(goal)]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]

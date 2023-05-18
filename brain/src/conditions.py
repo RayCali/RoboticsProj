@@ -29,7 +29,7 @@ class isFound(Condition):
 class isAtToy(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/srv/isAtToy/point_follower/brain', Request)
+        self.service = rospy.ServiceProxy('/srv/isAtToy/path_follower_local/brain', Request)
     def tick(self):
         res = Condition.tick(self)
         print("atToy? ", res)
