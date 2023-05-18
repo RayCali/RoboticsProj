@@ -6,22 +6,22 @@
 |    |    (isNotPair)
 |    |    ->
 |    |    |    ?
-|    |    |    |    (isNotExploring)
+|    |    |    |    (isNotMoving)
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
-|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    [doMoveAlongPath()]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]
 |    |    |    ?
 |    |    |    |    (isInFrontBox)
-|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    [doMoveAlongPath]
 |    |    |    ?
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]
 |    |    |    (isNotPair)
 |    ->
-|    |    (isNotExploring)
+|    |    (isNotMoving)
 |    |    [doPlanPath()]
 |    |    [doMoveAlongPath()]
