@@ -5,9 +5,8 @@
 |    ?
 |    |    (isNotPair)
 |    |    ->
-|    |    |    ?
+|    |    |    ->
 |    |    |    |    (isNotExploring)
-|    |    |    |    [doInterruptExplorer]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)

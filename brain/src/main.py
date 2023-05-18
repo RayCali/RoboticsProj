@@ -16,7 +16,7 @@ if __name__=="__main__":
             Or([ 
                 isNotPair(),
                 And([
-                    stopExplore(),
+                    isNotExploring(),
                     Or([
                         isAtToy(),
                         And([
