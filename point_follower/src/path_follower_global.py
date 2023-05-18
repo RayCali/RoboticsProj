@@ -37,6 +37,7 @@ class path(object):
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
+        self.service = rospy.Service('/srv/isNotExploring/path_follower_global/brain', Request, self.isNotMoving)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.stop_explore_pub = rospy.Subscriber("/stopexploring", Int64, queue_size=1, callback=self.stop_explore)
@@ -48,19 +49,19 @@ class path(object):
         self.running = False
         self.Path = None
         self.moveto_pub = rospy.Publisher('/path_follower/global/tracker', Path, queue_size=1)
-        self.moveto_sub = rospy.Subscriber('/path_follower/global/tracker', Path, self.callExploreAction, queue_size=1)
+        self.moveto_sub = rospy.Subscriber('/path_follower/global/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
         self.done_once = False
         self.done_exploring = False
         self.STATE = FAILURE
-        self.actionserver = actionlib.SimpleActionServer('/action/path_follower_global', ExploreAction, execute_cb=self.tracker, auto_start=False)
-        self.actionserver.start()
-        self.actionclient = actionlib.SimpleActionClient('/action/path_follower_global', ExploreAction)
-        self.actionclient.wait_for_server()
-        self.actionKiller = rospy.Publisher('/action/path_follower_global/cancel', GoalID, queue_size=1)
+       
 
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
-    
+    def isNotMoving(self, req):
+        if self.STATE == RUNNING:
+            return RequestResponse(FAILURE)
+        else:
+            return RequestResponse(SUCCESS)
 
     def doMovePathResponse(self, req: RequestRequest):
         if self.done_exploring:
@@ -70,6 +71,7 @@ class path(object):
                 return RequestResponse(FAILURE) 
             self.running = True
             self.moveto_pub.publish(self.Path)
+            self.STATE = RUNNING
             return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
@@ -116,9 +118,9 @@ class path(object):
         self.STATE = self.actionclient.get_result()
         return
     
-    def tracker(self, msg: ExploreGoal):
+    def tracker(self, msg: Path):
         if not self.done_once:
-            path = msg.path
+            path = msg
             path.poses = path.poses[1:]
             #rospy.loginfo("My path is: ")
             #rospy.loginfo(msg)
@@ -222,7 +224,7 @@ class path(object):
                         self.pub_twist.publish(self.twist)
                         rospy.loginfo("Collision detected")
                         self.STATE = FAILURE
-                        return ExploreResult(-1)
+                        return 
                     #rospy.sleep(1)
                         
                     if (rospy.Time.now().secs - latestupdate.secs) > 1:
@@ -317,7 +319,7 @@ class path(object):
         self.rate = rospy.Rate(20)
         self.running = False
         self.Path = None
-        return ExploreResult(-1)
+        return 
         
     
         # self.rate.sleep()

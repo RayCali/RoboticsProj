@@ -47,7 +47,7 @@ class isPicked(Condition):
 class isNotExploring(Condition):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy('/srv/isNotExploring/path_follower/brain', Request)
+        self.service = rospy.ServiceProxy('/srv/isNotExploring/path_follower_global/brain', Request)
     def tick(self):
         res = Condition.tick(self)
         print("isNotExploring?, ", res)

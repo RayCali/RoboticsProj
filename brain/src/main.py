@@ -28,10 +28,13 @@ if __name__=="__main__":
                         isPicked(),
                         doPickup()
                     ]),
-                    And([
-                        doPlanPathBox(),
-                        doMoveAlongPathBox(),
-                    ]),
+                    Or([
+                        isAtBox(),
+                        And([
+                            doPlanPathBox(),
+                            doMoveAlongPathBox(),
+                        ]),
+                    ])
                     doPlace(),
                     Or([
                         isNotPair(),
@@ -40,6 +43,7 @@ if __name__=="__main__":
                     
                 ])
             ]),
+            isNotExploring(),
             doExplore(),
             doPlanPathExplore(),
             doMoveAlongPathGlobal()

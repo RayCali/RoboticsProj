@@ -10,6 +10,9 @@
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    (isInFrontToy)
+|    |    |    |    ?
+|    |    |    |    |    (isPlanned)
+|    |    |    |    |    [doPlanPath()]
 |    |    |    |    [doMoveToGoal(goal)]
 |    |    |    ?
 |    |    |    |    (isPicked)

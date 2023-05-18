@@ -38,14 +38,13 @@ class path(object):
         self.radius_sub = float(1)
         self.objectpose = PoseStamped()
         self.updated_first_pose = PoseStamped()
-        self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
-        self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower_local/brain', Request, self.doMovePathResponseToy)
-        self.movePathBox_srv = rospy.Service('/srv/doMoveAlongPathBoxLocal/path_follower_local/brain', Request, self.doMovePathResponseBox)
+        self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower_local/brain', Request, self.doMovePathResponse)
+        self.service = rospy.Service('/srv/isAtToy/path_follower_local/brain', Request, self.isatToy)
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
-        self.detection_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.doSaveToyPose, queue_size=1)
-        self.boxpose_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.doSaveBoxPose, queue_size=1)
+      
+        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSaveTarget, queue_size=10)
         self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
         self.target_pose = None
         self.done_once = False
@@ -57,25 +56,21 @@ class path(object):
         self.target = None
         self.STATE = FAILURE
         self.running = False
-        self.objectpose = None
         self.Path = None
         self.timetocallthebigguns = False
-        self.arrivedAtToy = False
-        self.arrivedAtBox = False
+        self.arrived=False
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
-    def doMovePathResponseToy(self, req: RequestRequest):
-        if self.arrivedAtToy:
+    def doMovePathResponse(self, req: RequestRequest):
+        if self.arrived:
             return RequestResponse(SUCCESS)
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
             self.running = True
-            if self.toy is None:
+            if self.target is None:
                 return RequestResponse(FAILURE)
-            self.target = self.toy
-            self.target_pose = self.toy_pose
             self.moveto_pub.publish(self.Path)
             return RequestResponse(RUNNING)
         if self.running:
@@ -88,49 +83,37 @@ class path(object):
                 self.running = False
                 self.arrivedAtToy = True
                 return RequestResponse(SUCCESS)
-    
-    def doMovePathResponseBox(self, req: RequestRequest):
-        if self.arrivedAtBox:
-            return RequestResponse(SUCCESS)
-        if not self.running:
-            if self.Path is None:
-                return RequestResponse(FAILURE) 
-            if self.box is None:
-                return RequestResponse(FAILURE) 
-            self.target = self.box
-            self.target_pose = self.box_pose
-            self.running = True
-            self.done_once = False
-            self.moveto_pub.publish(self.Path)
-            return RequestResponse(RUNNING)
-        if self.running:
-            if self.STATE == RUNNING:
-                return RequestResponse(RUNNING)
-            if self.STATE == FAILURE:
-                self.running = False
-                return RequestResponse(FAILURE)
-            if self.STATE == SUCCESS:
-                self.running = False
-                self.arrivedAtBox = True
-                return RequestResponse(SUCCESS)
 
-    def arrivedAtEnd(self, req: Request):
+
+    def isAtToy(self, req: Request):
         if self.STATE == SUCCESS:
-            # self.STATE = FAILURE
             return RequestResponse(SUCCESS)
-        return RequestResponse(FAILURE)
+        else:
+            return RequestResponse(FAILURE)
+    
+    def isAtBox(self, req: Request):
+        if self.STATE == SUCCESS:
+            return RequestResponse(SUCCESS)
+        else:
+            return RequestResponse(FAILURE)
+    
     
     def doSaveObjectpose(self, msg: Path):
         rospy.loginfo("Object detected")
         if self.Path is None:
             self.Path= msg
 
-    def doSaveToyPose(self, msg: objectPoseStampedLst):
-        self.toy = msg.object_class[0][:-2]
-        self.toy_pose = msg.PoseStamped[0]
-    def doSaveBoxPose(self, msg: objectPoseStampedLst):
-        self.box = "box"
-        self.box_pose = msg.PoseStamped[0]
+    def doSaveTarget(self, msg: objectPoseStampedLst):
+        if "box" in msg.object_class[0]:
+            print("This is a box") 
+            self.target = "Box"
+        else:
+            print("This is a toy")
+            self.target = msg.object_class[0][:-2]
+
+        self.target_pose = msg.PoseStamped[0]
+        
+   
     
     def distance_to_goal(self, msg: objectPoseStampedLst):
         if self.lastnode:
