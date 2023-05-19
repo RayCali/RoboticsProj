@@ -25,6 +25,10 @@ class isFound(Condition):
     def __init__(self) -> None:
         super().__init__()
         self.service = rospy.ServiceProxy('/srv/isFound/memory/brain', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print("isFound? ", res)
+        return res
 
 class isPlanned(Condition):
     def __init__(self) -> None:
@@ -99,4 +103,22 @@ class isPlaced(Condition):
     def tick(self):
         res = Condition.tick(self)
         print("isPlaced?, ", res)
+        return res
+
+class isSelected(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/srv/isGoalSelected/memory/brain', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print("isSelected?, ", res)
+        return res
+
+class isExplorationPathPlanned(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/srv/isExplorationPathPlanned/memory/brain', Request)
+    def tick(self):
+        res = Condition.tick(self)
+        print("isExplorationPathPlanned?, ", res)
         return res

@@ -33,8 +33,8 @@ class path(object):
 
         self.moveToToy_srv = rospy.Service("/srv/doMoveToGoal/point_follower/path_follower_local", Request, self.doMoveToToyResponse)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
-        self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
-        self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
+        #self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
+        #self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
         self.detection_sub = rospy.Subscriber("/targetPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
         self.done_once = False
         self.rate = rospy.Rate(20)
@@ -51,18 +51,13 @@ class path(object):
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
-        if not self.running and not self.arrrived:
-            if self.objectpose_map is None:
-                return RequestResponse(FAILURE) 
-            self.running = True
-            self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
-            if self.STATE == SUCCESS:
-                self.running = False
-                self.arrrived = True
-                return RequestResponse(SUCCESS)
-            if self.STATE == FAILURE:
-                self.running = False
-                return RequestResponse(FAILURE)
+        if self.objectpose_map is None:
+            return RequestResponse(FAILURE) 
+        rospy.loginfo("calling pointfollower tracker")
+        self.tracker(self.objectpose_map.PoseStamped[0])
+        return RequestResponse(self.STATE)
+        #self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
+
 
     def arrivedAtToy(self, req: Request):
         if self.STATE == SUCCESS:
@@ -93,9 +88,23 @@ class path(object):
                 self.objectpose = msg.PoseStamped[i]
                 rospy.loginfo(msg.object_class[i])
                 rospy.loginfo(self.objectpose_map.object_class[0])
-                if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
+                #if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!
+                if self.objectpose.pose.position.x < 0.15:
+                    rospy.loginfo("first cond fail")
+                    self.listen_once = True
+                elif self.objectpose is None:
+                    rospy.loginfo("second cond fail")
+                    self.listen_once = True
+                elif msg.object_class[i].strip()!=self.objectpose_map.object_class[0].strip():
+                    
+                    rospy.loginfo("third cond fail")
+                    print(msg.object_class[i].strip(), self.goal_name.strip(), msg.object_class[i].strip()!=self.goal_name.strip())
+                    self.listen_once = True
+                elif self.objectpose.pose.position.x > 1:
+                    rospy.loginfo("fourth cond fail")
                     self.listen_once = True
                 else: 
+                    rospy.loginfo("correct object close")
                     self.listen_once = False
                     trans = tfBuffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(1.0))
                     self.updated_first_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
@@ -236,12 +245,12 @@ class path(object):
                 self.inc_x= self.goal_pose.pose.position.x
                 self.inc_y= self.goal_pose.pose.position.y
                 if math.atan2(self.inc_y, self.inc_x) > 0.05:
-                    self.twist.angular.z = 0.2 #either -0.2 or 0.2
+                    self.twist.angular.z = 0.4 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
 
                 if math.atan2(self.inc_y, self.inc_x) < -0.05:
-                    self.twist.angular.z = -0.2 #either -0.2 or 0.2
+                    self.twist.angular.z = -0.4 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
                 if switch is False:
@@ -252,7 +261,8 @@ class path(object):
                     rospy.loginfo(self.objectpose.pose.position.x + latest_pose.pose.position.x)
                     self.objectpose.pose.position.x = self.objectpose.pose.position.x + latest_pose.pose.position.x
                     self.objectpose.pose.position.y = self.objectpose.pose.position.y + latest_pose.pose.position.y
-                    distance = math.sqrt(self.objectpose.pose.position.x**2 + self.objectpose.pose.position.y**2)
+                    #distance = math.sqrt(self.objectpose.pose.position.x**2 + self.objectpose.pose.position.y**2)
+                    distance= self.objectpose.pose.position.x
                     trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
                     latest_pose = PoseStamped()
                     latest_pose.header.frame_id = "map"

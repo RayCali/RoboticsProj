@@ -5,10 +5,15 @@ import rospy
 from std_srvs.srv import SetBool
 from msg_srv_pkg.srv import Request
 
-class doExplore(Action):
+class doSelect(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doExplore/mapping_and_planning/brain", Request)
+        #self.service = rospy.ServiceProxy("/srv/doExplore/mapping_and_planning/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doSelectExplorationGoal/memory/brain", Request)
+    def tick(self):
+        res = Action.tick(self)
+        print("doSelect: ", res)
+        return res
 
 class doLocalize(Action):
     def __init__(self) -> None:
@@ -48,10 +53,12 @@ class doPickup(Action):
         print("doPickup: ", res)
         return res
 
+
+
 class doPlanPathExplore(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpathExplore/mapping_and_planning/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanpath/memory/brain", Request)
     def tick(self):
         res = super().tick()
         print("doPlanPathExplore: ", res)
@@ -71,10 +78,21 @@ class doPlanPathToy(Action):
 class doPlanPathBox(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpathBox/mapping_and_planning/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanpathBox/memory/brain", Request)
     def tick(self):
         res = super().tick()
         print("doPlanPathBox: ", res)
+        return res
+
+class doPlanExplorationPath(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doPlanExplorationPath/memory/brain", Request)
+        #self.service = rospy.ServiceProxy("/srv/doPlanExplorationPath/mapping_and_planning/brain", Request)
+        
+    def tick(self):
+        res = super().tick()
+        print("doPlanPathExplore: ", res)
         return res
     
 class doMoveAlongPathGlobal(Action):
@@ -130,4 +148,13 @@ class stopExplore(Action):
     def tick(self):
         res = super().tick()
         print("stopExplore: ", res)
+        return res
+
+class doMoveAlongPathGlobal(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathGlobal/memory/brain", Request)
+    def tick(self):
+        res = super().tick()
+        print("doMoveAlongPathGlobal: ", res)
         return res

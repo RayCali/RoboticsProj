@@ -45,7 +45,7 @@ if __name__=="__main__":
                     Or([
                         isPlaced(),
                         doPlace()
-                    ])
+                    ]),
                     doPlace(),
                     Or([
                         isNotPair(),
@@ -55,8 +55,15 @@ if __name__=="__main__":
                 ])
             ]),
             isNotExploring(),
-            doExplore(),
-            doPlanPathExplore(),
+            Or([
+                isSelected(),
+                doSelect()
+
+            ]),
+            Or([
+                isExplorationPathPlanned(),
+                doPlanExplorationPath(),
+            ]),
             doMoveAlongPathGlobal()
         ])
     )

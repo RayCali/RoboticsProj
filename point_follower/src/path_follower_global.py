@@ -45,7 +45,7 @@ class path(object):
         self.rate = rospy.Rate(20)
         self.updated_first_pose = PoseStamped()
         self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
-        self.movePath_srv = rospy.Service('/srv/doMoveAlongPathGlobal/path_follower_global/brain', Request, self.doMovePathResponse)
+        self.movePath_srv = rospy.Service('/srv/doMoveAlongPathGlobal/path_follower_global/memory', Request, self.doMovePathResponse)
         self.running = False
         self.Path = None
         self.moveto_pub = rospy.Publisher('/path_follower/global/tracker', Path, queue_size=1)

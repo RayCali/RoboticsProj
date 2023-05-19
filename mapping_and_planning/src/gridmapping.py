@@ -46,7 +46,7 @@ class Map():
         height = int(height/resolution)
         self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
+        self.start_explore_srv = rospy.Service("/srv/doSelectExplorationGoal/mapping_and_planning/memory", Request, self.__doStartExploreCallback)
         self.stop_explore_srv = rospy.Service("/srv/stopExplore/mapping_and_planning/brain", Request, self.__stopExploreCallback)
         self.explore_pub= rospy.Publisher("/explore", Int64, queue_size=1)
         self.explore_sub = rospy.Subscriber("/explore", Int64, self.__exploreCallback)
@@ -69,7 +69,7 @@ class Map():
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
-        self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
+        self.goal_pub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
         self.stopped_explore = False
         self.running_Ex = False
         self.running_stopEx = False
@@ -110,12 +110,17 @@ class Map():
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
-        self.goal_pub.publish(ps)
         self.startExplore_STATE = SUCCESS
+
+        object_poses = objectPoseStampedLst()
+        name = "ExplorationGoal"
+        
+        object_poses.PoseStamped.append(ps)
+        object_poses.object_class.append(name)
+        self.goal_pub.publish(object_poses)
+
         return
     def __doStartExploreCallback(self, req: RequestRequest):
-        if self.received_mostvaluedcell:
-            return RequestResponse(SUCCESS)
         if not self.running_Ex:
             self.running_Ex = True
             self.startExplore_STATE = RUNNING
@@ -129,7 +134,6 @@ class Map():
                 return RequestResponse(FAILURE)
             if self.startExplore_STATE == SUCCESS:
                 self.running_Ex = False
-                self.received_mostvaluedcell = True
                 return RequestResponse(SUCCESS)
         
     

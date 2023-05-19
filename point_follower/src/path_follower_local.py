@@ -86,17 +86,17 @@ class path(object):
                 return RequestResponse(SUCCESS)
 
 
-    def isAtToy(self, req: Request):
-        if self.STATE == SUCCESS:
-            return RequestResponse(SUCCESS)
-        else:
-            return RequestResponse(FAILURE)
+    # def isAtToy(self, req: Request):
+    #     if self.STATE == SUCCESS:
+    #         return RequestResponse(SUCCESS)
+    #     else:
+    #         return RequestResponse(FAILURE)
     
-    def isAtBox(self, req: Request):
-        if self.STATE == SUCCESS:
-            return RequestResponse(SUCCESS)
-        else:
-            return RequestResponse(FAILURE)
+    # def isAtBox(self, req: Request):
+    #     if self.STATE == SUCCESS:
+    #         return RequestResponse(SUCCESS)
+    #     else:
+    #         return RequestResponse(FAILURE)
     
     
     def doSaveObjectpose(self, msg: Path):
@@ -172,7 +172,7 @@ class path(object):
                 self.inc_y = self.goal_pose.pose.position.y
                 while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                     self.twist.linear.x = 0.0
-                    self.twist.angular.z = -0.7
+                    self.twist.angular.z = -0.8
                     # rospy.loginfo("Turning right")
                     # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                     self.pub_twist.publish(self.twist)
@@ -188,7 +188,7 @@ class path(object):
 
                 while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                     self.twist.linear.x = 0.0
-                    self.twist.angular.z = 0.7
+                    self.twist.angular.z = 0.8
                     # rospy.loginfo("Turning left")
                     # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                     self.pub_twist.publish(self.twist)
@@ -247,6 +247,7 @@ class path(object):
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
                         self.done_once = True
+                        rospy.sleep(1)
                         break
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
@@ -300,8 +301,10 @@ class path(object):
         point_to_follow.object_class.append(self.target)
         point_to_follow.PoseStamped.append(self.target_pose)
         self.target_pub.publish(point_to_follow)
-        state = self.point_follower()
+        rospy.loginfo("Point follower called")
+        state = self.point_follower_srv()
         if state == FAILURE:
+            rospy.loginfo(state)
             self.STATE = FAILURE
             return
 
