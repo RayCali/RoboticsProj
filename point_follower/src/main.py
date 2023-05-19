@@ -245,12 +245,12 @@ class path(object):
                 self.inc_x= self.goal_pose.pose.position.x
                 self.inc_y= self.goal_pose.pose.position.y
                 if math.atan2(self.inc_y, self.inc_x) > 0.05:
-                    self.twist.angular.z = 0.4 #either -0.2 or 0.2
+                    self.twist.angular.z = 0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
 
                 if math.atan2(self.inc_y, self.inc_x) < -0.05:
-                    self.twist.angular.z = -0.4 #either -0.2 or 0.2
+                    self.twist.angular.z = -0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
                 if switch is False:

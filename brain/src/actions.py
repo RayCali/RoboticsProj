@@ -102,6 +102,7 @@ class doMoveAlongPathGlobal(Action):
     def tick(self):
         res = super().tick()
         print("doMoveAlongPathGlobal: ", res)
+        return res
 
 class doMoveAlongPathToy(Action):
     def __init__(self) -> None:
@@ -111,6 +112,7 @@ class doMoveAlongPathToy(Action):
     def tick(self):
         res = super().tick()
         print("doMoveAlongPathToy: ", res)
+        return res
     
 class doMoveAlongPathBox(Action):
     def __init__(self) -> None:
@@ -121,6 +123,7 @@ class doMoveAlongPathBox(Action):
     def tick(self):
         res = super().tick()
         print("doMoveAlongPathBox: ", res)
+        return res
 
 class doPlace(Action):
     def __init__(self) -> None:

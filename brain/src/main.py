@@ -67,8 +67,10 @@ if __name__=="__main__":
             doMoveAlongPathGlobal()
         ])
     )
-    
+    count = 0
     while not rospy.is_shutdown():
         rospy.init_node("behavior_tree")
+        rospy.loginfo("Behavior tree ticked %d times", count)
+        count += 1
         root.tick()
         rospy.sleep(2)

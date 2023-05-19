@@ -82,7 +82,7 @@ class path(object):
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
-                self.arrivedAtToy = True
+                self.arrived = True
                 return RequestResponse(SUCCESS)
 
 
@@ -113,7 +113,7 @@ class path(object):
             self.target = msg.object_class[0][:-2]
 
         self.target_pose = msg.PoseStamped[0]
-        
+        self.arrived = False
    
     
     def distance_to_goal(self, msg: objectPoseStampedLst):
@@ -309,6 +309,7 @@ class path(object):
             return
 
         self.STATE = SUCCESS
+        rospy.loginfo(self.STATE)
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
@@ -321,7 +322,6 @@ class path(object):
         self.box_pose = None
         self.toy_pose = None
 
-        self.running = False
         self.objectpose = None
         self.Path = None
         self.timetocallthebigguns = False

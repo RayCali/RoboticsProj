@@ -73,7 +73,7 @@ class Memory:
         self.isPlanned_srv      = rospy.Service("/srv/isPlanned/memory/brain", Request, self.getIsPlanned)
         
         self.isPicked_srv       = rospy.Service("/srv/isPicked/memory/brain", Request, self.getIsPicked)
-        self.doPickup_srv       = rospy.Service("/srv/doPickup/memory/brain", Request, self.doPickup)
+        self.doPickup_srv       = rospy.Service("/srv/doPickToy/memory/brain", Request, self.doPickup)
         self.doPlanPathToy_srv  = rospy.Service("/srv/doPlanpathToy/memory/brain", Request, self.doPlanPathToy)
         self.isAtBox_srv        = rospy.Service("/srv/isAtBox/memory/brain", Request, self.getIsAtBox)
         self.isPlannedBox_srv   = rospy.Service("/srv/isPlannedBox/memory/brain", Request, self.getIsPlannedBox)
@@ -165,7 +165,7 @@ class Memory:
             self.targetToy.atToy = False
         return res
     def getIsPlannedBox(self, req: RequestRequest):
-        pose = self.targetBox.pose
+        pose = self.targetBox.poseStamped
         if self.targetBox.isPlanned:
             return RequestResponse(SUCCESS)
         # This is when the path planner gets the pose of the box
@@ -225,6 +225,7 @@ class Memory:
     def doMoveAlongPathToyLocal(self, req: RequestRequest):
         proxy = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
+        print("Response", res)
         if res.success == SUCCESS:
             self.targetToy.atToy = True
             self.targetToy.isPlanned = False
