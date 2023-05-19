@@ -23,7 +23,7 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlannerEx_srv = rospy.Service("/srv/doPlanpathExplore/mapping_and_planning/brain", Request, self.doPlanResponse)
+        self.pathPlannerEx_srv = rospy.Service("/srv/doPlanpathToy/mapping_and_planning/memory", Request, self.doPlanResponse)
         # 
         self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)

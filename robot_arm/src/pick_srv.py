@@ -29,9 +29,8 @@ class PickAndPlace():
         self.gripper_open = -1.7802358066666664
         self.gripper_closed = 0.0
 
-        rospy.Service("/srv/doPickToy/pickup/brain", Request, self.doPickupToy)
-        rospy.Service("/srv/isPicked/pickup/brain", Request, self.isPicked)
-        rospy.Service("/srv/doPlaceToy/place/brain", Request, self.doPlaceToy)
+        rospy.Service("/srv/doPickToy/pickup/memory", Request, self.doPickupToy)
+        rospy.Service("/srv/doPlace/pickup/memory", Request, self.doPlaceToy)
 
         rospy.wait_for_service("/srv/getPickPose/arm_camera/pickup")
         self.getPickPose_srv = rospy.ServiceProxy("/srv/getPickPose/arm_camera/pickup", PickPose)

@@ -16,11 +16,15 @@ if __name__=="__main__":
             Or([ 
                 isNotPair(),
                 And([
-                    isNotExploring(),
+                    And([isNotExploring()]),
                     Or([
+                        isPicked(),
                         isAtToy(),
                         And([
-                            doPlanPathToy(),
+                            Or([
+                                isPlanned(),
+                                doPlanPathToy()
+                                ]),
                             doMoveAlongPathToy()
                         ])
                     ]),
@@ -31,9 +35,16 @@ if __name__=="__main__":
                     Or([
                         isAtBox(),
                         And([
-                            doPlanPathBox(),
+                            Or([
+                                isPlannedBox(),
+                                doPlanPathBox()
+                            ]),
                             doMoveAlongPathBox(),
-                        ]),
+                        ])
+                    ]),
+                    Or([
+                        isPlaced(),
+                        doPlace()
                     ])
                     doPlace(),
                     Or([

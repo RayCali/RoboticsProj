@@ -38,8 +38,9 @@ class path(object):
         self.radius_sub = float(1)
         self.objectpose = PoseStamped()
         self.updated_first_pose = PoseStamped()
-        self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower_local/brain', Request, self.doMovePathResponse)
-        self.service = rospy.Service('/srv/isAtToy/path_follower_local/brain', Request, self.isatToy)
+        self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower/memory', Request, self.doMovePathResponse)
+        self.movePathBox_srv = rospy.Service('/srv/doMoveAlongPathBoxLocal/path_follower/memory', Request, self.doMovePathResponse)
+        
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)

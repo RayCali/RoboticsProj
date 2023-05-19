@@ -9,19 +9,22 @@
 |    |    |    |    (isNotExploring)
 |    |    |    ?
 |    |    |    |    (isPicked)
-|    |    |    |    (isInFrontToy)
-|    |    |    |    ?
-|    |    |    |    |    (isPlanned)
-|    |    |    |    |    [doPlanPath()]
-|    |    |    |    ?   
-|    |    |    |    |    (isMoving)
-|    |    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    (isAtToy)
+|    |    |    |    ->
+|    |    |    |    |    ?
+|    |    |    |    |    |    (isPlanned)
+|    |    |    |    |    |    [doPlanPath()]
+|    |    |    |    |    [doMoveToGoal()]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]
 |    |    |    ?
-|    |    |    |    (isInFrontBox)
-|    |    |    |    [doMoveToGoal(goal)]
+|    |    |    |    (isAtBox)
+|    |    |    |    ->
+|    |    |    |    |    ?
+|    |    |    |    |    |    (isPlannedBox)
+|    |    |    |    |    |    [doPlanPath()]
+|    |    |    |    |    [doMoveToGoal()]
 |    |    |    ?
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]

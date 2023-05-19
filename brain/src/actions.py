@@ -40,7 +40,9 @@ class doMoveToGoal(Action):
 class doPickup(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPickToy/pickup/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPickToy/memory/brain", Request)
+        # Staffan is to remap this service below to provide for the memory
+        #self.service = rospy.ServiceProxy("/srv/doPickToy/pickup/brain", Request)
     def tick(self):
         res = super().tick()
         print("doPickup: ", res)
@@ -58,7 +60,9 @@ class doPlanPathExplore(Action):
 class doPlanPathToy(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpathToy/mapping_and_planning/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanpathToy/memory/brain", Request)
+        # Staffan is to remap this service below to provide for the memory 
+        #self.service = rospy.ServiceProxy("/srv/doPlanpathToy/mapping_and_planning/brain", Request)
     def tick(self):
         res = super().tick()
         print("doPlanPathToy: ", res)
@@ -84,7 +88,8 @@ class doMoveAlongPathGlobal(Action):
 class doMoveAlongPathToy(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower_local/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/memory/brain", Request)
+        #self.service = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower_local/brain", Request)
     def tick(self):
         res = super().tick()
         print("doMoveAlongPathToy: ", res)
@@ -92,7 +97,9 @@ class doMoveAlongPathToy(Action):
 class doMoveAlongPathBox(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/memory/brain", Request)
+        # Staffan is to redirect this service below to provide for the memory
+        #self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/brain", Request)
     def tick(self):
         res = super().tick()
         print("doMoveAlongPathBox: ", res)
@@ -100,7 +107,7 @@ class doMoveAlongPathBox(Action):
 class doPlace(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlaceToy/place/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlace/memory/brain", Request)
     def tick(self):
         res = super().tick()
         print("doPlace: ", res)
