@@ -115,6 +115,8 @@ class Memory:
         if res.success == SUCCESS:
             self.targetBox.atBox = True
             self.targetBox.isPlanned = False
+            self.targetToy.atToy = False
+        return res
     def getIsPlannedBox(self, req: RequestRequest):
         if self.targetBox.isPlanned:
             return RequestResponse(SUCCESS)
