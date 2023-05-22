@@ -38,12 +38,10 @@ class PathProvider:
         self.STATE = RUNNING
         self.running = False
         self.goal = None
-        self.planned = False
     
     def doSetGoal(self, msg: objectPoseStampedLst):
-        print("got goal: ", msg)
         self.goal = msg.PoseStamped[0]
-        self.planned = False
+        print("got goal: ", self.goal)
     
     def doPlanResponse(self, req: Request):
         if not self.running:
@@ -60,7 +58,6 @@ class PathProvider:
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.reset()
-                self.planned = True
                 return RequestResponse(SUCCESS)
     def reset(self):
         self.running = False
