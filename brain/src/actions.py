@@ -62,7 +62,7 @@ class doPlanPathToy(Action):
 class doPlanPathBox(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpathBox/memory/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanPathBox/memory/brain", Request)
         self.verbose = True
 
 class doPlanExplorationPath(Action):
@@ -110,3 +110,15 @@ class doMoveAlongPathGlobal(Action):
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doMoveAlongPathGlobal/memory/brain", Request)
         self.verbose = True
+
+class doSleepOnce:
+    def __init__(self) -> None:
+        self.done = False
+    def tick(self):
+        if not self.done:
+            self.done = True
+            rospy.sleep(10)
+        else:
+            pass
+        return SUCCESS
+        

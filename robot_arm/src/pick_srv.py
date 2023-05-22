@@ -28,7 +28,6 @@ class PickAndPlace():
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
         self.gripper_closed = 0.0
-
         rospy.Service("/srv/doPickToy/pickup/memory", Request, self.doPickupToy)
         rospy.Service("/srv/doPlace/pickup/memory", Request, self.doPlaceToy)
 
@@ -123,6 +122,7 @@ class PickAndPlace():
                 return RequestResponse(RUNNING)
             if self.pick_STATE == SUCCESS:
                 self.running = False
+                rospy.loginfo("Resetting running to False")
                 return RequestResponse(SUCCESS)
             if self.pick_STATE == FAILURE:
                 self.running = False
@@ -267,7 +267,7 @@ class PickAndPlace():
     
 
     def handle_place_req(self, msg:bool):
-        if self.doPlace:
+        if self.running:
             goal = FollowJointTrajectoryGoal()
             goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
             goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_dropoff, velocities=self.q_dot, time_from_start=rospy.Duration(0.5))]
@@ -286,7 +286,7 @@ class PickAndPlace():
             self.trajectory_client.send_goal(goal)
             self.trajectory_client.wait_for_result()
 
-        self.place_STATE = SUCCESS
+            self.place_STATE = SUCCESS
         self.pick_STATE = FAILURE
         return
 

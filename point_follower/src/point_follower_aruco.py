@@ -47,14 +47,16 @@ class path(object):
         self.objectpose = None
         self.objectpose_map = None
         self.arrrived = False
-        self.updating = True
-    
+        self.updating = False
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
+        self.listener = tf2_ros.TransformListener(self.tf_buffer)
         
     
 
     def doMoveToToyResponse(self, req: RequestRequest):
         if self.objectpose_map is None:
-            return RequestResponse(FAILURE) 
+            return RequestResponse(FAILURE)
+        self.updating = True 
         rospy.loginfo("calling pointfollower_aruco tracker")
         self.tracker(self.objectpose_map.PoseStamped[0])
         return RequestResponse(self.STATE)
@@ -67,9 +69,8 @@ class path(object):
         # if len(msg) == 0:
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
-        rospy.loginfo("Object detected")
-
-        if self.objectpose_map is None:
+        #rospy.loginfo("Object detected")
+        if "Box" in msg.object_class[0]:
             self.objectpose_map = msg
 
 
@@ -77,15 +78,17 @@ class path(object):
     #     self.radius_sub = msg.data
    
     def update(self, msg:MarkerArray):
-        if self.updating:
+        if self.objectpose_map is None:
+            pass
+        else:    
             for marker in msg.markers:
-                if marker.id == int(self.objectpose_map.object_class[0][:-1]):
+                if marker.id == int(self.objectpose_map.object_class[0][-1]):
                     boxpose = PoseStamped()
                     boxpose.header.frame_id = "camera_link"
                     boxpose.pose = marker.pose.pose
                     transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
                     boxPose_map = tf2_geometry_msgs.do_transform_pose(boxpose, transform)
-                    self.objectpose=boxPose_map
+                    self.objectpose_map.PoseStamped[0]=boxPose_map
 
 
 
@@ -95,7 +98,6 @@ class path(object):
         # playsound('/home/robot/dd2419_ws/src/speaker/src/MoveToToy.mp3')
         self.STATE = RUNNING
         if not self.done_once:
-            self.cam_pose = msg
             self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
@@ -109,7 +111,7 @@ class path(object):
             # self.cam_pose.pose = msg.pose
             try:
                 self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logerr("Failed to transform point from odom frame to base_link frame")
                 pass
@@ -128,7 +130,7 @@ class path(object):
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
@@ -144,7 +146,7 @@ class path(object):
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
@@ -154,16 +156,13 @@ class path(object):
             self.twist.angular.z = 0.0
             self.pub_twist.publish(self.twist)
             self.rate.sleep()
-            while self.objectpose is None:
-                rospy.loginfo("checking for box....")
-                continue
+           
             self.updating = False
             self.acceleration = 0.05
             self.deceleration = 0.05
-            self.cam_pose = self.objectpose
             try:
                 self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                 rospy.logerr("Failed to transform point from odom frame to base_link frame")
                 pass
@@ -184,7 +183,7 @@ class path(object):
                 #     self.STATE = FAILURE
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
                     pass
@@ -197,7 +196,7 @@ class path(object):
                 self.rate.sleep()
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.cam_pose, self.trans)
+                    self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)
                     
                 except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
                     rospy.logerr("Failed to transform point from odom frame to base_link frame")
@@ -219,10 +218,6 @@ class path(object):
             self.twist.linear.x = 0.0
             self.twist.angular.z = 0.0 #I added these two lines just incase
             self.pub_twist.publish(self.twist)
-            trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
-            final_pose_map = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
-            self.inc_x = self.objectpose.pose.position.x
-            self.inc_y = self.objectpose.pose.position.y
 
             self.done_once = True 
         rospy.loginfo('You have reached the goal')

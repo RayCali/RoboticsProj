@@ -44,7 +44,7 @@ class ArmCam:
 
     def getPickPose(self, req: PickPoseRequest):
         image = rospy.wait_for_message("/usb_cam/image_raw", Image)
-        self.proofPub(Image)
+        self.proofPub.publish(image)
 
         cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
         h,  w = cv_image.shape[:2]

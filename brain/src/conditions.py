@@ -83,3 +83,4 @@ class isExplorationPathPlanned(Condition):
         super().__init__()
         self.service = rospy.ServiceProxy('/srv/isExplorationPathPlanned/memory/brain', Request)
         self.verbose = True
+

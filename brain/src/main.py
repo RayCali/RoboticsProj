@@ -13,6 +13,7 @@ if __name__=="__main__":
                 isLocalized(),
                 doLocalize()
             ]),
+            doSleepOnce(),
             Or([ 
                 isNotPair(),
                 And([
