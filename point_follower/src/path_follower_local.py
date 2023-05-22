@@ -106,7 +106,7 @@ class path(object):
             self.Path= msg
 
     def doSaveTarget(self, msg: objectPoseStampedLst):
-        if "box" in msg.object_class[0]:
+        if "Box" in msg.object_class[0]:
             print("This is a box") 
             self.target = "Box"
         else:

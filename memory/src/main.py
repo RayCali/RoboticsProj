@@ -280,7 +280,15 @@ class Memory:
                 boxPose = objectPoseStampedLst()
                 objectPose = objectPoseStampedLst()
                 print(box.name)
-                if box.name == "Box_Plushies":
+
+                    #     self.arucoId2Box = {
+                    #     2 : "Box_Plushies",
+                    #     3 : "Box_Balls",
+                    #     1 : "Box_Cubes",
+                    #     500 : "Anchor"
+                    # }
+
+                if box.name == "Box2":
                     print(self.plushies)
                     if len(self.plushies) > 0:
                         self.targetBox = box
@@ -293,7 +301,7 @@ class Memory:
 
                         
 
-                elif box.name == "Box_Balls":
+                elif box.name == "Box3":
                     if len(self.balls) > 0:
                         self.targetBox = box
                         self.targetToy = self.balls[list(self.balls.keys())[0]]
@@ -304,7 +312,7 @@ class Memory:
                         return RequestResponse(FAILURE)
 
 
-                elif box.name == "Box_Cubes":
+                elif box.name == "Box1":
                     if len(self.cubes) > 0:
                         self.targetBox = box
                         self.targetToy = self.cubes[list(self.cubes.keys())[0]]
@@ -423,7 +431,7 @@ class Memory:
             boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_cam, transform)
             t = TransformStamped()
             t.header.frame_id = "map"
-            t.child_frame_id = "box" + str(marker.id)
+            t.child_frame_id = "Box" + str(marker.id)
             t.transform.translation.x = boxPose_map.pose.position.x
             t.transform.translation.y = boxPose_map.pose.position.y
             t.transform.translation.z = 0
@@ -438,7 +446,7 @@ class Memory:
             t.transform.rotation.w = q[3]
             self.br.sendTransform(t)
             boxPose_aruco = PoseStamped()
-            boxPose_aruco.header.frame_id = "box" + str(marker.id)
+            boxPose_aruco.header.frame_id = "Box" + str(marker.id)
             boxPose_aruco.pose.position.x = 0.2
             boxPose_aruco.pose.position.y = 0
             boxPose_aruco.pose.position.z = 0
@@ -446,10 +454,10 @@ class Memory:
             boxPose_aruco.pose.orientation.y = 0
             boxPose_aruco.pose.orientation.z = 0
             boxPose_aruco.pose.orientation.w = 1
-            transform = self.tf_buffer.lookup_transform('map', 'box' + str(marker.id), rospy.Time(0), rospy.Duration(1.0))
+            transform = self.tf_buffer.lookup_transform('map', 'Box' + str(marker.id), rospy.Time(0), rospy.Duration(1.0))
             boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_aruco, transform)
 
-            boxObject = Box(boxPose_map, self.arucoId2Box[marker.id], marker.id)
+            boxObject = Box(boxPose_map, "Box" + str(marker.id), marker.id)
             boxObject.hasArucoMarker = True
             self.putBoxInDict(boxObject)
 
