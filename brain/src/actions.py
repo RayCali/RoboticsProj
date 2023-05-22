@@ -98,11 +98,6 @@ class doPlace(Action):
         self.verbose = True
     
 
-class doReset(Action):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doReset/memory/brain", Request)
-        self.verbose = True
     
 class stopExplore(Action):
     def __init__(self) -> None:

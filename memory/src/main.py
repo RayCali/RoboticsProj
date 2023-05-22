@@ -103,7 +103,6 @@ class Memory:
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
 
-        self.STATE_RESET = FAILURE
     
     def getIsExplorationPathPlanned(self, req: RequestRequest):
         if self.pathToExplorationGoalPlanned:
@@ -240,10 +239,6 @@ class Memory:
         to_be_published.object_class.append(self.targetToy.name)
         self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
-    def doReset(self, req: RequestRequest):
-        self.STATE_RESET = RUNNING
-        self.reset_behaviour_pub.publish(Bool(True))
-        return RequestResponse(SUCCESS)
    
     
     # def doInformOfPick(self, req):
@@ -290,9 +285,10 @@ class Memory:
 
                 if box.name == "Box2":
                     print(self.plushies)
-                    if len(self.plushies) > 0:
+                    pickable_plushies = [i for i in list(self.plushies.keys()) if not i.inBox]
+                    if len(pickable_plushies) > 0:
                         self.targetBox = box
-                        self.targetToy = self.plushies[list(self.plushies.keys())[0]]
+                        self.targetToy = pickable_plushies[0]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
@@ -302,9 +298,10 @@ class Memory:
                         
 
                 elif box.name == "Box3":
-                    if len(self.balls) > 0:
+                    pickable_balls = [i for i in list(self.balls.keys()) if not i.inBox]
+                    if len(pickable_balls) > 0:
                         self.targetBox = box
-                        self.targetToy = self.balls[list(self.balls.keys())[0]]
+                        self.targetToy = pickable_balls[0]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
@@ -313,9 +310,10 @@ class Memory:
 
 
                 elif box.name == "Box1":
-                    if len(self.cubes) > 0:
+                    pickable_cubes = [i for i in list(self.cubes.keys()) if not i.inBox]
+                    if len(pickable_cubes) > 0:
                         self.targetBox = box
-                        self.targetToy = self.cubes[list(self.cubes.keys())[0]]
+                        self.targetToy = pickable_cubes[0]
                         boxPose.PoseStamped.append(box.poseStamped)
                         boxPose.object_class.append(box.name)
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
@@ -387,9 +385,9 @@ class Memory:
             if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
                 if toy_id == id:
                     count += 1
-        if count < 15:
+        if count < 10:
             self.toys_buffer.append((pose,id))
-        if count > 14:
+        if count > 9:
             self.putObject(pose,id)
             self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
 

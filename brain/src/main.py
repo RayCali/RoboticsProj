@@ -46,11 +46,7 @@ if __name__=="__main__":
                         isPlaced(),
                         doPlace()
                     ]),
-                    doPlace(),
-                    Or([
-                        isNotPair(),
-                        doReset()
-                    ])
+                    isNotPair()
                     
                 ])
             ]),
