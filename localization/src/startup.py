@@ -69,9 +69,11 @@ def createWorkspace(t:TransformStamped,mesg,mark):
     #for i in range(1,len(points)):
     #    polygon.points.append(Point(float(points[i][0])-4.02,float(points[i][1])-1.21, -t.transform.translation.z))
     #polygon.points.append(Point(float(points[1][0])-4.02, float(points[1][1])-1.21,-t.transform.translation.z))
+    x = -1
+    y = -1
     for i in range(1,len(points)):
-        polygon.points.append(Point(float(points[i][0]),float(points[i][1]), -t.transform.translation.z))
-    polygon.points.append(Point(float(points[1][0]), float(points[1][1]),-t.transform.translation.z))
+        polygon.points.append(Point(float(points[i][0])-x,float(points[i][1])-y, -t.transform.translation.z))
+    polygon.points.append(Point(float(points[1][0])-x, float(points[1][1])-y,-t.transform.translation.z))
     polygon.scale.x = 0.03
     polygon.color.a = 1.0
     polygon.color.r = 1.0
