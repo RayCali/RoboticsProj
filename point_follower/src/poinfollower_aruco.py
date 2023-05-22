@@ -237,6 +237,7 @@ class path(object):
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
+        self.updating =False
         return
     
        
