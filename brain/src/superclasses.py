@@ -24,10 +24,10 @@ class Action(Leaf):
         except ServiceException as e:
             loginfo(e)
             return FAILURE
-        if res not in [-1, 0, 1]:
-            raise Exception("Invalid response type")
+        #if res not in [-1, 0, 1]:
+        #    raise Exception("Invalid response type")
         if self.verbose:
-            loginfo(type(self).__name__+": " + TABLE[res])
+            loginfo(type(self).__name__+": " + TABLE[res.success])
         return self.getStatusFromNum(res.success)
 
 class Condition(Leaf):
@@ -42,8 +42,8 @@ class Condition(Leaf):
             return FAILURE
         if self.getStatusFromNum(res.success)==RUNNING:
             raise ServiceReturnedRunningException("Service returned a RUNNING state to a condition node. This is not allowed.")
-        if res not in [-1, 0, 1]:
-            raise Exception("Invalid response type")
+        #if res not in [-1, 0, 1]:
+        #    raise Exception("Invalid response type")
         if self.verbose:
-            loginfo(type(self).__name__+": " + TABLE[res])
+            loginfo(type(self).__name__+": " + TABLE[res.success])
         return self.getStatusFromNum(res.success)
