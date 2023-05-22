@@ -90,8 +90,6 @@ class doMoveAlongPathBox(Action):
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/memory/brain", Request)
         self.verbose = True
-        # Staffan is to redirect this service below to provide for the memory
-        #self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/brain", Request)
 
 class doPlace(Action):
     def __init__(self) -> None:

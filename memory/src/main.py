@@ -5,7 +5,7 @@ from numpy import dot, array
 import tf2_ros
 import tf2_geometry_msgs
 from nav_msgs.msg import OccupancyGrid
-from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
+from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point,TransformStamped
 from sensor_msgs.msg import LaserScan
 from aruco_msgs.msg import MarkerArray, Marker
 import matplotlib.pyplot as plt
@@ -18,6 +18,8 @@ from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
 from std_msgs.msg import Bool
 from config import SUCCESS, RUNNING, FAILURE
+import math
+
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
 class Memory:
     def __init__(self):
@@ -59,7 +61,7 @@ class Memory:
 
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
-
+        self.br = tf2_ros.TransformBroadcaster()
         self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
         self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco, queue_size=1)
@@ -419,6 +421,34 @@ class Memory:
             boxPose_cam.pose = marker.pose.pose
             transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
             boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_cam, transform)
+            t = TransformStamped()
+            t.header.frame_id = "map"
+            t.child_frame_id = "box" + str(marker.id)
+            t.transform.translation.x = boxPose_map.pose.position.x
+            t.transform.translation.y = boxPose_map.pose.position.y
+            t.transform.translation.z = 0
+            anglelist = [boxPose_map.pose.orientation.x, boxPose_map.pose.orientation.y, boxPose_map.pose.orientation.z, boxPose_map.pose.orientation.w]
+            roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(anglelist)
+            roll = roll - math.pi/2
+            yaw = yaw - math.pi/2
+            q = tf_conversions.transformations.quaternion_from_euler(roll, pitch, yaw)
+            t.transform.rotation.x = q[0]
+            t.transform.rotation.y = q[1]
+            t.transform.rotation.z = q[2]
+            t.transform.rotation.w = q[3]
+            self.br.sendTransform(t)
+            boxPose_aruco = PoseStamped()
+            boxPose_aruco.header.frame_id = "box" + str(marker.id)
+            boxPose_aruco.pose.position.x = 0.2
+            boxPose_aruco.pose.position.y = 0
+            boxPose_aruco.pose.position.z = 0
+            boxPose_aruco.pose.orientation.x = 0
+            boxPose_aruco.pose.orientation.y = 0
+            boxPose_aruco.pose.orientation.z = 0
+            boxPose_aruco.pose.orientation.w = 1
+            transform = self.tf_buffer.lookup_transform('map', 'box' + str(marker.id), rospy.Time(0), rospy.Duration(1.0))
+            boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_aruco, transform)
+
             boxObject = Box(boxPose_map, self.arucoId2Box[marker.id], marker.id)
             boxObject.hasArucoMarker = True
             self.putBoxInDict(boxObject)

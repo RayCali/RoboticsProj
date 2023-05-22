@@ -49,6 +49,7 @@ class path(object):
         self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
         self.target_pose = None
         self.done_once = False
+        self.updated_target = None
         self.lastnode = False
         self.toy = None
         self.box = None
@@ -122,6 +123,7 @@ class path(object):
                 if self.target == msg.object_class[0]:
                     if math.sqrt((self.target_pose.pose.position.x - msg.PoseStamped[0].pose.position.x)**2 + (self.target_pose.pose.position.y - msg.PoseStamped[0].pose.position.y)**2) < 0.1:
                         self.timetocallthebigguns = True
+                        self.updated_target = msg.PoseStamped[0]
             except IndexError:
                 pass
     
@@ -298,6 +300,7 @@ class path(object):
         
         #call point follower
         point_to_follow=objectPoseStampedLst()
+        self.target = self.updated_target
         point_to_follow.object_class.append(self.target)
         point_to_follow.PoseStamped.append(self.target_pose)
         self.target_pub.publish(point_to_follow)
