@@ -5,7 +5,7 @@ import math
 import rospy
 from rospy import loginfo
 import tf2_ros
-
+from msg_srv_pkg.msg import objectPoseStampedLst
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped, Pose
 from msg_srv_pkg.srv import Request, RequestResponse
@@ -23,40 +23,52 @@ class PathProvider:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.map: Map = map
-        self.pathPlanner_srv = rospy.Service("/srv/doPlanpath/mapping_and_planning/brain", Request, self.doReturnMovetoResponse)
-
+        self.pathPlannerEx_srv = rospy.Service("/srv/doPlanpath/mapping_and_planning/memory", Request, self.doPlanResponse)
+        # 
         self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
 
-        self.goal_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoal, queue_size=10)
-
+        # self.goal_Ex_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoalEx, queue_size=10)
+        # self.goal_toy_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.getToy, queue_size=10)
+        # self.goal_box_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.getBox, queue_size=10)
+        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSetGoal, queue_size=10)
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
         self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
         self.getObstacles()
-        self.running = False
         self.STATE = RUNNING
+        self.running = False
         self.goal = None
+        self.planned = False
     
-    def getGoal(self, msg: PoseStamped):
+    def doSetGoal(self, msg: objectPoseStampedLst):
         print("got goal: ", msg)
-        self.goal = msg
+        self.goal = msg.PoseStamped[0]
+        self.planned = False
     
-    def doReturnMovetoResponse(self, req: Request):
+    def doPlanResponse(self, req: Request):
         if not self.running:
             if self.goal is None:
                 return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.goal)
-            return RequestResponse(SUCCESS)
+            return RequestResponse(RUNNING)
         if self.running:
             if self.STATE == RUNNING:
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
-                self.running = False
+                self.reset()
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
-                self.running = False
+                self.reset()
+                self.planned = True
                 return RequestResponse(SUCCESS)
+    def reset(self):
+        self.running = False
+        self.goal_Ex = None
+        self.goal_toy = None
+        self.goal_box = None
+
+    
         
     def doPlanPath(self, goal: PoseStamped):
         path_msg= Path()
@@ -104,7 +116,7 @@ class PathProvider:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.rewired_pub.publish(path_msg)
             self.running = False
-            self.STATE == SUCCESS
+            self.STATE = SUCCESS
             return            
             
 

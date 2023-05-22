@@ -7,19 +7,70 @@ from actions import *
 from utilities import Root, And, Or
 
 if __name__=="__main__":
-    root = Root( 
+    root = Root(
         And([
-            doPlanPath(),
-            doMoveAlongPath(),
+            Or([
+                isLocalized(),
+                doLocalize()
+            ]),
+            Or([ 
+                isNotPair(),
+                And([
+                    And([isNotExploring()]),
+                    Or([
+                        isPicked(),
+                        isAtToy(),
+                        And([
+                            Or([
+                                isPlanned(),
+                                doPlanPathToy()
+                                ]),
+                            doMoveAlongPathToy()
+                        ])
+                    ]),
+                    Or([
+                        isPicked(),
+                        doPickup()
+                    ]),
+                    Or([
+                        isAtBox(),
+                        And([
+                            Or([
+                                isPlannedBox(),
+                                doPlanPathBox()
+                            ]),
+                            doMoveAlongPathBox(),
+                        ])
+                    ]),
+                    Or([
+                        isPlaced(),
+                        doPlace()
+                    ]),
+                    doPlace(),
+                    Or([
+                        isNotPair(),
+                        doReset()
+                    ])
+                    
+                ])
+            ]),
+            isNotExploring(),
+            Or([
+                isSelected(),
+                doSelect()
+
+            ]),
+            Or([
+                isExplorationPathPlanned(),
+                doPlanExplorationPath(),
+            ]),
+            doMoveAlongPathGlobal()
         ])
     )
-    # root = Root(
-    #     And([
-    #         isPicked(),
-    #         doMoveToGoal(),
-    #     ])
-    # )
+    count = 0
     while not rospy.is_shutdown():
         rospy.init_node("behavior_tree")
+        rospy.loginfo("BEHAVIOR TREE TICK#%d", count)
+        count += 1
         root.tick()
         rospy.sleep(2)

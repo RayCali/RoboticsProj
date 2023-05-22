@@ -6,6 +6,7 @@ from rospy import loginfo
 class Leaf:
     # In classical robotics this is called and execution node
     def __init__(self) -> None:
+        self.verbose = False
         pass
     def tick(self) -> int:
         return RUNNING

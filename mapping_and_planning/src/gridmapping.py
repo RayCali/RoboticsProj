@@ -41,11 +41,15 @@ class Map():
         self.lineitup_sub = rospy.Subscriber("/boundaries", Marker, self.__lineitup)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.__savepath)
         self.nodenr_sub   = rospy.Subscriber('/path_follower/node', Float64, self.__savenode)
+        self.stop_explore_pub = rospy.Publisher("/stopexploring", Int64, queue_size=1)
         width = int(width/resolution)
         height = int(height/resolution)
         self.ones = False
         self.matrix = np.zeros((width, height), dtype=np.int8)
-        self.start_explore_srv = rospy.Service("/srv/doExplore/mapping_and_planning/brain", Request, self.__doStartExploreCallback)
+        self.start_explore_srv = rospy.Service("/srv/doSelectExplorationGoal/mapping_and_planning/memory", Request, self.__doStartExploreCallback)
+        self.stop_explore_srv = rospy.Service("/srv/stopExplore/mapping_and_planning/brain", Request, self.__stopExploreCallback)
+        self.explore_pub= rospy.Publisher("/explore", Int64, queue_size=1)
+        self.explore_sub = rospy.Subscriber("/explore", Int64, self.__exploreCallback)
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -65,10 +69,13 @@ class Map():
         self.grid.data = None
         self.grid_sub = rospy.Subscriber("/scan", LaserScan, self.__doScanCallback, queue_size=1)
         self.grid_pub = rospy.Publisher("/topic", OccupancyGrid, queue_size=1, latch=True)
-        self.goal_pub = rospy.Publisher("/mostValuedCell", PoseStamped, queue_size=10)
-
-
-
+        self.goal_pub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
+        self.stopped_explore = False
+        self.running_Ex = False
+        self.running_stopEx = False
+        self.received_mostvaluedcell = False
+        self.startExplore_STATE = FAILURE
+        self.stopExplore_STATE = FAILURE
 
         self.start_explore = rospy.Publisher("/start_explore", Int64, queue_size=1)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
@@ -80,19 +87,77 @@ class Map():
             "Muddles": 3,
             "Kiki": 3,
             "Oakie": 3,
-            "cube": 3,
-            "ball": 3,
-            "box": 4,
+            "Cube": 3,
+            "Ball": 3,
+            "Box": 4,
 
         }
-    def __doStartExploreCallback(self, req: RequestRequest):
+    # def __doStartExploreCallback(self, req: RequestRequest):
+    #     ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
+    #     ps: PoseStamped = PoseStamped()
+    #     stopExplore = Int64()
+    #     stopExplore.data = 0
+    #     self.stop_explore_pub.publish(stopExplore)
+    #     ps.header = ts.header
+    #     ps.pose.position.x = ts.transform.translation.x
+    #     ps.pose.position.y = ts.transform.translation.y
+    #     self.goal_pub.publish(ps)
+    #     return RequestResponse(SUCCESS)
+    
+    def __exploreCallback(self, msg: Int64):
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
-        self.goal_pub.publish(ps)
-        return RequestResponse(SUCCESS)
+        self.startExplore_STATE = SUCCESS
+
+        object_poses = objectPoseStampedLst()
+        name = "ExplorationGoal"
+        
+        object_poses.PoseStamped.append(ps)
+        object_poses.object_class.append(name)
+        self.goal_pub.publish(object_poses)
+
+        return
+    def __doStartExploreCallback(self, req: RequestRequest):
+        if not self.running_Ex:
+            self.running_Ex = True
+            self.startExplore_STATE = RUNNING
+            self.explore_pub.publish(Int64())
+            return RequestResponse(RUNNING)
+        if self.running_Ex:
+            if self.startExplore_STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.startExplore_STATE == FAILURE:
+                self.running_Ex = False
+                return RequestResponse(FAILURE)
+            if self.startExplore_STATE == SUCCESS:
+                self.running_Ex = False
+                return RequestResponse(SUCCESS)
+        
+    
+    def __stopExploreCallback(self, req: RequestRequest):
+        if self.stopped_explore:
+            return RequestResponse(SUCCESS)
+        if not self.running_stopEx:
+            self.running_stopEx = True
+            self.stopExplore_STATE = RUNNING
+            return RequestResponse(RUNNING)
+        if self.running_stopEx:
+            if self.stopExplore_STATE == RUNNING:
+                stopExplore = Int64()
+                stopExplore.data = 1
+                self.stop_explore_pub.publish(stopExplore)
+                self.stopExplore_STATE = SUCCESS
+                return RequestResponse(RUNNING)
+            if self.stopExplore_STATE == FAILURE:
+                self.running_stopEx = False
+                return RequestResponse(FAILURE)
+            if self.stopExplore_STATE == SUCCESS:
+                self.running_stopEx = False
+                self.stopped_explore = True
+                return RequestResponse(SUCCESS)
 
 
     def __getOccupancyGridObject(self) -> OccupancyGrid:
@@ -239,20 +304,20 @@ class Map():
     
     def __nocollision(self,req:RequestRequest):
         global latestscan, path, nodenr
-        for i in range (len(latestscan.ranges)):
-            if latestscan.ranges[i] < 0.5:
-                if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
-                    return RequestResponse(FAILURE)
-        position_with_toys = np.where(self.matrix == 3)
-        currentnode = path.poses[int(nodenr)]
-        base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
-        for i in range(len(position_with_toys[0])):
-            p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
-            p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
-            p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
-            d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
-            if d < 0.5: #will depend on covariance
-                return RequestResponse(FAILURE)
+        # for i in range (len(latestscan.ranges)):
+        #     if latestscan.ranges[i] < 0.5:
+        #         if latestscan.angle_min + i * latestscan.angle_increment < 0.5 and latestscan.angle_min + i * latestscan.angle_increment > -0.5:
+        #             return RequestResponse(FAILURE)
+        # position_with_toys = np.where(self.matrix == 3)
+        # currentnode = path.poses[int(nodenr)]
+        # base_link = self.tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2))
+        # for i in range(len(position_with_toys[0])):
+        #     p1 = np.array([currentnode.pose.position.x,currentnode.pose.position.y])
+        #     p2 = np.array([base_link.transform.translation.x,base_link.transform.translation.y])
+        #     p3 = np.array([position_with_toys[1][i]*self.grid.info.resolution+self.grid.info.origin.position.x,position_with_toys[0][i]*self.grid.info.resolution+self.grid.info.origin.position.y])
+        #     d=np.abs(np.cross(p2-p1,p3-p1))/np.linalg.norm(p2-p1)
+        #     if d < 0.5: #will depend on covariance
+        #         return RequestResponse(FAILURE)
         return RequestResponse(SUCCESS)
     def __savenode(self,msg):
         global nodenr

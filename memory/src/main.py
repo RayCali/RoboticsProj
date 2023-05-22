@@ -3,6 +3,7 @@ import rospy
 import numpy as np
 from numpy import dot, array
 import tf2_ros
+import tf2_geometry_msgs
 from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import Pose, Point, Quaternion, PoseStamped, Point
 from sensor_msgs.msg import LaserScan
@@ -15,13 +16,9 @@ from utilities import normalized
 from msg_srv_pkg.msg import objectPoseStampedLst
 from msg_srv_pkg.srv import Request, RequestResponse, RequestRequest
 from visualization_msgs.msg import Marker
+from std_msgs.msg import Bool
 from config import SUCCESS, RUNNING, FAILURE
-from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
-latesttime_cube = 0
-latesttime_ball = 0
-latesttime_plushie = 0
-
 class Memory:
     def __init__(self):
         self.objects: Dict[Movable]= {}
@@ -31,8 +28,6 @@ class Memory:
         self.toys: Dict[Toy] = {}
         self.toys_buffer = []
         self.boxes: Dict[Box] = {}
-        self.ones = False
-        self.two = False
         self.id2Object = {
            0 : "Binky",
            1 : "Hugo",
@@ -40,9 +35,9 @@ class Memory:
            3 : "Muddles",
            4 : "Kiki",
            5 : "Oakie",
-           6 : "cube",
-           7 : "ball",
-           8 : "box",
+           6 : "Cube",
+           7 : "Ball",
+           8 : "Box",
         }
         self.object2Id = {
             "Binky"  : 0,
@@ -51,14 +46,14 @@ class Memory:
             "Muddles": 3,
             "Kiki"   : 4,
             "Oakie"  : 5,
-            "cube"   : 6,
-            "ball"   : 7,
-            "box"    : 8
+            "Cube"   : 6,
+            "Ball"   : 7,
+            "Box"    : 8
         }
         self.arucoId2Box = {
-            0 : "Box_Plushies",
-            1 : "Box_Balls",
-            2 : "Box_Cubes",
+            2 : "Box_Plushies",
+            3 : "Box_Balls",
+            1 : "Box_Cubes",
             500 : "Anchor"
         }
 
@@ -67,41 +62,187 @@ class Memory:
 
         self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
-        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco)
+        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco, queue_size=1)
 
         self.isLocalized_srv    = rospy.Service("/srv/isLocalized/memory/brain", Request, self.getIsLocalized)
         self.doLocalize_srv     = rospy.Service("/srv/doLocalize/memory/brain", Request, self.doLocalize)
         self.isnotpair_srv      = rospy.Service("/srv/isNotPair/memory/brain", Request, self.getNotPair)
-        self.isFound_srv        = rospy.Service("/srv/isPicked/pickup/brain", Request, self.getIsFound)
-
-        # self.ispicked_srv = rospy.Service("/ispicked", Request, self.getIsPicked)
-        # self.pathPlanner_proxy = rospy.ServiceProxy("/pathPlanner", Moveto)
-
-        self.toyPub = rospy.Publisher("/toyPoseMap", objectPoseStampedLst, queue_size=10)
-      
+        self.reset_srv          = rospy.Service("/srv/doReset/memory/brain", Request, self.doReset)
+        self.isAtToy_srv        = rospy.Service('/srv/isAtToy/memory/brain', Request, self.getIsAtToy)
+        self.move2Toy_srv       = rospy.Service("/srv/doMoveAlongPathToyLocal/memory/brain", Request, self.doMoveAlongPathToyLocal)
+        self.isPlanned_srv      = rospy.Service("/srv/isPlanned/memory/brain", Request, self.getIsPlanned)
         
-        self.movingToTargetToy = False
+        self.isPicked_srv       = rospy.Service("/srv/isPicked/memory/brain", Request, self.getIsPicked)
+        self.doPickup_srv       = rospy.Service("/srv/doPickToy/memory/brain", Request, self.doPickup)
+        self.doPlanPathToy_srv  = rospy.Service("/srv/doPlanpathToy/memory/brain", Request, self.doPlanPathToy)
+        self.isAtBox_srv        = rospy.Service("/srv/isAtBox/memory/brain", Request, self.getIsAtBox)
+        self.isPlannedBox_srv   = rospy.Service("/srv/isPlannedBox/memory/brain", Request, self.getIsPlannedBox)
+        self.doPlanPathBox_srv = rospy.Service("/srv/doPlanPathBox/memory/brain", Request, self.doPlanPathBox)
+        self.move2Box_srv       = rospy.Service("/srv/doMoveAlongPathBoxLocal/memory/brain", Request, self.doMoveAlongPathBoxLocal)
+        self.isPlaced_srv       = rospy.Service("/srv/isPlaced/memory/brain", Request, self.getIsPlaced)
+        self.doPlace_srv        = rospy.Service("/srv/doPlace/memory/brain", Request, self.doPlace)
+
+
+        self.isPlanExplored     = rospy.Service("/srv/isGoalSelected/memory/brain", Request, self.getIsSlected)
+        self.mostValue_srv      = rospy.Service("/srv/doSelectExplorationGoal/memory/brain", Request, self.doSelectExplorationGoal)
+        self.isExplorePlaned_srv= rospy.Service("/srv/isExplorationPathPlanned/memory/brain", Request, self.getIsExplorationPathPlanned)
+        self.move2Explore_srv   = rospy.Service("/srv/doMoveAlongPathGlobal/memory/brain", Request, self.doMoveAlongPathGlobal)
+        self.explore_srv        = rospy.Service("/srv/doPlanExplorationPath/memory/brain", Request, self.doPlanpathExplore)
+        self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
+        self.reset_behaviour_pub = rospy.Publisher("/RESET", Bool, queue_size=10)
+        self.goal_name = "lmao"
+                        
+        
+        self.targetBox: Box= None
         self.targetToy: Toy = None
-        self.targetHasBecomeInvalid = False
         self.xThreshold = 0.10
         self.yThreshold = 0.10
-        # self.doPick_srv = rospy.Service("pickup", Pick, self.doInformOfPick)
         self.anchordetected = False
+        self.isSelected = False
+        self.pathToExplorationGoalPlanned = False
+
+        self.STATE_RESET = FAILURE
     
-    def getIsFound(self, req: RequestRequest):
-        if len(self.toys) > 0:
-            target_toy: Toy =  self.toys[list(self.toys.keys())[0]]
-            print("Found a toy", target_toy)
-            object_poses = objectPoseStampedLst()
-            name = target_toy.name
-            ps = target_toy.poseStamped
-            id = target_toy.id
-            object_poses.PoseStamped.append(ps)
-            object_poses.object_class.append(name)
-            self.toyPub.publish(object_poses)
+    def getIsExplorationPathPlanned(self, req: RequestRequest):
+        if self.pathToExplorationGoalPlanned:
             return RequestResponse(SUCCESS)
-        print("NO TOY!")
         return RequestResponse(FAILURE)
+    def doMoveAlongPathGlobal(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doMoveAlongPathGlobal/path_follower_global/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.isSelected = False
+            self.pathToExplorationGoalPlanned = False
+        return res
+    
+
+    def getIsSlected(self, req: RequestRequest):
+        if self.isSelected:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+
+    def doSelectExplorationGoal(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doSelectExplorationGoal/mapping_and_planning/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.isSelected = True
+        return res        
+
+    def isExplorationPathPlanned(self, req: RequestRequest):
+        if self.pathToExplorationGoalPlanned:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+
+    def doPlanpathExplore(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.pathToExplorationGoalPlanned = True
+        return res
+    
+
+    def getIsPlaced(self, req: RequestRequest):
+        if self.targetToy.inBox:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    
+    def doPlace(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doPlace/pickup/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.targetToy.inBox = True
+            self.targetToy.isPicked = False
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+
+
+    def doMoveAlongPathBoxLocal(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.targetBox.atBox = True
+            self.targetBox.isPlanned = False
+            self.targetToy.atToy = False
+        return res
+    def getIsPlannedBox(self, req: RequestRequest):
+        pose = self.targetBox.poseStamped
+        if self.targetBox.isPlanned:
+            return RequestResponse(SUCCESS)
+        # This is when the path planner gets the pose of the box
+        object_poses = objectPoseStampedLst()
+        name = self.targetBox.name
+        ps = self.targetBox.poseStamped
+        object_poses.PoseStamped.append(ps)
+        object_poses.object_class.append(name)
+        self.pathplanpub.publish(object_poses)
+        rospy.sleep(1)
+        return RequestResponse(FAILURE)
+    
+
+    def getIsAtBox(self, req: RequestRequest):
+        if self.targetBox.atBox:
+            return RequestResponse(SUCCESS)
+        to_be_published = objectPoseStampedLst()
+        to_be_published.PoseStamped.append(self.targetBox.poseStamped)
+        to_be_published.object_class.append(self.targetBox.name)
+        self.pathplanpub.publish(to_be_published)
+        return RequestResponse(FAILURE)
+    
+
+    def doPlanPathBox(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
+        res: RequestResponse = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.targetToy.isPlanned = True
+        return res
+
+    
+    def doPickup(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doPickToy/pickup/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.targetToy.isPicked = True
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    def getIsPicked(self, req: RequestRequest):
+        if self.targetToy.isPicked:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    def getIsPlanned(self, req: RequestRequest):
+        if self.targetToy.isPlanned:
+            return RequestResponse(SUCCESS)
+        return RequestResponse(FAILURE)
+    
+    def doPlanPathToy(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
+        res: RequestResponse = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.targetToy.isPlanned = True
+        return res
+    
+    
+
+    def doMoveAlongPathToyLocal(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower/memory", Request)
+        res: RequestResponse = proxy(RequestRequest())
+        print("Response", res)
+        if res.success == SUCCESS:
+            self.targetToy.atToy = True
+            self.targetToy.isPlanned = False
+        return res
+    def getIsAtToy(self, req: RequestRequest):
+        if self.targetToy.atToy:
+            return RequestResponse(SUCCESS)
+        to_be_published = objectPoseStampedLst()
+        to_be_published.PoseStamped.append(self.targetToy.poseStamped)
+        to_be_published.object_class.append(self.targetToy.name)
+        self.pathplanpub.publish(to_be_published)
+        return RequestResponse(FAILURE)
+    def doReset(self, req: RequestRequest):
+        self.STATE_RESET = RUNNING
+        self.reset_behaviour_pub.publish(Bool(True))
+        return RequestResponse(SUCCESS)
+   
     
     # def doInformOfPick(self, req):
     #     if self.alreadyPickingUpAnObjectSinceBefore:
@@ -131,25 +272,49 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        STATUS = SUCCESS
-        for key in self.boxes:
-            box = self.boxes[key]
+        for key in self.boxes.copy():
+            box: Box = self.boxes[key]
             if box.hasArucoMarker:
+                boxPose = objectPoseStampedLst()
+                objectPose = objectPoseStampedLst()
+                print(box.name)
                 if box.name == "Box_Plushies":
+                    print(self.plushies)
                     if len(self.plushies) > 0:
-                        STATUS = FAILURE
-                        self.targetToy = self.plushies[self.plushies.keys()[0]]
+                        self.targetBox = box
+                        self.targetToy = self.plushies[list(self.plushies.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
+                        return RequestResponse(FAILURE)
+
+                        
+
                 elif box.name == "Box_Balls":
                     if len(self.balls) > 0:
-                        STATUS = FAILURE
-                        self.targetToy = self.balls[self.balls.keys()[0]]
+                        self.targetBox = box
+                        self.targetToy = self.balls[list(self.balls.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
+                        return RequestResponse(FAILURE)
+
 
                 elif box.name == "Box_Cubes":
                     if len(self.cubes) > 0:
-                        STATUS = FAILURE
-                        self.targetToy = self.cubes[self.cubes.keys()[0]]
-        
-        return RequestResponse(STATUS)
+                        self.targetBox = box
+                        self.targetToy = self.cubes[list(self.cubes.keys())[0]]
+                        boxPose.PoseStamped.append(box.poseStamped)
+                        boxPose.object_class.append(box.name)
+                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                        objectPose.object_class.append(self.targetToy.name)
+                        return RequestResponse(FAILURE)
+
+                rospy.loginfo("No PAIR status: {}".format(SUCCESS))
+
+        return RequestResponse(SUCCESS)
     
     def doLocalize(self, req: RequestRequest):
         if not self.anchordetected:
@@ -184,7 +349,6 @@ class Memory:
     #     return MovetoResponse(STATUS)
     
     def putObject(self, pose: PoseStamped, id: int):
-        global latesttime_ball, latesttime_cube
         object: Movable
         objectType = None
         correctDict = None
@@ -200,21 +364,6 @@ class Memory:
         else:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
-        # if name[:-2] == "cube": #and name[-1]== 1:
-        #     if rospy.Time.now().secs - latesttime_cube > 3:
-        #         playsound("cube.mp3")
-        #         latesttime_cube = rospy.Time.now().secs
-
-        # if name[:-2] == "ball": #and name[-1]== 1:
-        #     if rospy.Time.now().secs - latesttime_ball > 3:
-        #         playsound("ball.mp3")
-        #         latesttime_ball = rospy.Time.now().secs
-        
-        # for name in objectType:
-        #     if name  == "Plushie": #and name[-1]== 1:
-        #         if rospy.Time.now().secs - latesttime_plushie > 3:
-        #             playsound("plushie.mp3")
-        #             latesttime_cube = rospy.Time.now().secs
 
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
@@ -266,7 +415,11 @@ class Memory:
             if marker.id == 500:
                 self.anchordetected = True
                 continue
-            boxObject = Box(marker.pose.pose, self.arucoId2Box[marker.id], marker.id)
+            boxPose_cam = PoseStamped()
+            boxPose_cam.pose = marker.pose.pose
+            transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
+            boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_cam, transform)
+            boxObject = Box(boxPose_map, self.arucoId2Box[marker.id], marker.id)
             boxObject.hasArucoMarker = True
             self.putBoxInDict(boxObject)
 
@@ -275,7 +428,7 @@ class Memory:
             objectPos = self.objects[object_name].poseStamped.pose.position
             boxPos = boxObject.poseStamped.pose.position
             if self.getWithinRange(objectPos, boxPos):
-                if not object.hasArucoMarker and boxObject.hasArucoMarker:
+                if boxObject.hasArucoMarker:
                     replace = True
                     self.putBox(boxObject,replace,object_name)
                     return

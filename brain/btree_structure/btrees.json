@@ -14,13 +14,17 @@
     "conditions": {
       "isLocalized": {},
       "isExplored": {},
+      "isPlanned": "",
+      "isAtToy": "",
+      "isPlannedBox": "asd",
+      "isNotExploring": "Moving to the exploration goal",
       "isValidPath": "Check if there is a valid path between current position and goal position.",
       "isPicked": "Check to see if the object was actually picked up.",
       "isPlaced": "Check to see if the object was actually placed.",
       "isDone": "Check if all objects have been picked up.",
       "isAnchorSeen": "Check if the anchor has been seen.",
       "isNotPair": "Checks if we do not have toy with a matching box.",
-      "isInFrontToy": "Checks if Grumpy is in front of the toy.",
+      "isAtBox": "Checks if Grumpy is in front of the toy.",
       "isInFrontBox": "Checks if Grumpy is in front of the box."
     }
   }

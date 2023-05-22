@@ -20,7 +20,9 @@ class Toy(Movable):
     def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
         super().__init__(pose, name, id)
         self.inBox = False
-
+        self.isPlanned = False
+        self.atToy = False
+        self.isPicked = False
 
 class Plushie(Toy):
     def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
@@ -39,3 +41,5 @@ class Box(Movable):
         super().__init__(pose, name, id)
         self.hasArucoMarker = False
         self.objectLst: List[Toy] = []
+        self.atBox = False
+        self.isPlanned = False

@@ -26,38 +26,52 @@ class path(object):
         self.pub_twist = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         #self.goal_pose = rospy.Subscriber("/detection/pose_baseLink", objectPoseStampedLst, self.distance_to_goal, queue_size=1)
         self.object_finalpose_pub = rospy.Publisher('/object_finalpose', PoseStamped, queue_size=10)
+        self.targetdetection = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.distance_to_goal, queue_size=1)
+        self.latesttargetdetection = PoseStamped()
         # ROS Subscribers
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
+        self.point_follower_srv = rospy.ServiceProxy('/srv/doMoveToGoal/point_follower/path_follower_local', Request)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
-        self.done_once = False
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.radius_sub = float(1)
         self.objectpose = PoseStamped()
-        self.listen_once = False
         self.updated_first_pose = PoseStamped()
-        self.atToy_srv = rospy.Service("/atend", Request, self.arrivedAtEnd)
-        self.explore = True
-        self.movePath_srv = rospy.Service('/srv/doMoveAlongPath/path_follower/brain', Request, self.doMovePathResponse)
-
+        self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower/memory', Request, self.doMovePathResponse)
+        self.movePathBox_srv = rospy.Service('/srv/doMoveAlongPathBoxLocal/path_follower/memory', Request, self.doMovePathResponse)
+        
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
-        
+      
+        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSaveTarget, queue_size=10)
+        self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
+        self.target_pose = None
+        self.done_once = False
+        self.lastnode = False
+        self.toy = None
+        self.box = None
+        self.box_pose = None
+        self.toy_pose = None
+        self.target = None
         self.STATE = FAILURE
         self.running = False
-        self.objectpose = None
         self.Path = None
-
+        self.timetocallthebigguns = False
+        self.arrived=False
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
     def doMovePathResponse(self, req: RequestRequest):
+        if self.arrived:
+            return RequestResponse(SUCCESS)
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
             self.running = True
+            if self.target is None:
+                return RequestResponse(FAILURE)
             self.moveto_pub.publish(self.Path)
             return RequestResponse(RUNNING)
         if self.running:
@@ -68,22 +82,48 @@ class path(object):
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
+                self.arrived = True
                 return RequestResponse(SUCCESS)
 
-    def arrivedAtEnd(self, req: Request):
-        if self.STATE == SUCCESS:
-            # self.STATE = FAILURE
-            return RequestResponse(SUCCESS)
-        return RequestResponse(FAILURE)
+
+    # def isAtToy(self, req: Request):
+    #     if self.STATE == SUCCESS:
+    #         return RequestResponse(SUCCESS)
+    #     else:
+    #         return RequestResponse(FAILURE)
+    
+    # def isAtBox(self, req: Request):
+    #     if self.STATE == SUCCESS:
+    #         return RequestResponse(SUCCESS)
+    #     else:
+    #         return RequestResponse(FAILURE)
+    
     
     def doSaveObjectpose(self, msg: Path):
         rospy.loginfo("Object detected")
         if self.Path is None:
             self.Path= msg
 
+    def doSaveTarget(self, msg: objectPoseStampedLst):
+        if "box" in msg.object_class[0]:
+            print("This is a box") 
+            self.target = "Box"
+        else:
+            print("This is a toy")
+            self.target = msg.object_class[0][:-2]
 
-    # def Radius(self, msg:Float64):
-    #     self.radius_sub = msg.data
+        self.target_pose = msg.PoseStamped[0]
+        self.arrived = False
+   
+    
+    def distance_to_goal(self, msg: objectPoseStampedLst):
+        if self.lastnode:
+            try:
+                if self.target == msg.object_class[0]:
+                    if math.sqrt((self.target_pose.pose.position.x - msg.PoseStamped[0].pose.position.x)**2 + (self.target_pose.pose.position.y - msg.PoseStamped[0].pose.position.y)**2) < 0.1:
+                        self.timetocallthebigguns = True
+            except IndexError:
+                pass
     
     
     def tracker(self, msg: Path):
@@ -110,7 +150,9 @@ class path(object):
                 t.transform.translation.y = point.pose.position.y
                 t.transform.rotation.w = 1
                 self.tfbroadcaster.sendTransform(t)
-
+                if point == path.poses[-1]:
+                    self.lastnode = True
+                
                 rospy.sleep(1)
                 self.twist = Twist()
                 currentpose = PoseStamped()
@@ -130,7 +172,7 @@ class path(object):
                 self.inc_y = self.goal_pose.pose.position.y
                 while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                     self.twist.linear.x = 0.0
-                    self.twist.angular.z = -0.7
+                    self.twist.angular.z = -0.8
                     # rospy.loginfo("Turning right")
                     # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                     self.pub_twist.publish(self.twist)
@@ -146,7 +188,7 @@ class path(object):
 
                 while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
                     self.twist.linear.x = 0.0
-                    self.twist.angular.z = 0.7
+                    self.twist.angular.z = 0.8
                     # rospy.loginfo("Turning left")
                     # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                     self.pub_twist.publish(self.twist)
@@ -200,6 +242,13 @@ class path(object):
                         self.pub_twist.publish(self.twist)
                         rospy.sleep(1)
                         latestupdate = rospy.Time.now()
+                    if self.timetocallthebigguns == True:
+                        self.twist.linear.x = 0.0
+                        self.twist.angular.z = 0.0
+                        self.pub_twist.publish(self.twist)
+                        self.done_once = True
+                        rospy.sleep(1)
+                        break
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                             self.goal_pose = tf2_geometry_msgs.do_transform_pose(currentpose, self.trans)
@@ -247,36 +296,35 @@ class path(object):
                     rospy.loginfo(to_log)
             self.done_once = True
         
-        #spin base_link if exploring
-        if self.explore:
-            base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
-            anglelist = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
-            currentyaw = anglelist[2]
-            latesttime = rospy.Time.now()
-            condition = np.abs(currentyaw - anglelist[2]) < 5
-            while condition:
-                rospy.loginfo(currentyaw - anglelist[2])
-                if np(currentyaw - anglelist[2]) > 3:
-                    condition = np.abs(currentyaw - anglelist[2]) < 0.1
-                self.twist.angular.z = 0.7
-                self.pub_twist.publish(self.twist)
-                self.rate.sleep()
-                try:
-                    base_link = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), rospy.Duration(2.0))
-                    roll,pitch,currentyaw = tf.transformations.euler_from_quaternion([base_link.transform.rotation.x, base_link.transform.rotation.y, base_link.transform.rotation.z, base_link.transform.rotation.w])
-                except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
-                    rospy.logerr("Failed to transform point from map frame to base_link frame")
-                    pass
-                if (rospy.Time.now().secs - latesttime.secs) > 1:
-                    self.twist.linear.x = 0.0
-                    self.twist.angular.z = 0.0
-                    self.pub_twist.publish(self.twist)
-                    rospy.sleep(1)
-                    latesttime = rospy.Time.now()
+        #call point follower
+        point_to_follow=objectPoseStampedLst()
+        point_to_follow.object_class.append(self.target)
+        point_to_follow.PoseStamped.append(self.target_pose)
+        self.target_pub.publish(point_to_follow)
+        rospy.loginfo("Point follower called")
+        state = self.point_follower_srv()
+        if state == FAILURE:
+            rospy.loginfo(state)
+            self.STATE = FAILURE
+            return
+
         self.STATE = SUCCESS
+        rospy.loginfo(self.STATE)
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0
         self.pub_twist.publish(self.twist)
+        self.done_once = False
+        self.lastnode = False
+        self.target = None
+        self.target_pose = None
+        self.toy = None
+        self.box = None
+        self.box_pose = None
+        self.toy_pose = None
+
+        self.objectpose = None
+        self.Path = None
+        self.timetocallthebigguns = False
         return
     
         # self.rate.sleep()
@@ -308,7 +356,7 @@ class path(object):
         #     self.done_once = False
 
 if __name__ == "__main__":
-    rospy.init_node("path_follower")
+    rospy.init_node("path_follower_local")
     rospy.loginfo("Starting path_tracker node")
     # getCanIGetThereWithoutAnyCollisions = rospy.ServiceProxy('get_can_i_get_there_without_any_collisions', Node)
     tfBuffer = tf2_ros.Buffer()
