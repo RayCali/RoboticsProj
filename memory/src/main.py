@@ -19,7 +19,7 @@ from visualization_msgs.msg import Marker
 from std_msgs.msg import Bool
 from config import SUCCESS, RUNNING, FAILURE
 import math
-
+from playsound import playsound
 # https://stackoverflow.com/questions/42660670/collapse-all-methods-in-visual-studio-code
 class Memory:
     def __init__(self):
@@ -387,12 +387,18 @@ class Memory:
             raise Exception("Invalid object ID: " % str(id))
         name = self.id2Object[id] + "_" + str(objectType.count)
         
+        
 
         objectType.count += 1
         object = objectType(pose=pose, name=name, id=id)
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
+
+        self.playingSound(id)  
+
+    def playingSound(self, id: int):
+        playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3")
 
     def putObjectinBuffer(self, pose: PoseStamped, id: int):
         count = 0
