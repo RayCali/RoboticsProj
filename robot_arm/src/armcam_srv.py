@@ -44,7 +44,7 @@ class ArmCam:
 
     def getPickPose(self, req: PickPoseRequest):
         image = rospy.wait_for_message("/usb_cam/image_raw", Image)
-        self.proofPub(Image)
+        self.proofPub.publish(image)
 
         cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
         h,  w = cv_image.shape[:2]
@@ -88,40 +88,58 @@ class ArmCam:
         if len(filtered_cnts) > 0:
             biggest_contour = max(filtered_cnts, key=cv2.contourArea)
 
-            rect = cv2.minAreaRect(biggest_contour)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
+            ellipse = cv2.fitEllipse(biggest_contour)
+            # rect = cv2.minAreaRect(biggest_contour)
+            # box = cv2.boxPoints(rect)
+            # box = np.int0(box)
 
             # Get centroid
-            M = cv2.moments(box)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
+            # M = cv2.moments(box)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
 
-            d1 = math.sqrt((box[0][0] - box [1][0])**2 + (box[0][1] - box [1][1])**2)
-            d2 = math.sqrt((box[1][0] - box [2][0])**2 + (box[1][1] - box [2][1])**2)
-            print("DIFF: ",abs(d1-d2))
-            diff = abs(d1-d2)
-            if diff < 10 or diff > 20:
-                if d1 > d2:
-                    theta = -(math.atan2(box[0][1] - box[1][1], box[0][0] - box[1][0]) - math.pi/2)
-                    theta = theta % math.pi
-                    if theta > math.pi/2:
-                        theta = theta - math.pi
-                    if theta < -math.pi/2:
-                        theta = theta + math.pi
-                else:
-                    theta = -(math.atan2(box[1][1] - box[2][1], box[1][0] - box[2][0]) - math.pi/2)
-                    theta = theta % math.pi
-                    if theta > math.pi/2:
-                        theta = theta - math.pi
-                    if theta < -math.pi/2:
-                        theta = theta + math.pi
-            else:
-                theta = math.pi/2
+            # Get centroid of ellipse
+            # M = cv2.moments(ellipse)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
+            cX = int(ellipse[0][0])
+            cY = int(ellipse[0][1])
+
+            # Get angle of ellipse
+            theta = ellipse[2]
+            theta = theta % math.pi
+            if theta > math.pi/2:
+                theta = theta - math.pi
+            if theta < -math.pi/2:
+                theta = theta + math.pi
+
+            # d1 = math.sqrt((box[0][0] - box [1][0])**2 + (box[0][1] - box [1][1])**2)
+            # d2 = math.sqrt((box[1][0] - box [2][0])**2 + (box[1][1] - box [2][1])**2)
+            # print("DIFF: ",abs(d1-d2))
+            # diff = abs(d1-d2)
+            # if diff < 10 or diff > 20:
+            #     if d1 > d2:
+            #         theta = -(math.atan2(box[0][1] - box[1][1], box[0][0] - box[1][0]) - math.pi/2)
+            #         theta = theta % math.pi
+            #         if theta > math.pi/2:
+            #             theta = theta - math.pi
+            #         if theta < -math.pi/2:
+            #             theta = theta + math.pi
+            #     else:
+            #         theta = -(math.atan2(box[1][1] - box[2][1], box[1][0] - box[2][0]) - math.pi/2)
+            #         theta = theta % math.pi
+            #         if theta > math.pi/2:
+            #             theta = theta - math.pi
+            #         if theta < -math.pi/2:
+            #             theta = theta + math.pi
+            # else:
+            #     theta = math.pi/2
 
             # draw contour
+            # contour_ellipse = 
             result = dst.copy()
-            cv2.drawContours(result, [box], -1, (255,0,0), 2)
+            # cv2.drawContours(result, [ellipse], -1, (255,0,0), 2)
+            cv2.ellipse(result,ellipse, (255,0,0), 3)
             cv2.circle(result, (cX, cY), 2, (0, 255, 0), -1)
             # principal_x = newcameramtx[0,2]
             # principal_y = newcameramtx[1,2]

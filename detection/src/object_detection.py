@@ -25,6 +25,7 @@ from rospy import loginfo
 from cv_bridge import CvBridge
 import cv2
 from shapely.geometry import Polygon
+import os
 
 FOCAL_LENGTH = 605.9197387695312
 DEVICE = "cuda"
@@ -255,24 +256,30 @@ def proofCB(msg: Image):
     bbs = detectionModel.decode_output(inference, threshold=0.7)[0]
 
     max_bbx = None
+    max_bbx_label = None
     max_score = 0
     for bbx in bbs:
-        score = bbx["score"]
+        x, y, width, height, score, label = bbx["x"], bbx["y"], bbx["width"], bbx["height"], bbx["score"], bbx["category"]
         if score > max_score:
             max_score = score
-            max_bbx = bbx
+            box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)
+            max_bbx = box
+            max_bbx_label = label
 
     boxes = torch.cat([max_bbx])
     np_image = rnp.numpify(msg) # shape: (480, 640, 3)
     image = torch.from_numpy(np_image).permute(2,0,1)
     image = draw_bounding_boxes(image, boxes, width=5,
-                          colors="green",labels=[max_bbx["category"]],
+                          colors="green",labels=[max_bbx_label],
                           fill=False,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=50)
-    name = '/home/robot/DD2419_ws/' +"ID:"+ str(max_bbx["category"]) + "@" + str(msg.header.stamp.secs) + ".png"
-    save_image(image, name)
-
     
-
+    files = [file for file in os.listdir('/home/robot/dd2419_ws/proof_images') if file.endswith('.png')]
+    same_label_files = [file for file in files if file.startswith("ID:"+str(max_bbx_label))]
+    name = '/home/robot/dd2419_ws/proof_images/' +"ID:"+ str(max_bbx_label) + "_" + str(len(same_label_files)+1) + ".png"
+    toPIL = transforms.ToPILImage()
+    image_pil = toPIL(image)
+    image_pil.save(name)
+    # save_image(image, name)
 
     return
 
