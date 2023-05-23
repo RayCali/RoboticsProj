@@ -268,7 +268,7 @@ class PickAndPlace():
 
     def handle_place_req(self, msg:bool):
         if self.running:
-            playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3")
+            # playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3") have to add a file
             goal = FollowJointTrajectoryGoal()
             goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
             goal.trajectory.points = [JointTrajectoryPoint(positions=self.q_dropoff, velocities=self.q_dot, time_from_start=rospy.Duration(0.5))]

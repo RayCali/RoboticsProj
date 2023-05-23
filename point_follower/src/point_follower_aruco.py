@@ -70,8 +70,9 @@ class path(object):
         #     rospy.loginfo("No object detected!!!!!!!!!!!!!!")
         #     exit()
         #rospy.loginfo("Object detected")
-        if "Box" in msg.object_class[0]:
-            self.objectpose_map = msg
+        if self.objectpose_map is None:
+            if "Box" in msg.object_class[0]:
+                self.objectpose_map = msg
 
 
     # def Radius(self, msg:Float64):
@@ -82,7 +83,7 @@ class path(object):
             pass
         else:    
             for marker in msg.markers:
-                if marker.id == int(self.objectpose_map.object_class[0][-1]):
+                if marker.id == int(self.objectpose_map.object_class[0][-1]) and marker.pose.pose.position.x > 0.2:
                     boxpose = PoseStamped()
                     boxpose.header.frame_id = "camera_link"
                     boxpose.pose = marker.pose.pose
@@ -121,7 +122,7 @@ class path(object):
             self.inc_y = self.goal_pose.pose.position.y
 
             # rospy.loginfo(abs(rotation))
-            while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x)< -0.03: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.7
                 # rospy.loginfo("Turning right")
@@ -137,7 +138,7 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
-            while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+            while math.atan2(self.inc_y, self.inc_x) > 0.03: # or math.atan2(inc_y, inc_x) < -0.2:
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.7
                 # rospy.loginfo("Turning left")
@@ -203,12 +204,12 @@ class path(object):
                     pass
                 self.inc_x= self.goal_pose.pose.position.x
                 self.inc_y= self.goal_pose.pose.position.y
-                if math.atan2(self.inc_y, self.inc_x) > 0.05:
+                if math.atan2(self.inc_y, self.inc_x) > 0.03:
                     self.twist.angular.z = 0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
 
-                if math.atan2(self.inc_y, self.inc_x) < -0.05:
+                if math.atan2(self.inc_y, self.inc_x) < -0.03:
                     self.twist.angular.z = -0.2 #either -0.2 or 0.2
                     self.pub_twist.publish(self.twist)
                     self.rate.sleep()
@@ -216,7 +217,7 @@ class path(object):
                     
             rospy.loginfo("Out")
             self.twist.linear.x = 0.0
-            self.twist.angular.z = 0.0 #I added these two lines just incase
+            self.twist.angular.z = 0.0 
             self.pub_twist.publish(self.twist)
 
             self.done_once = True 
