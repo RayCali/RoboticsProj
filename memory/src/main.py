@@ -81,7 +81,7 @@ class Memory:
         self.doPlanPathBox_srv  = rospy.Service("/srv/doPlanPathBox/memory/brain", Request, self.doPlanPathBox)
         self.move2Box_srv       = rospy.Service("/srv/doMoveAlongPathBoxLocal/memory/brain", Request, self.doMoveAlongPathBoxLocal)
         self.moveback_srv       = rospy.Service("/srv/doMoveBack/memory/brain", Request, self.doMoveBack)
-        self.hasMovedBack_srv = rospy.ServiceProxy('/srv/hasMovedBack/memory/brain', Request, self.getHasMovedBack)
+        self.hasMovedBack_srv   = rospy.Service('/srv/hasMovedBack/memory/brain', Request, self.getHasMovedBack)
         self.isPlaced_srv       = rospy.Service("/srv/isPlaced/memory/brain", Request, self.getIsPlaced)
         self.doPlace_srv        = rospy.Service("/srv/doPlace/memory/brain", Request, self.doPlace)
 
@@ -491,7 +491,7 @@ class Memory:
         self.br.sendTransform(t)
         boxPose_aruco = PoseStamped()
         boxPose_aruco.header.frame_id = "Box" + str(marker.id)
-        boxPose_aruco.pose.position.x = 0.2
+        boxPose_aruco.pose.position.x = 0.4
         boxPose_aruco.pose.position.y = 0
         boxPose_aruco.pose.position.z = 0
         boxPose_aruco.pose.orientation.x = 0
