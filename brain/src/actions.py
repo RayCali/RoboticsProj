@@ -62,7 +62,7 @@ class doPlanPathToy(Action):
 class doPlanPathBox(Action):
     def __init__(self) -> None:
         super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doPlanpathBox/memory/brain", Request)
+        self.service = rospy.ServiceProxy("/srv/doPlanPathBox/memory/brain", Request)
         self.verbose = True
 
 class doPlanExplorationPath(Action):
@@ -90,8 +90,6 @@ class doMoveAlongPathBox(Action):
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/memory/brain", Request)
         self.verbose = True
-        # Staffan is to redirect this service below to provide for the memory
-        #self.service = rospy.ServiceProxy("/srv/doMoveAlongPathBoxLocal/path_follower_local/brain", Request)
 
 class doPlace(Action):
     def __init__(self) -> None:
@@ -100,11 +98,6 @@ class doPlace(Action):
         self.verbose = True
     
 
-class doReset(Action):
-    def __init__(self) -> None:
-        super().__init__()
-        self.service = rospy.ServiceProxy("/srv/doReset/memory/brain", Request)
-        self.verbose = True
     
 class stopExplore(Action):
     def __init__(self) -> None:
@@ -117,3 +110,15 @@ class doMoveAlongPathGlobal(Action):
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doMoveAlongPathGlobal/memory/brain", Request)
         self.verbose = True
+
+class doSleepOnce:
+    def __init__(self) -> None:
+        self.done = False
+    def tick(self):
+        if not self.done:
+            self.done = True
+            rospy.sleep(10)
+        else:
+            pass
+        return SUCCESS
+        

@@ -268,7 +268,7 @@ def proofCB(msg: Image):
     image = draw_bounding_boxes(image, boxes, width=5,
                           colors="green",labels=[max_bbx["category"]],
                           fill=False,font="/home/robot/Downloads/16020_FUTURAM.ttf",font_size=50)
-    name = '/home/robot/DD2419_ws/' +"ID:"+ str(max_bbx["category"]) + "@" + str(msg.header.stamp.secs) + ".png"
+    name = '/home/robot/dd2419_ws/' +"ID:"+ str(max_bbx["category"]) + "@" + str(msg.header.stamp.secs) + ".png"
     save_image(image, name)
 
     

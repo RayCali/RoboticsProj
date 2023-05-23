@@ -32,6 +32,7 @@ class path(object):
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
         self.point_follower_srv = rospy.ServiceProxy('/srv/doMoveToGoal/point_follower/path_follower_local', Request)
+        self.point_follower_aruco_srv = rospy.ServiceProxy("/srv/doMoveToGoal/point_follower_aruco/path_follower_local", Request)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -39,8 +40,7 @@ class path(object):
         self.objectpose = PoseStamped()
         self.updated_first_pose = PoseStamped()
         self.movePathToy_srv = rospy.Service('/srv/doMoveAlongPathToyLocal/path_follower/memory', Request, self.doMovePathResponse)
-        self.movePathBox_srv = rospy.Service('/srv/doMoveAlongPathBoxLocal/path_follower/memory', Request, self.doMovePathResponse)
-        
+        self.movePathBox_srv = rospy.Service('/srv/doMoveAlongPathBoxLocal/path_follower_local/memory', Request, self.doMovePathResponse)
         self.moveto_pub = rospy.Publisher('/path_follower/tracker', Path, queue_size=1)
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
@@ -49,6 +49,7 @@ class path(object):
         self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
         self.target_pose = None
         self.done_once = False
+        self.updated_target = None
         self.lastnode = False
         self.toy = None
         self.box = None
@@ -60,6 +61,7 @@ class path(object):
         self.Path = None
         self.timetocallthebigguns = False
         self.arrived=False
+        self.movingtobox=False
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
@@ -105,14 +107,20 @@ class path(object):
             self.Path= msg
 
     def doSaveTarget(self, msg: objectPoseStampedLst):
-        if "box" in msg.object_class[0]:
+        if "Box" in msg.object_class[0]:
             print("This is a box") 
-            self.target = "Box"
+            self.target = msg.object_class[0]
+            self.target_pose = msg.PoseStamped[0]
+            self.movingtobox = True
+            point_to_follow=objectPoseStampedLst()
+            point_to_follow.object_class.append(self.target)
+            point_to_follow.PoseStamped.append(self.target_pose)
+            self.target_pub.publish(point_to_follow)
         else:
             print("This is a toy")
             self.target = msg.object_class[0][:-2]
+            self.target_pose = msg.PoseStamped[0]
 
-        self.target_pose = msg.PoseStamped[0]
         self.arrived = False
    
     
@@ -122,6 +130,7 @@ class path(object):
                 if self.target == msg.object_class[0]:
                     if math.sqrt((self.target_pose.pose.position.x - msg.PoseStamped[0].pose.position.x)**2 + (self.target_pose.pose.position.y - msg.PoseStamped[0].pose.position.y)**2) < 0.1:
                         self.timetocallthebigguns = True
+                        self.updated_target = msg.PoseStamped[0]
             except IndexError:
                 pass
     
@@ -240,15 +249,17 @@ class path(object):
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
-                        rospy.sleep(1)
+                        rospy.sleep(1.5)
                         latestupdate = rospy.Time.now()
                     if self.timetocallthebigguns == True:
-                        self.twist.linear.x = 0.0
-                        self.twist.angular.z = 0.0
-                        self.pub_twist.publish(self.twist)
-                        self.done_once = True
-                        rospy.sleep(1)
-                        break
+                        if self.movingtobox is False:
+                            self.twist.linear.x = 0.0
+                            self.twist.angular.z = 0.0
+                            self.pub_twist.publish(self.twist)
+                            self.done_once = True
+                            self.target_pose = self.updated_target
+                            rospy.sleep(1)
+                            break
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                             self.goal_pose = tf2_geometry_msgs.do_transform_pose(currentpose, self.trans)
@@ -258,16 +269,7 @@ class path(object):
                     self.inc_x = self.goal_pose.pose.position.x
                     self.inc_y = self.goal_pose.pose.position.y
                     
-                    if self.twist.linear.x < 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration):
-                        self.twist.linear.x += self.acceleration
-                        # rospy.loginfo(self.twist.linear.x)
-
-                    elif self.twist.linear.x >= 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
-                        self.twist.linear.x = 0.6
-
-                    else:
-                        if self.twist.linear.x >0.15:
-                            self.twist.linear.x -= self.deceleration
+                    self.twist.linear.x = 0.15
                         # rospy.loginfo("Decelerating")
                         # rospy.loginfo(self.twist.linear.x)
                 
@@ -297,12 +299,17 @@ class path(object):
             self.done_once = True
         
         #call point follower
-        point_to_follow=objectPoseStampedLst()
-        point_to_follow.object_class.append(self.target)
-        point_to_follow.PoseStamped.append(self.target_pose)
-        self.target_pub.publish(point_to_follow)
+    
+       
         rospy.loginfo("Point follower called")
-        state = self.point_follower_srv()
+        if self.movingtobox:
+            state = self.point_follower_aruco_srv()
+        else:
+            point_to_follow=objectPoseStampedLst()
+            point_to_follow.object_class.append(self.target)
+            point_to_follow.PoseStamped.append(self.target_pose)
+            self.target_pub.publish(point_to_follow)
+            state = self.point_follower_srv()
         if state == FAILURE:
             rospy.loginfo(state)
             self.STATE = FAILURE
@@ -321,7 +328,7 @@ class path(object):
         self.box = None
         self.box_pose = None
         self.toy_pose = None
-
+        self.movingtobox=False
         self.objectpose = None
         self.Path = None
         self.timetocallthebigguns = False
