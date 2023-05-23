@@ -13,6 +13,7 @@ if __name__=="__main__":
                 isLocalized(),
                 doLocalize()
             ]),
+            doSleepOnce(),
             Or([ 
                 isNotPair(),
                 And([
@@ -46,11 +47,7 @@ if __name__=="__main__":
                         isPlaced(),
                         doPlace()
                     ]),
-                    doPlace(),
-                    Or([
-                        isNotPair(),
-                        doReset()
-                    ])
+                    isNotPair()
                     
                 ])
             ]),

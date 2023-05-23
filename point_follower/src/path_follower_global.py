@@ -231,7 +231,7 @@ class path(object):
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
-                        rospy.sleep(1)
+                        rospy.sleep(1.5)
                         latestupdate = rospy.Time.now()
                     try:
                             self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
@@ -242,16 +242,7 @@ class path(object):
                     self.inc_x = self.goal_pose.pose.position.x
                     self.inc_y = self.goal_pose.pose.position.y
                     
-                    if self.twist.linear.x < 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration):
-                        self.twist.linear.x += self.acceleration
-                        # rospy.loginfo(self.twist.linear.x)
-
-                    elif self.twist.linear.x >= 0.6 and distance>self.twist.linear.x**2/(2*self.deceleration): #eller acceleration
-                        self.twist.linear.x = 0.6
-
-                    else:
-                        if self.twist.linear.x >0.15:
-                            self.twist.linear.x -= self.deceleration
+                    self.twist.linear.x = 0.15
                         # rospy.loginfo("Decelerating")
                         # rospy.loginfo(self.twist.linear.x)
                 
@@ -309,7 +300,7 @@ class path(object):
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.0
                 self.pub_twist.publish(self.twist)
-                rospy.sleep(1)
+                rospy.sleep(1.5)
                 latesttime = rospy.Time.now()
         self.STATE = SUCCESS
         self.twist.linear.x = 0.0
