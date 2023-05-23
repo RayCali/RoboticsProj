@@ -46,35 +46,56 @@ class ArmCam:
         image = rospy.wait_for_message("/usb_cam/image_raw", Image)
         self.proofPub.publish(image)
 
+        # -----------------------------------------------------------------------------------------------
+        """ USING UNDISTORTED IMAGE"""
+        # cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
+        # h,  w = cv_image.shape[:2]
+        # newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.distortion_factors, (w,h), 1, (w,h))
+
+        # # undistort
+        # dst = cv2.undistort(cv_image, self.camera_matrix, self.distortion_factors, None, newcameramtx)
+        # # crop the image
+        # x, y, w, h = roi
+        # # dst = dst[y:y+h, x:x+w]
+        # dst[0:y, :] = dst[y+h:-1, :] = dst[:, 0:x] = dst[:, x+w:-1] = 0
+        # gray = cv2.cvtColor(dst, cv2.COLOR_RGB2GRAY)
+        # # blurred = cv2.GaussianBlur(dst, (5,5), 0.5)
+        # # gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
+
+        # thresh = cv2.adaptiveThreshold(gray, 255, cv2.BORDER_REPLICATE, cv2.THRESH_BINARY, 11, 4)
+        # kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
+        # blob0 = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+        # blob1 = cv2.morphologyEx(blob0, cv2.MORPH_OPEN, kernel)
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
+        # blob2 = cv2.morphologyEx(blob1, cv2.MORPH_OPEN, kernel)
+        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
+        # blob3 = cv2.morphologyEx(blob2, cv2.MORPH_CLOSE, kernel)
+        # # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+        # # blob = cv2.morphologyEx(blob, cv2.MORPH_DILATE, kernel)
+
+        # blob = 255-blob3
+        # blob[y+h-27:y+h,x:x+w] = blob[y,x:x+w] = blob[y:y+h,x] = blob[y:y+h,x+h-1] = 255
+
+        # -----------------------------------------------------------------------------------------------
+        # -----------------------------------------------------------------------------------------------
+        """ USING RAW IMAGE"""
         cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
-        h,  w = cv_image.shape[:2]
-        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(self.camera_matrix, self.distortion_factors, (w,h), 1, (w,h))
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
-        # undistort
-        dst = cv2.undistort(cv_image, self.camera_matrix, self.distortion_factors, None, newcameramtx)
-        # crop the image
-        x, y, w, h = roi
-        # dst = dst[y:y+h, x:x+w]
-        dst[0:y, :] = dst[y+h:-1, :] = dst[:, 0:x] = dst[:, x+w:-1] = 0
-        gray = cv2.cvtColor(dst, cv2.COLOR_RGB2GRAY)
-        # blurred = cv2.GaussianBlur(dst, (5,5), 0.5)
-        # gray = cv2.cvtColor(blurred, cv2.COLOR_BGR2GRAY)
-
-        thresh = cv2.adaptiveThreshold(gray, 255, cv2.BORDER_REPLICATE, cv2.THRESH_BINARY, 11, 4)
-        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3,3))
-        blob0 = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-        blob1 = cv2.morphologyEx(blob0, cv2.MORPH_OPEN, kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
-        blob2 = cv2.morphologyEx(blob1, cv2.MORPH_OPEN, kernel)
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-        blob3 = cv2.morphologyEx(blob2, cv2.MORPH_CLOSE, kernel)
-        # kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
-        # blob = cv2.morphologyEx(blob, cv2.MORPH_DILATE, kernel)
-
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.BORDER_REPLICATE, cv2.THRESH_BINARY, 69, 5)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13,13))
+        blob = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (15,15))
+        blob = cv2.morphologyEx(blob, cv2.MORPH_CLOSE, kernel)
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3,3))
+        blob = cv2.morphologyEx(blob, cv2.MORPH_DILATE, kernel)
         
-        blob = 255-blob3
-        blob[y+h-27:y+h,x:x+w] = blob[y,x:x+w] = blob[y:y+h,x] = blob[y:y+h,x+h-1] = 255
+        blob = 255-blob
+        h, w = blob.shape
+        blob[0,:] = blob[:,0] = blob[h-150:h-1,:] = blob[:,w-1] = 255
+
+        # -----------------------------------------------------------------------------------------------
 
         # Get contours
         cnts = cv2.findContours(blob, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -88,40 +109,61 @@ class ArmCam:
         if len(filtered_cnts) > 0:
             biggest_contour = max(filtered_cnts, key=cv2.contourArea)
 
-            rect = cv2.minAreaRect(biggest_contour)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
+            ellipse = cv2.fitEllipse(biggest_contour)
+            # rect = cv2.minAreaRect(biggest_contour)
+            # box = cv2.boxPoints(rect)
+            # box = np.int0(box)
 
             # Get centroid
-            M = cv2.moments(box)
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
+            # M = cv2.moments(box)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
 
-            d1 = math.sqrt((box[0][0] - box [1][0])**2 + (box[0][1] - box [1][1])**2)
-            d2 = math.sqrt((box[1][0] - box [2][0])**2 + (box[1][1] - box [2][1])**2)
-            print("DIFF: ",abs(d1-d2))
-            diff = abs(d1-d2)
-            if diff < 10 or diff > 20:
-                if d1 > d2:
-                    theta = -(math.atan2(box[0][1] - box[1][1], box[0][0] - box[1][0]) - math.pi/2)
-                    theta = theta % math.pi
-                    if theta > math.pi/2:
-                        theta = theta - math.pi
-                    if theta < -math.pi/2:
-                        theta = theta + math.pi
-                else:
-                    theta = -(math.atan2(box[1][1] - box[2][1], box[1][0] - box[2][0]) - math.pi/2)
-                    theta = theta % math.pi
-                    if theta > math.pi/2:
-                        theta = theta - math.pi
-                    if theta < -math.pi/2:
-                        theta = theta + math.pi
-            else:
-                theta = math.pi/2
+            # Get centroid of ellipse
+            # M = cv2.moments(ellipse)
+            # cX = int(M["m10"] / M["m00"])
+            # cY = int(M["m01"] / M["m00"])
+            cX = int(ellipse[0][0])
+            cY = int(ellipse[0][1])
+
+            # Get angle of ellipse
+            theta0 = ellipse[2] * math.pi / 180
+            # print("ELLIPSE: ",ellipse[2])
+            # print(theta0)
+            theta = theta0 % math.pi
+            if theta > math.pi/2:
+                theta = theta - math.pi
+            if theta < -math.pi/2:
+                theta = theta + math.pi
+
+            # d1 = math.sqrt((box[0][0] - box [1][0])**2 + (box[0][1] - box [1][1])**2)
+            # d2 = math.sqrt((box[1][0] - box [2][0])**2 + (box[1][1] - box [2][1])**2)
+            # print("DIFF: ",abs(d1-d2))
+            # diff = abs(d1-d2)
+            # if diff < 10 or diff > 20:
+            #     if d1 > d2:
+            #         theta = -(math.atan2(box[0][1] - box[1][1], box[0][0] - box[1][0]) - math.pi/2)
+            #         theta = theta % math.pi
+            #         if theta > math.pi/2:
+            #             theta = theta - math.pi
+            #         if theta < -math.pi/2:
+            #             theta = theta + math.pi
+            #     else:
+            #         theta = -(math.atan2(box[1][1] - box[2][1], box[1][0] - box[2][0]) - math.pi/2)
+            #         theta = theta % math.pi
+            #         if theta > math.pi/2:
+            #             theta = theta - math.pi
+            #         if theta < -math.pi/2:
+            #             theta = theta + math.pi
+            # else:
+            #     theta = math.pi/2
 
             # draw contour
-            result = dst.copy()
-            cv2.drawContours(result, [box], -1, (255,0,0), 2)
+            # contour_ellipse = 
+            # result = dst.copy()
+            result = cv_image.copy()
+            # cv2.drawContours(result, [ellipse], -1, (255,0,0), 2)
+            cv2.ellipse(result,ellipse, (255,0,0), 3)
             cv2.circle(result, (cX, cY), 2, (0, 255, 0), -1)
             # principal_x = newcameramtx[0,2]
             # principal_y = newcameramtx[1,2]
@@ -132,10 +174,18 @@ class ArmCam:
             self.blobPub.publish(im_with_keypoints_ROS)
 
             # Get pose in camera frame
-            principal_x = newcameramtx[0,2]
-            principal_y = newcameramtx[1,2]
-            focal_x = newcameramtx[0,0]
-            focal_y = newcameramtx[1,1]
+            # principal_x = newcameramtx[0,2]
+            # principal_y = newcameramtx[1,2]
+            # focal_x = newcameramtx[0,0]
+            # focal_y = newcameramtx[1,1]
+            # X = self.Z * (cX - principal_x) / focal_x
+            # Y = self.Z * (cY - principal_y) / focal_y
+
+            # Get pose in arm frame
+            principal_x = self.camera_matrix[0][2]
+            principal_y = self.camera_matrix[1][2]
+            focal_x = self.camera_matrix[0][0]
+            focal_y = self.camera_matrix[1][1]
             X = self.Z * (cX - principal_x) / focal_x
             Y = self.Z * (cY - principal_y) / focal_y
 
@@ -145,12 +195,12 @@ class ArmCam:
             dx = self.ball_radius * math.cos(alpha_x)
             dy = self.ball_radius * math.cos(alpha_y)
 
-            print("Alpha X: ",alpha_x*180/math.pi)
-            print("Alpha Y: ",alpha_y*180/math.pi)
-            print("X: ",X)
-            print("Y: ",Y)
-            print("DX: ",dx)
-            print("DY: ",dy)
+            # print("Alpha X: ",alpha_x*180/math.pi)
+            # print("Alpha Y: ",alpha_y*180/math.pi)
+            # print("X: ",X)
+            # print("Y: ",Y)
+            # print("DX: ",dx)
+            # print("DY: ",dy)
 
             # X = X + dx
             # Y = Y - dy
@@ -167,6 +217,7 @@ class ArmCam:
             pose_stamped.pose.orientation.w = 1
 
             print("THETA:  ",theta*180/math.pi)
+            
 
             resp = PickPoseResponse()
             resp.success = True
