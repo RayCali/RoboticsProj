@@ -80,7 +80,8 @@ class Memory:
         self.isPlannedBox_srv   = rospy.Service("/srv/isPlannedBox/memory/brain", Request, self.getIsPlannedBox)
         self.doPlanPathBox_srv  = rospy.Service("/srv/doPlanPathBox/memory/brain", Request, self.doPlanPathBox)
         self.move2Box_srv       = rospy.Service("/srv/doMoveAlongPathBoxLocal/memory/brain", Request, self.doMoveAlongPathBoxLocal)
-        
+        self.moveback_srv       = rospy.Service("/srv/doMoveBack/memory/brain", Request, self.doMoveBack)
+        self.hasMovedBack_srv = rospy.ServiceProxy('/srv/hasMovedBack/memory/brain', Request, self.getHasMovedBack)
         self.isPlaced_srv       = rospy.Service("/srv/isPlaced/memory/brain", Request, self.getIsPlaced)
         self.doPlace_srv        = rospy.Service("/srv/doPlace/memory/brain", Request, self.doPlace)
 
@@ -102,6 +103,7 @@ class Memory:
         self.anchordetected = False
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
+        self.hasMovedBack = False
 
     
     def getIsExplorationPathPlanned(self, req: RequestRequest):
@@ -170,7 +172,19 @@ class Memory:
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
-    
+    def doMoveBack(self, req: RequestRequest):
+        proxy = rospy.ServiceProxy("/srv/doMoveBack/point_follower_aruco/memory", Request)
+        res = proxy(RequestRequest())
+        if res.success == SUCCESS:
+            self.hasMovedBack = True
+        else:
+            self.hasMovedBack = False
+        return res
+    def getHasMovedBack(self, req: RequestRequest):
+        if self.hasMovedBack:
+            return RequestResponse(SUCCESS)
+        else:
+            return RequestResponse(FAILURE)    
     def getIsPlannedBox(self, req: RequestRequest):
         pose = self.targetBox.poseStamped
         if self.targetBox.isPlanned:

@@ -86,6 +86,9 @@ class path(object):
                 exit()
             for i in range(len(msg.PoseStamped)):
                 self.objectpose = msg.PoseStamped[i]
+                
+                if "Oakie" in msg.object_class[i] or "Slush" in msg.object_class[i] or "Muddles" in msg.object_class[i] or "Kiki" in msg.object_class[i] or "Hugo" in msg.object_class[i] or "Binky" in msg.object_class[i]:
+                    msg.object_class[i] = "Plushie"
                 rospy.loginfo(msg.object_class[i])
                 rospy.loginfo(self.objectpose_map.object_class[0])
                 #if self.objectpose.pose.position.x < 0.15 or self.objectpose is None or  msg.object_class[i]!=self.goal_name or self.objectpose.pose.position.x > 1 : #or felnamn!!!!!

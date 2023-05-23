@@ -30,7 +30,7 @@ class path(object):
         # self.goal = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.tracker, queue_size=1) # has to be the pose of the postion we want to go to
         self.s =rospy.ServiceProxy('/no_collision', Request)
         self.updated_first_pose = PoseStamped()
-    
+        self.moveback_srv = rospy.Service("/srv/doMoveBack/point_follower_aruco/memory", Request, self.doMoveBackResponse)
 
         self.moveToToy_srv = rospy.Service("/srv/doMoveToGoal/point_follower_aruco/path_follower_local", Request, self.doMoveToToyResponse)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -43,6 +43,7 @@ class path(object):
         self.listen_once = False
         self.goal_name = "lmao"
         self.STATE = FAILURE
+        self.STATE_moveback = FAILURE
         self.running = False
         self.objectpose = None
         self.objectpose_map = None
@@ -63,7 +64,25 @@ class path(object):
         #self.moveto_pub.publish(self.objectpose_map.PoseStamped[0])
 
 
-   
+    def doMoveBackResponse(self, req: RequestRequest):
+        if not self.running:
+            self.STATE_moveback = RUNNING
+            self.running = True
+            starttime = rospy.Time.now().secs
+            while rospy.Time.now().secs - starttime < 3:
+                self.twist.linear.x = -0.15
+                self.pub_twist.publish(self.twist)
+            self.twist.linear.x = 0
+            self.STATE_moveback = SUCCESS
+        if self.running:
+            if self.STATE == RUNNING:
+                return RequestResponse(RUNNING)
+            if self.STATE == FAILURE:
+                self.running = False
+                return RequestResponse(FAILURE)
+            if self.STATE == SUCCESS:
+                self.running = False
+                return RequestResponse(SUCCESS)
     
     def doSaveObjectpose(self, msg: objectPoseStampedLst):
         # if len(msg) == 0:
@@ -230,7 +249,6 @@ class path(object):
         self.objectpose = None
         self.listen_once = False
         self.goal_name = "lmao"
-        self.running = False
         self.objectpose = None
         self.objectpose_map = None
         self.updating =False

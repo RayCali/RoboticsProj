@@ -99,6 +99,17 @@ class path(object):
     #         return RequestResponse(SUCCESS)
     #     else:
     #         return RequestResponse(FAILURE)
+    #  self.object2Id = {
+    #         "Binky"  : 0,
+    #         "Hugo"   : 1,
+    #         "Slush"  : 2,
+    #         "Muddles": 3,
+    #         "Kiki"   : 4,
+    #         "Oakie"  : 5,
+    #         "Cube"   : 6,
+    #         "Ball"   : 7,
+    #         "Box"    : 8
+    #     }
     
     
     def doSaveObjectpose(self, msg: Path):
@@ -120,6 +131,9 @@ class path(object):
             print("This is a toy")
             self.target = msg.object_class[0][:-2]
             self.target_pose = msg.PoseStamped[0]
+            if "Oakie" in self.target or "Slush" in self.target or "Muddles" in self.target or "Kiki" in self.target or "Hugo" in self.target or "Binky" in self.target:
+                self.toy = "Plushie"
+                self.toy_pose = self.target_pose
 
         self.arrived = False
    

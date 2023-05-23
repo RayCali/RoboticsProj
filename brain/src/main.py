@@ -47,6 +47,11 @@ if __name__=="__main__":
                         isPlaced(),
                         doPlace()
                     ]),
+                    Or([
+                        hasMovedBack(),
+                        doMoveBack()
+                    ]),
+                    
                     isNotPair()
                     
                 ])

@@ -66,6 +66,12 @@ class isPlannedBox(Condition):
         self.service = rospy.ServiceProxy('/srv/isPlannedBox/memory/brain', Request)
         self.verbose = True
 
+class hasMovedBack(Condition):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy('/srv/hasMovedBack/memory/brain', Request)
+        self.verbose = True
+
 class isPlaced(Condition):
     def __init__(self) -> None:
         super().__init__()
