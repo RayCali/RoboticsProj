@@ -46,7 +46,6 @@ class ArmCam:
         image = rospy.wait_for_message("/usb_cam/image_raw", Image)
         self.proofPub.publish(image)
 
-<<<<<<< HEAD
         # -----------------------------------------------------------------------------------------------
         """ USING UNDISTORTED IMAGE"""
         # cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
@@ -81,8 +80,6 @@ class ArmCam:
         # -----------------------------------------------------------------------------------------------
         # -----------------------------------------------------------------------------------------------
         """ USING RAW IMAGE"""
-=======
->>>>>>> 3da956d5b1318858ca901eeb6d9f0aaaeba249f2
         cv_image = self.bridge.imgmsg_to_cv2(image, "rgb8")
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
