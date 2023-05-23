@@ -24,7 +24,7 @@ class PickAndPlace():
         self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
         self.q_observe = [0.0, -0.261799, -1.309, -math.pi/2, 0.0]
         self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-        self.q_dropoff = analyticalIK_lock4([0.2, 0.0, 0.0])
+        self.q_dropoff = analyticalIK_lock4([0.2, 0.05, 0.0])
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
         self.gripper_closed = 0.0
