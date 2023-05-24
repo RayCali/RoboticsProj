@@ -33,6 +33,7 @@ class path(object):
         self.collision_srv = rospy.ServiceProxy('/srv/no_collision/mapping_and_planning/path_follower', Request)
         self.point_follower_srv = rospy.ServiceProxy('/srv/doMoveToGoal/point_follower/path_follower_local', Request)
         self.point_follower_aruco_srv = rospy.ServiceProxy("/srv/doMoveToGoal/point_follower_aruco/path_follower_local", Request)
+        self.inside_workspace_srv = rospy.ServiceProxy('/inside_workspace', Request)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
@@ -257,6 +258,15 @@ class path(object):
                         rospy.loginfo("Collision detected")
                         self.STATE = FAILURE
                         return
+                    if self.twist.linear.x >0:
+                        res = self.inside_workspace_srv()
+                        if res.success == FAILURE:
+                            self.twist.linear.x = 0.0
+                            self.twist.angular.z = 0.0
+                            self.pub_twist.publish(self.twist)
+                            rospy.loginfo("Out of workspace")
+                            self.STATE = FAILURE
+                            return
                     #rospy.sleep(1)
                         
                     if (rospy.Time.now().secs - latestupdate.secs) > 1:

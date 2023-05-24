@@ -31,7 +31,7 @@ class path(object):
         self.s =rospy.ServiceProxy('/no_collision', Request)
         self.updated_first_pose = PoseStamped()
         self.moveback_srv = rospy.Service("/srv/doMoveBack/point_follower_aruco/memory", Request, self.doMoveBackResponse)
-
+        self.inside_workspace_srv = rospy.ServiceProxy('/inside_workspace', Request)
         self.moveToToy_srv = rospy.Service("/srv/doMoveToGoal/point_follower_aruco/path_follower_local", Request, self.doMoveToToyResponse)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         #self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
@@ -204,6 +204,16 @@ class path(object):
                 #     self.pub_twist.publish(self.twist)
                 #     rospy.loginfo("Collision detected")
                 #     self.STATE = FAILURE
+                if self.twist.linear.x >0:
+                        res = self.inside_workspace_srv()
+                        if res.success == FAILURE:
+                            self.twist.linear.x = 0.0
+                            self.twist.angular.z = 0.0
+                            self.pub_twist.publish(self.twist)
+                            rospy.loginfo("Out of workspace")
+                            self.STATE = FAILURE
+                            return
+                
                 try:
                     self.trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
                     self.goal_pose = tf2_geometry_msgs.do_transform_pose(self.objectpose_map.PoseStamped[0], self.trans)

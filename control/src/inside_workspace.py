@@ -12,6 +12,10 @@ import tf2_ros
 import tf2_msgs.msg
 import tf2_geometry_msgs
 import tf
+from msg_srv_pkg.srv import Request, RequestRequest, RequestResponse
+from std_msgs.msg import Float64
+from nav_msgs.msg import Path
+SUCCESS, RUNNING, FAILURE = 1, 0, -1
 #create a point class
 class Point:
     def __init__(self, x, y):
@@ -22,6 +26,7 @@ workspace = None
 twistmsg = None
 listener = None
 tf_buffer = None
+UncertaintyRadius = 0
 pub= None
 marginpose = PoseStamped()
 marginpose.pose.position.x = 0.4
@@ -36,29 +41,27 @@ def workspacecallback(data:Marker):
     global workspace
     workspace = data.points[:-1]
 
-def twistcallback(data:Twist):
+def radiuscallback(data:Float64):
+    global UncertaintyRadius
+    UncertaintyRadius = data.data
+
+def insideWorkspaceResponse(req: RequestRequest):
     global twistmsg, listener, workspace, tf_buffer, pub,marginpose
     #rospy.loginfo("got twist")
-    twistmsg = data
-    if twistmsg.linear.x != 0:
-        transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
-        if twistmsg.linear.x > 0:
-            marginpose.pose.position.x = 0.4
-        else:
-            marginpose.pose.position.x = -0.4
-        new_marginpose = tf2_geometry_msgs.do_transform_pose(marginpose, transform)
-        #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
-        poly = workspace
+    
+    transform = tf_buffer.lookup_transform('arucomap', 'base_link', rospy.Time(0))
+    marginpose.pose.position.x = 0.2 + UncertaintyRadius
+    new_marginpose = tf2_geometry_msgs.do_transform_pose(marginpose, transform)
+    #poly = [Point(0,0), Point(-1.3,2), Point(1.3,1), Point(3.1,-0.5)]
+    poly = workspace
 
-        if point_inside_polygon(new_marginpose.pose.position.x, new_marginpose.pose.position.y, poly):
-            rospy.loginfo("inside workspace")
-            pub.publish(twistmsg)
-        else:
-            rospy.loginfo("outside workspace")
-            twistmsg.linear.x = 0
-            pub.publish(twistmsg)
+    if point_inside_polygon(new_marginpose.pose.position.x, new_marginpose.pose.position.y, poly):
+        rospy.loginfo("inside workspace")
+        return SUCCESS
     else:
-        pub.publish(twistmsg)
+        rospy.loginfo("outside workspace")
+        return FAILURE
+    
             
 
 
@@ -84,11 +87,12 @@ if __name__ == '__main__':
     #Polygon is a list of (x,y) pairs.
     #calculate the distance to the closest line segment
     rospy.init_node('inside_workspace')
-    vel_sub = rospy.Subscriber('/cmd_vel', Twist, twistcallback)
+    inside_workspace = rospy.Service('/inside_workspace', Request, insideWorkspaceResponse)
     workspace_sub = rospy.Subscriber('/boundaries', Marker, workspacecallback)
     pub = rospy.Publisher('/cmd_vel_proc', Twist, queue_size=1)
     tf_buffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tf_buffer)
+    radius_sub = rospy.Subscriber('/UncertaintyRaidus', Float64, radiuscallback)
     
     #create a polygon
     rospy.spin()

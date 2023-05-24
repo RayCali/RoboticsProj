@@ -14,6 +14,7 @@ from global_explorer import getMostValuedCell
 from nav_msgs.msg import Path
 from planner import Node, RRTStar
 from typing import List
+from std_msgs.msg import Float64
 from config import SUCCESS, RUNNING, FAILURE
 
 
@@ -27,7 +28,7 @@ class PathProvider:
         # 
         self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
         self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
-
+        radius_sub = rospy.Subscriber('/UncertaintyRaidus', Float64, self.GetUncertaintyRadius)
         # self.goal_Ex_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoalEx, queue_size=10)
         # self.goal_toy_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.getToy, queue_size=10)
         # self.goal_box_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.getBox, queue_size=10)
@@ -39,6 +40,12 @@ class PathProvider:
         self.running = False
         self.goal = None
     
+    def GetUncertaintyRadius(self, data: Float64):
+        if data.data > 0.3:
+            self.UncertaintyRadius = data.data
+        else:
+            self.UncertaintyRadius = 0.3
+
     def doSetGoal(self, msg: objectPoseStampedLst):
         self.goal = msg.PoseStamped[0]
         print("got goal: ", self.goal)
@@ -96,7 +103,8 @@ class PathProvider:
             inside = self.getInside(),
             width=self.map.grid.info.width * self.map.grid.info.resolution,
             height=self.map.grid.info.height * self.map.grid.info.resolution,
-            grid=self.map.grid
+            grid=self.map.grid,
+            r = self.UncertaintyRadius
             )
         print("Planning path")
         rrt.doPath(max_time=5)

@@ -15,6 +15,7 @@ import math
 import numpy as np
 from geometry_msgs.msg import Twist
 from visualization_msgs.msg import MarkerArray, Marker
+from std_msgs.msg import Float64
 yaw = 0
 br= None
 tfBuffer = None
@@ -37,6 +38,7 @@ G[3:3+2*landmarks,3:3+2*landmarks]=np.identity(2*landmarks)
 latestupdate = None
 Landmarklist = []
 marker_pub = rospy.Publisher("/covariances", MarkerArray, queue_size=10)
+radius_pub = rospy.Publisher("/UncertaintyRaidus", Float64, queue_size=10)
 #create a class with attributes: int id and int order
 class Landmark:
     def __init__(self, id, order):
@@ -106,6 +108,9 @@ def updaterviz():
     marker.id = 400
     markerarray.markers.append(marker)
     marker_pub.publish(markerarray)
+    radius = Float64()
+    radius.data = marker.scale.x
+    radius_pub.publish(radius)
     rate.sleep()
 def updatervizpos():
     global mu_slam, P, br, landmarks, Landmarklist
@@ -137,6 +142,9 @@ def updatervizpos():
     marker.id = 400
     markerArray.markers.append(marker)
     marker_pub.publish(markerArray)
+    radius = Float64()
+    radius.data = marker.scale.x
+    radius_pub.publish(radius)
     rate.sleep()
 
     
@@ -160,8 +168,11 @@ def predict_callback(msg:Twist):
     # rospy.loginfo(w)
     if w<0.003 and w>-0.003  and v<1e-4 and v>-1e-4:
         R = np.zeros((3,3))
+    elif w>0.003 or w<-0.003 and v<1e-4 and v>-1e-4:
+        R = np.identity(3)*0
+        R[2,2] = 0.0001
     else:
-        R = np.identity(3)*0.0005
+        R = np.identity(3)*0.0002
         R[2,2] = 0.0001
     P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
     updatervizpos()
