@@ -96,6 +96,12 @@ class doPlace(Action):
         super().__init__()
         self.service = rospy.ServiceProxy("/srv/doPlace/memory/brain", Request)
         self.verbose = True
+
+class doMoveBack(Action):
+    def __init__(self) -> None:
+        super().__init__()
+        self.service = rospy.ServiceProxy("/srv/doMoveBack/memory/brain", Request)
+        self.verbose = True
     
 
     

@@ -161,7 +161,7 @@ def predict_callback(msg:Twist):
     if w<0.003 and w>-0.003  and v<1e-4 and v>-1e-4:
         R = np.zeros((3,3))
     else:
-        R = np.identity(3)*0.001
+        R = np.identity(3)*0.0005
         R[2,2] = 0.0001
     P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
     updatervizpos()
