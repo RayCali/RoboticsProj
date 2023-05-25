@@ -29,6 +29,8 @@ import os
 
 FOCAL_LENGTH = 605.9197387695312
 DEVICE = "cuda"
+count = 0
+
 
 
 def get_object_position(depthImg, center_x, center_y, img_center_x, img_center_y):
@@ -60,12 +62,14 @@ def get_map_pose(position,msg_frame,msg_stamp):
     # object_poses.object_class.append(label)
     # classes.append(label)
     try:
-        transform = tf_buffer.lookup_transform("map", msg_frame, msg_stamp, rospy.Duration(2))
+        #transform = tf_buffer.lookup_transform("map", msg_frame, msg_stamp, rospy.Duration(2))
+        transform = tf_buffer.lookup_transform("map", msg_frame, rospy.Time(0), rospy.Duration(2))
         map_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
         map_pose.pose.position.z = 0.0
         # fix orientation facing the robot
         try:
-            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
+            #map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2))
             rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
             roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
             yaw = yaw + math.pi
@@ -92,12 +96,14 @@ def get_baseLink_pose(position,msg_frame,msg_stamp):
     pose.pose.position.z = position[2]
     
     try:
-        transform = tf_buffer.lookup_transform("base_link", msg_frame, msg_stamp, rospy.Duration(2))
+        #transform = tf_buffer.lookup_transform("base_link", msg_frame, msg_stamp, rospy.Duration(2))
+        transform = tf_buffer.lookup_transform("base_link", msg_frame, rospy.Time(0), rospy.Duration(2))
         baseLink_pose = tf2_geometry_msgs.do_transform_pose(pose, transform)
         baseLink_pose.pose.position.z = 0.0
         # fix orientation facing the robot
         try:
-            map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
+            #map_to_base = tf_buffer.lookup_transform("map", "base_link", msg_stamp, timeout=rospy.Duration(2))
+            map_to_base = tf_buffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2))
             rotation = np.array((map_to_base.transform.rotation.x, map_to_base.transform.rotation.y, map_to_base.transform.rotation.z, map_to_base.transform.rotation.w))
             roll, pitch, yaw = tf_conversions.transformations.euler_from_quaternion(rotation)
             yaw = yaw + math.pi
@@ -117,6 +123,7 @@ def get_baseLink_pose(position,msg_frame,msg_stamp):
 
 
 def imageCB(msg: Image):
+    global count
     image_frame_id  = msg.header.frame_id
     image_stamp = msg.header.stamp
     depthImg_rcvd = False
@@ -201,6 +208,11 @@ def imageCB(msg: Image):
     # transform and publish poses
     object_poses = objectPoseStampedLst()
     object_poses_baseLink = objectPoseStampedLst()
+    if len(labels) > 0:
+        count += 1
+    s = str(len(labels)) + " new detections" + "\t " + str(count) + " frames with objects detected"
+    rospy.loginfo(s)
+    rospy.loginfo(labels)
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
@@ -212,8 +224,8 @@ def imageCB(msg: Image):
             t.header.stamp = image_stamp
             t.header.frame_id = "map"
             t.child_frame_id = "detection_"+label+str(i)
-            loginfo(t.child_frame_id)
-
+            
+            
             t.transform.translation = map_pose.pose.position
             t.transform.rotation = map_pose.pose.orientation
             
@@ -226,6 +238,7 @@ def imageCB(msg: Image):
         try:
             baseLink_pose = get_baseLink_pose(pos,image_frame_id,image_stamp)
             object_poses_baseLink.PoseStamped.append(baseLink_pose)
+            rospy.loginfo("Detected:" + label)
             object_poses_baseLink.object_class.append(label)
             #rospy.loginfo(baseLink_pose)
 
@@ -288,8 +301,8 @@ def proofCB(msg: Image):
 
 
 if __name__=="__main__":
+    
     rospy.init_node("object_detection")
-    count = 0
     
     detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
     detectionModel.eval()

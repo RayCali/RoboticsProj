@@ -104,6 +104,8 @@ class Memory:
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
         self.hasMovedBack = False
+        self.numberOfUpdates = 0
+        self.numberOfCubes = 0
 
     
     def getIsExplorationPathPlanned(self, req: RequestRequest):
@@ -225,10 +227,12 @@ class Memory:
             self.targetToy.isPicked = True
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
+    
     def getIsPicked(self, req: RequestRequest):
         if self.targetToy.isPicked:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
+    
     def getIsPlanned(self, req: RequestRequest):
         if self.targetToy.isPlanned:
             return RequestResponse(SUCCESS)
@@ -247,7 +251,6 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower/memory", Request)
         
         res: RequestResponse = proxy(RequestRequest())
-        print("Response", res)
         if res.success == SUCCESS:
             self.targetToy.atToy = True
             self.targetToy.isPlanned = False
@@ -292,21 +295,18 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        print("getNotPair. Len(boxes):", len(self.boxes))
         for key in self.boxes:
             box: Box = self.boxes[key]
-            print("Box: ", box.name)
             if box.hasArucoMarker:
                 boxPose = objectPoseStampedLst()
                 objectPose = objectPoseStampedLst()
-                print(box.name)
-
                     #     self.arucoId2Box = {
                     #     2 : "Box_Plushies",
                     #     3 : "Box_Balls",
                     #     1 : "Box_Cubes",
                     #     500 : "Anchor"
                     # }
+                print("Box name: ", box.name)
                 pickable_plushies = [self.plushies[key] for key in list(self.plushies.keys()) if not self.plushies[key].inBox]
                 print("pickable plushies: ", len(pickable_plushies))
                 
@@ -347,9 +347,6 @@ class Memory:
                         objectPose.PoseStamped.append(self.targetToy.poseStamped)
                         objectPose.object_class.append(self.targetToy.name)
                         return RequestResponse(FAILURE)
-
-                rospy.loginfo("No PAIR status: {}".format(SUCCESS))
-
         return RequestResponse(SUCCESS)
     
     def doLocalize(self, req: RequestRequest):
@@ -412,7 +409,7 @@ class Memory:
         self.playingSound(id)  
 
     def playingSound(self, id: int):
-        playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3")
+        playsound('/home/robot/Downloads/' + str(self.id2Object[id]) + ".mp3")
 
     def putObjectinBuffer(self, pose: PoseStamped, id: int):
         count = 0
@@ -420,7 +417,6 @@ class Memory:
             if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
                 if toy_id == id:
                     count += 1
-        print("count: ", count)
         if count < 10:
             self.toys_buffer.append((pose,id))
         if count > 9:
@@ -431,7 +427,7 @@ class Memory:
         
 
     def putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
-        print("putting box: ", object.name)
+        #print("putting box: ", object.name)
         if object.hasArucoMarker:
             if replace:
                 del self.objects[object_to_replace]
@@ -446,7 +442,6 @@ class Memory:
         for pose, id in zip(msg.PoseStamped, msg.object_class):
             id = self.object2Id[id]
             if id < 8:
-
                 self.putInDictsIfNotAlreadyIn(pose,id)
             # elif id == 8:
             #     boxObject = Box(pose, self.id2Object[id] + str(Box.count), id)
