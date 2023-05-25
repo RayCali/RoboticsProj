@@ -94,7 +94,8 @@ class Memory:
         self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
         self.reset_behaviour_pub = rospy.Publisher("/RESET", Bool, queue_size=10)
         self.goal_name = "lmao"
-                        
+        
+        self.toyAndBoxPublisher = rospy.Publisher("/toyAndBoxUpdate", objectPoseStampedLst, queue_size=10)
         
         self.targetBox: Box= None
         self.targetToy: Toy = None
@@ -140,6 +141,7 @@ class Memory:
         return RequestResponse(FAILURE)
 
     def doPlanpathExplore(self, req: RequestRequest):
+        self.doInformMapOfTheLatestPositionOf_ToysAndBoxes()
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
@@ -211,6 +213,7 @@ class Memory:
     
 
     def doPlanPathBox(self, req: RequestRequest):
+        self.doInformMapOfTheLatestPositionOf_ToysAndBoxes()
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
@@ -234,7 +237,25 @@ class Memory:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
+    
+    def doInformMapOfTheLatestPositionOf_ToysAndBoxes(self):
+        to_be_published = objectPoseStampedLst()
+        for toy in self.toys:
+            to_be_published.PoseStamped.append(toy.poseStamped)
+            to_be_published.PoseStamped.append("Toy")
+        
+        for box in self.boxes:
+            to_be_published.PoseStamped.append(box.poseStamped)
+            to_be_published.PoseStamped.append("Box")
+        self.toyAndBoxPublisher.publish(to_be_published)
+        rospy.sleep(0.1)
+        
+
+        
+
+
     def doPlanPathToy(self, req: RequestRequest):
+        self.doInformMapOfTheLatestPositionOf_ToysAndBoxes()
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:

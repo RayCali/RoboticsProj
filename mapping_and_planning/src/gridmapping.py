@@ -50,6 +50,7 @@ class Map():
         self.stop_explore_srv = rospy.Service("/srv/stopExplore/mapping_and_planning/brain", Request, self.__stopExploreCallback)
         self.explore_pub= rospy.Publisher("/explore", Int64, queue_size=1)
         self.explore_sub = rospy.Subscriber("/explore", Int64, self.__exploreCallback)
+        
         self.grid = OccupancyGrid()
         self.grid.header.frame_id = "map"
         self.grid.info.resolution = resolution
@@ -79,7 +80,9 @@ class Map():
 
         self.start_explore = rospy.Publisher("/start_explore", Int64, queue_size=1)
         self.workspace_sub = rospy.Subscriber("/boundaries", Marker, self.__doWorkspaceCallback)
-        self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doObjectCallback)
+        #self.detection_sub = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.__doObjectCallback)
+        self.toyAndBox_sub = rospy.Subscriber("/toyAndBoxUpdate", objectPoseStampedLst, self.__doObjectCallback)
+        
         self.class_dictionary = {
             "Binky" : 3,
             "Hugo" : 3,
@@ -89,6 +92,7 @@ class Map():
             "Oakie": 3,
             "Cube": 3,
             "Ball": 3,
+            "Toy": 3,
             "Box": 4,
 
         }
@@ -103,7 +107,49 @@ class Map():
     #     ps.pose.position.y = ts.transform.translation.y
     #     self.goal_pub.publish(ps)
     #     return RequestResponse(SUCCESS)
+
+        
+
+    def __doUpdateToysAndBoxes(self, msg: objectPoseStampedLst):
+        listOfPoses: List[PoseStamped] = msg.PoseStamped
+        labels: List[str] = [self.class_dictionary[c] for c in msg.object_class]
+        for i in range(len(listOfPoses)):
+            c = labels[i]
+            pose = listOfPoses[i]
+            x = pose.pose.position.x
+            y = pose.pose.position.y
+            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+        
+
+    def __doFreeToysAndBoxes(self):
+        x, y = np.where( (self.matrix == 3) | (self.matrix == 4))
+        for x,y in zip(x,y):
+            self.matrix[y,x] = 1
+        
+    def __doObjectCallback(self, msg: objectPoseStampedLst):
+            self.__doFreeToysAndBoxes()
+            listOfPoses: List[PoseStamped] = msg.PoseStamped
+            labels: List[str] = [self.class_dictionary[c] for c in msg.object_class]
+            for i in range(len(listOfPoses)):
+                c = labels[i]
+                pose = listOfPoses[i]
+                x = pose.pose.position.x
+                y = pose.pose.position.y
+                x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
+                y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
+                if x_ind>self.grid.info.height or y_ind>self.grid.info.width:
+                        print("FUCKUP!NOTGOOD!VERY BAD!!!")
+                        exit()
+                try:
+                    if self.matrix[y_ind, x_ind] != 5:
+                        self.matrix[y_ind, x_ind] = c
+                except IndexError:
+                    print("Outside grid")
+                    exit()
     
+
+
     def __exploreCallback(self, msg: Int64):
         ts: TransformStamped = getMostValuedCell(self.matrix, int(self.grid.info.width), int(self.grid.info.height), float(self.grid.info.resolution), (self.grid.info.origin.position.x, self.grid.info.origin.position.y))
         ps: PoseStamped = PoseStamped()
@@ -518,26 +564,6 @@ class Map():
 
   
 
-    def __doObjectCallback(self, msg: objectPoseStampedLst):
-        listOfPoses: List[PoseStamped] = msg.PoseStamped
-        # print(msg.object_class)
-        labels: List[str] = [self.class_dictionary[c] for c in msg.object_class]
-        for i in range(len(listOfPoses)):
-            c = labels[i]
-            pose = listOfPoses[i]
-            x = pose.pose.position.x
-            y = pose.pose.position.y
-            x_ind = int((x - self.grid.info.origin.position.x) / self.grid.info.resolution)
-            y_ind = int((y - self.grid.info.origin.position.y) / self.grid.info.resolution)
-            if x_ind>self.grid.info.height or y_ind>self.grid.info.width:
-                    print("FUCKUP!NOTGOOD!VERY BAD!!!")
-                    exit()
-            try:
-                if self.matrix[y_ind, x_ind] != 5:
-                    self.matrix[y_ind, x_ind] = c
-            except IndexError:
-                print("Outside grid")
-                exit()
             
 
     def __doWorkspaceCallback(self, msg: Marker):
