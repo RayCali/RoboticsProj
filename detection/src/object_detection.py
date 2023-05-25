@@ -210,9 +210,9 @@ def imageCB(msg: Image):
     object_poses_baseLink = objectPoseStampedLst()
     if len(labels) > 0:
         count += 1
-    s = str(len(labels)) + " new detections" + "\t " + str(count) + " frames with objects detected"
-    rospy.loginfo(s)
-    rospy.loginfo(labels)
+    #s = str(len(labels)) + " new detections" + "\t " + str(count) + " frames with objects detected"
+    #rospy.loginfo(s)
+    #rospy.loginfo(labels)
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
