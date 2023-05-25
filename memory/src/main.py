@@ -240,13 +240,15 @@ class Memory:
     
     def doInformMapOfTheLatestPositionOf_ToysAndBoxes(self):
         to_be_published = objectPoseStampedLst()
-        for toy in self.toys:
+        for key in self.toys:
+            toy = self.toys[key]
             to_be_published.PoseStamped.append(toy.poseStamped)
-            to_be_published.PoseStamped.append("Toy")
+            to_be_published.object_class.append("Toy")
         
-        for box in self.boxes:
+        for key in self.boxes:
+            box = self.boxes[key]
             to_be_published.PoseStamped.append(box.poseStamped)
-            to_be_published.PoseStamped.append("Box")
+            to_be_published.object_class.append("Box")
         self.toyAndBoxPublisher.publish(to_be_published)
         rospy.sleep(0.1)
         
@@ -430,10 +432,10 @@ class Memory:
         self.toys[name] = object
         correctDict[name] = object
 
-        self.playingSound(id)  
+        #self.playingSound(id)  
 
     def playingSound(self, id: int):
-        playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3")
+        playsound('/home/robot/Downloads/' + str(self.id2Object[id]) + ".mp3")
 
     def putObjectinBuffer(self, pose: PoseStamped, id: int):
         count = 0
@@ -446,13 +448,14 @@ class Memory:
             self.toys_buffer.append((pose,id))
         if count > 9:
             self.putObject(pose,id)
-            self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
+            print("Clearing buffer")
+            self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 10]
 
 
         
 
     def putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
-        print("putting box: ", object.name)
+        #print("putting box: ", object.name)
         if object.hasArucoMarker:
             if replace:
                 del self.objects[object_to_replace]
