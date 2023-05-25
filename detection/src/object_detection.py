@@ -212,6 +212,7 @@ def imageCB(msg: Image):
             t.header.stamp = image_stamp
             t.header.frame_id = "map"
             t.child_frame_id = "detection_"+label+str(i)
+            loginfo(t.child_frame_id)
 
             t.transform.translation = map_pose.pose.position
             t.transform.rotation = map_pose.pose.orientation
@@ -233,6 +234,7 @@ def imageCB(msg: Image):
             continue
         
 
+    
     posesPub.publish(object_poses)
 
     baseLink_posePub.publish(object_poses_baseLink)
@@ -287,7 +289,8 @@ def proofCB(msg: Image):
 
 if __name__=="__main__":
     rospy.init_node("object_detection")
-
+    count = 0
+    
     detectionModel = utils.load_model(detector.Detector(),"/home/robot/models/working_model/index.pt", device="cuda")
     detectionModel.eval()
     detectionModel = detectionModel.to(DEVICE)
