@@ -24,7 +24,7 @@ class PickAndPlace():
         self.q_observe = [0.0, -0.24713861786666663, -1.0011208418666664, -1.801179757333333, 0.0, -1.7802358066666664]
         self.q_observe = [0.0, -0.261799, -1.309, -math.pi/2, 0.0]
         self.q_home = [0.0, 0.5235987666666666, -1.361356793333333, -1.7592918559999997, 0.0]
-        self.q_dropoff = analyticalIK_lock4([0.2, 0.05, 0.0])
+        self.q_dropoff = analyticalIK_lock4([0.23, 0.06, -0.02])
         self.q_dot = [0.0, 0.0, 0.0, 0.0, 0.0]
         self.gripper_open = -1.7802358066666664
         self.gripper_closed = 0.0
@@ -34,7 +34,9 @@ class PickAndPlace():
         rospy.wait_for_service("/srv/getPickPose/arm_camera/pickup")
         self.getPickPose_srv = rospy.ServiceProxy("/srv/getPickPose/arm_camera/pickup", PickPose)
 
+        self.joint_states = None
         self.jointStateSub = rospy.Subscriber('/joint_states', JointState, self.joint_state_callback)
+        rospy.sleep(1)
 
         self.gripperPub = rospy.Publisher('/r_joint_controller/command_duration', CommandDuration, queue_size=1)
         self.trajectory_client = actionlib.SimpleActionClient('/arm_controller/follow_joint_trajectory', FollowJointTrajectoryAction)
@@ -52,9 +54,8 @@ class PickAndPlace():
         self.place_sub = rospy.Subscriber("/doPlace", Bool, self.doSaveIfPlace)
         self.doPlaceSub = rospy.Subscriber("/placeToy", Bool, self.handle_place_req)
 
-        self.reset_sub = rospy.Subscriber("/RESET", Bool, self.handle_reset_req)
+        # self.reset_sub = rospy.Subscriber("/RESET", Bool, self.handle_reset_req)
 
-        self.joint_states = None
         self.running = False
         self.pickPose = PoseStamped()
         self.doPlace = False
@@ -84,13 +85,13 @@ class PickAndPlace():
         self.twist = Twist()
 
 
-    def handle_reset_req(self, msg: Bool):
-        if msg.data:
-            self.pick_STATE = FAILURE
-            self.place_STATE = FAILURE
-            self.running = False
-            self.doPlace = False
-            self.pickPose = PoseStamped()
+    # def handle_reset_req(self, msg: Bool):
+    #     if msg.data:
+    #         self.pick_STATE = FAILURE
+    #         self.place_STATE = FAILURE
+    #         self.running = False
+    #         self.doPlace = False
+    #         self.pickPose = PoseStamped()
 
 
     def doSavePickPose(self, msg: PoseStamped):
@@ -216,10 +217,11 @@ class PickAndPlace():
                 rospy.loginfo("Object too close to base, service call failed!!!")
                 self.pick_STATE = FAILURE
                 return
-            if pose_base.pose.position.x > 0.22:
+            if pose_base.pose.position.x > 0.23:
                 rospy.loginfo("Object too far from base, service call failed!!!")
                 # self.twist.linear.x = pose_base.pose.position.x - 0.18
                 # self.pub_twist.publish(self.twist)
+
                 self.pick_STATE = FAILURE
                 return
             
@@ -301,6 +303,13 @@ if __name__ == "__main__":
     try:
         rospy.loginfo("Creating PickAndPlace object")
         picker = PickAndPlace()
+        # goal = FollowJointTrajectoryGoal()
+        # goal.trajectory.joint_names = ['joint1', 'joint2', 'joint3', 'joint4', 'joint5']
+        # goal.trajectory.points = [JointTrajectoryPoint(positions=picker.q_dropoff, velocities=picker.q_dot, time_from_start=rospy.Duration(1.0))]
+        # print("Sending goal")
+        # picker.trajectory_client.send_goal(goal)
+        # print("Waiting for result")
+        # picker.trajectory_client.wait_for_result()
         rospy.loginfo("PickAndPlace object created")
     except rospy.ROSInterruptException:
         rospy.loginfo("Some error occurred.")

@@ -48,14 +48,15 @@ def analyticalIK_lock4(position, theta=None, alpha=None):
     output:
             joint angles [q1, q2, q3, q4, q5]
     """
-
-    # lock q4 and q5
-    q4 = -math.pi/2
-    q5 = 0.0
-
     x = position[0]
     y = position[1]
     z = position[2]
+
+    # lock q4 and q5
+    if x > 0.22 and x < 0.23:
+        q4 = -math.pi/4
+    q4 = -math.pi/2
+    q5 = 0.0
 
     # rotate arm towards object
     q1 = math.atan2(y, x)

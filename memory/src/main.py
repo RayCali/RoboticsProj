@@ -151,6 +151,7 @@ class Memory:
 
     def getIsPlaced(self, req: RequestRequest):
         if self.targetToy.inBox:
+            self.hasMovedBack = False
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
@@ -174,6 +175,7 @@ class Memory:
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
+    
     def doMoveBack(self, req: RequestRequest):
         proxy = rospy.ServiceProxy("/srv/doMoveBack/point_follower_aruco/memory", Request)
         res = proxy(RequestRequest())
@@ -182,11 +184,13 @@ class Memory:
         else:
             self.hasMovedBack = False
         return res
+    
     def getHasMovedBack(self, req: RequestRequest):
         if self.hasMovedBack:
             return RequestResponse(SUCCESS)
         else:
-            return RequestResponse(FAILURE)    
+            return RequestResponse(FAILURE)
+         
     def getIsPlannedBox(self, req: RequestRequest):
         pose = self.targetBox.poseStamped
         if self.targetBox.isPlanned:
@@ -201,7 +205,6 @@ class Memory:
         rospy.sleep(1)
         return RequestResponse(FAILURE)
     
-
     def getIsAtBox(self, req: RequestRequest):
         if self.targetBox.atBox:
             return RequestResponse(SUCCESS)
@@ -209,6 +212,7 @@ class Memory:
         to_be_published.PoseStamped.append(self.targetBox.poseStamped)
         to_be_published.object_class.append(self.targetBox.name)
         self.pathplanpub.publish(to_be_published)
+        self.doPublishObjectPose(self.targetBox)
         return RequestResponse(FAILURE)
     
 
@@ -264,6 +268,7 @@ class Memory:
         to_be_published.PoseStamped.append(self.targetToy.poseStamped)
         to_be_published.object_class.append(self.targetToy.name)
         self.pathplanpub.publish(to_be_published)
+        self.doPublishObjectPose(self.targetToy)
         return RequestResponse(FAILURE)
    
     
@@ -457,6 +462,19 @@ class Memory:
                 self.anchordetected = True
                 continue
             self.putArucoMarkerIntoDictionaryAsABoxIfNotAlreadyDetected(marker)
+    
+    def doPublishObjectPose(self, object: Movable):
+        pose = object.poseStamped
+        t = TransformStamped()
+        t.header.frame_id = "map"
+        t.child_frame_id = "GOAL:" + object.name
+        t.header.stamp = rospy.Time.now()
+        t.transform.translation.x = pose.pose.position.x
+        t.transform.translation.y = pose.pose.position.y
+        t.transform.translation.z = 0
+        t.transform.rotation.w = 1
+        self.br.sendTransform(t)
+        
     def putArucoMarkerIntoDictionaryAsABoxIfNotAlreadyDetected(self, marker: Marker):
         boxPose_cam = PoseStamped()
         boxPose_cam.pose = marker.pose.pose

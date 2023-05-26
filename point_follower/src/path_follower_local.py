@@ -62,6 +62,7 @@ class path(object):
         self.timetocallthebigguns = False
         self.arrived=False
         self.movingtobox=False
+        self.firstnode = True
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
@@ -153,15 +154,22 @@ class path(object):
         self.STATE = RUNNING
         if not self.done_once:
             path = msg
-            path.poses = path.poses[1:]
+            rospy.loginfo("NUMBER OF NODES IN PATH: " + str(len(path.poses)))
+            # less than
+            #if len(path.poses) < 3:
+            #    path.poses = path.poses[1:]
+            #elif len(path.poses) < 4:
+            #    path.poses = path.poses[2:]
             rospy.loginfo("My path is: ")
             rospy.loginfo(msg)
             node_nr = Float64()
             node_nr.data = -1
-            for point in path.poses:
+            for i, point in enumerate(path.poses):
+
                 node_nr.data += 1
                 to_log = "moving to next node" + str(np.round(point.pose.position.x,3)) + " " + str(np.round(point.pose.position.y,3))  
                 self.publish_node.publish(node_nr)
+                rospy.loginfo("CURRENT NODE: " + str(node_nr.data))
                 rospy.loginfo(to_log)
                 rospy.loginfo(point)
 
@@ -242,7 +250,8 @@ class path(object):
                 condition = math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.05
                 distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
                 latestupdate = rospy.Time.now()
-                while distance > 0.03:
+                while distance > 0.03 or self.firstnode and distance > 0.4:
+                    self.firstnode = False
                     
                     rospy.loginfo("Waiting for service")
                     rospy.wait_for_service('/srv/no_collision/mapping_and_planning/path_follower')
@@ -311,6 +320,7 @@ class path(object):
                     to_log = "Distance to next node: " + str(np.round(distance, 3))
                     rospy.loginfo(to_log)
             self.done_once = True
+            self.firstnode = True
         
         #call point follower
     
