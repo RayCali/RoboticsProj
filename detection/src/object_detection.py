@@ -216,6 +216,7 @@ def imageCB(msg: Image):
     for pos, label in zip(positions,labels):
         try:
             map_pose = get_map_pose(pos,image_frame_id,image_stamp)
+            
             object_poses.PoseStamped.append(map_pose)
             object_poses.object_class.append(label)
 

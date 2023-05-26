@@ -12,6 +12,7 @@ class Movable:
         self.name: str = name
         self.id: int = id
         self.unreachable = False
+        self.dict = None
     def __str__(self) -> str:
         return str(self.poseStamped.pose.position.x) + " " + str(self.poseStamped.pose.position.y) + " " + str(self.poseStamped.pose.position.z) + " " + str(self.id) + " " + str(self.name) + " " + str(self.unreachable)
 
@@ -23,6 +24,7 @@ class Toy(Movable):
         self.isPlanned = False
         self.atToy = False
         self.isPicked = False
+        self.key = None
 
 class Plushie(Toy):
     def __init__(self, pose: PoseStamped, name: str, id: int) -> None:
@@ -43,3 +45,4 @@ class Box(Movable):
         self.objectLst: List[Toy] = []
         self.atBox = False
         self.isPlanned = False
+        self.goal = None

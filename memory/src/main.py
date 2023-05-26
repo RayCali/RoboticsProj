@@ -208,7 +208,7 @@ class Memory:
         if self.targetBox.atBox:
             return RequestResponse(SUCCESS)
         to_be_published = objectPoseStampedLst()
-        to_be_published.PoseStamped.append(self.targetBox.poseStamped)
+        to_be_published.PoseStamped.append(self.targetBox.goal)
         to_be_published.object_class.append(self.targetBox.name)
         self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
@@ -228,6 +228,8 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.isPicked = True
+            del self.targetToy.dict[self.targetToy.name]
+            del self.toys[self.targetToy.name]
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
@@ -254,7 +256,7 @@ class Memory:
             to_be_published.PoseStamped.append(box.poseStamped)
             to_be_published.object_class.append("Box")
         self.toyAndBoxPublisher.publish(to_be_published)
-        rospy.sleep(0.1)
+        rospy.sleep(1)
         
 
         
@@ -262,6 +264,33 @@ class Memory:
 
     def doPlanPathToy(self, req: RequestRequest):
         self.doInformMapOfTheLatestPositionOf_ToysAndBoxes()
+        currentPose = PoseStamped()
+        currentPose.header.frame_id = "base_link"
+        currentPose.pose.position.x = 0
+        currentPose.pose.position.y = 0
+        currentPose.pose.position.z = 0
+        currentPose.pose.orientation.x = 0
+        currentPose.pose.orientation.y = 0
+        currentPose.pose.orientation.z = 0
+        currentPose.pose.orientation.w = 1
+
+        transform = self.tf_buffer.lookup_transform('map', 'base_link', rospy.Time(0), rospy.Duration(1.0))
+        currentPose_map = tf2_geometry_msgs.do_transform_pose(currentPose, transform)
+        
+
+        t = TransformStamped()
+        t.header.frame_id = "map"
+        t.child_frame_id = "start"
+        t.header.stamp = rospy.Time.now()
+        t.transform.translation.x = currentPose_map.pose.position.x
+        t.transform.translation.y = currentPose_map.pose.position.y
+        t.transform.translation.z = 0
+        
+        t.transform.rotation.w = 1
+        rospy.sleep(0.2)     
+        self.br.sendTransform(t)
+        
+
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
@@ -378,7 +407,6 @@ class Memory:
         return RequestResponse(SUCCESS)
     def getIsLocalized(self, req: RequestRequest):
         if self.anchordetected:
-            print("anchor detected")
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     def doSetAnchorAsDetected(self, msg: MarkerArray):
@@ -428,8 +456,10 @@ class Memory:
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
+        self.dict = correctDict
+        object.key = name
 
-        #self.playingSound(id)  
+        self.playingSound(id)  
 
     def playingSound(self, id: int):
         playsound('/home/robot/Downloads/' + str(self.id2Object[id]) + ".mp3")
@@ -451,7 +481,6 @@ class Memory:
         
 
     def putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
-        #print("putting box: ", object.name)
         if object.hasArucoMarker:
             if replace:
                 del self.objects[object_to_replace]
@@ -510,7 +539,7 @@ class Memory:
         self.br.sendTransform(t)
         boxPose_aruco = PoseStamped()
         boxPose_aruco.header.frame_id = "Box" + str(marker.id)
-        boxPose_aruco.pose.position.x = 0.4
+        boxPose_aruco.pose.position.x = 0.0 # 0.4
         boxPose_aruco.pose.position.y = 0
         boxPose_aruco.pose.position.z = 0
         boxPose_aruco.pose.orientation.x = 0
@@ -520,6 +549,21 @@ class Memory:
         transform = self.tf_buffer.lookup_transform('map', 'Box' + str(marker.id), rospy.Time(0), rospy.Duration(1.0))
         boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_aruco, transform)
         boxObject = Box(boxPose_map, "Box" + str(marker.id), marker.id)
+
+
+        goal = PoseStamped()
+        goal.header.frame_id = "AngleOfAttack_Box"+ str(marker.id)
+        goal.pose.position.x = 0.4 # 0.4
+        goal.pose.position.y = 0
+        goal.pose.position.z = 0
+        goal.pose.orientation.x = 0
+        goal.pose.orientation.y = 0
+        goal.pose.orientation.z = 0
+        goal.pose.orientation.w = 1
+        transform = self.tf_buffer.lookup_transform('map', 'Box' + str(marker.id), rospy.Time(0), rospy.Duration(1.0))
+        boxPose_map = tf2_geometry_msgs.do_transform_pose(boxPose_aruco, transform)
+        boxObject.goal = goal
+        
         boxObject.hasArucoMarker = True
         self.putBoxInDict(boxObject)
 

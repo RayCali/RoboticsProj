@@ -125,7 +125,7 @@ class Map():
     def __doFreeToysAndBoxes(self):
         x, y = np.where( (self.matrix == 3) | (self.matrix == 4))
         for x,y in zip(x,y):
-            self.matrix[y,x] = 1
+            self.matrix[x,y] = 1
         
     def __doObjectCallback(self, msg: objectPoseStampedLst):
             self.__doFreeToysAndBoxes()
