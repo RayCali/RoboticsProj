@@ -98,8 +98,8 @@ class Memory:
         
         self.targetBox: Box= None
         self.targetToy: Toy = None
-        self.xThreshold = 0.10
-        self.yThreshold = 0.10
+        self.xThreshold = 0.30
+        self.yThreshold = 0.30
         self.anchordetected = False
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
@@ -417,9 +417,9 @@ class Memory:
             if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
                 if toy_id == id:
                     count += 1
-        if count < 10:
+        if count < 15:
             self.toys_buffer.append((pose,id))
-        if count > 9:
+        if count > 14:
             self.putObject(pose,id)
             self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
 

@@ -183,7 +183,7 @@ def imageCB(msg: Image):
                     if depthImg_rcvd:
                         positions[i] = object_position
                     break
-            if i == len(boxes)-1 and score > 0.8:
+            if i == len(boxes)-1 and score > 0.85:
                 boxes.append(box)
                 labels.append(label)
                 scores.append(score)
