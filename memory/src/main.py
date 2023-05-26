@@ -190,15 +190,12 @@ class Memory:
         else:
             return RequestResponse(FAILURE)    
     def getIsPlannedBox(self, req: RequestRequest):
-        pose = self.targetBox.poseStamped
         if self.targetBox.isPlanned:
             return RequestResponse(SUCCESS)
         # This is when the path planner gets the pose of the box
         object_poses = objectPoseStampedLst()
-        name = self.targetBox.name
-        ps = self.targetBox.poseStamped
-        object_poses.PoseStamped.append(ps)
-        object_poses.object_class.append(name)
+        object_poses.PoseStamped.append(self.targetBox.goal)
+        object_poses.object_class.append(self.targetBox.name)
         self.pathplanpub.publish(object_poses)
         rospy.sleep(1)
         return RequestResponse(FAILURE)
@@ -316,6 +313,7 @@ class Memory:
         to_be_published.PoseStamped.append(self.targetToy.poseStamped)
         to_be_published.object_class.append(self.targetToy.name)
         self.pathplanpub.publish(to_be_published)
+        rospy.sleep(1)
         return RequestResponse(FAILURE)
    
     
@@ -509,6 +507,7 @@ class Memory:
             if marker.id == 500:
                 self.anchordetected = True
                 continue
+            
             self.putArucoMarkerIntoDictionaryAsABoxIfNotAlreadyDetected(marker)
     def putArucoMarkerIntoDictionaryAsABoxIfNotAlreadyDetected(self, marker: Marker):
         boxPose_cam = PoseStamped()

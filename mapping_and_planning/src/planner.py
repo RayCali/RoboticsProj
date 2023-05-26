@@ -31,8 +31,8 @@ class RRTStar:
             width: float,
             height: float,
             grid: OccupancyGrid,
-            pick: float = 0.2, #
-            r: float = 0.25, #radius to osbtacle
+            pick: float = 0.4, #
+            r: float = 0.20, #radius to osbtacle
             proximity: float = 1.0 #The proximity at which we will look for a new parent
             ) -> None:
         self.start = Node(start)

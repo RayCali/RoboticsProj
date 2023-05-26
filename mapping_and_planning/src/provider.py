@@ -126,7 +126,7 @@ class PathProvider:
         return matrix_with_true_or_false_statements_depending_on_if_the_cell_is_inside_of_the_workspace 
 
     def getObstacles(self):
-        x, y = np.where((self.map.matrix == 2) | (self.map.matrix == 6) | (self.map.matrix == 3) | (self.map.matrix == 4))
+        x, y = np.where((self.map.matrix == 2) | (self.map.matrix == 6)  | (self.map.matrix == 4))
         obstacles = zip(x,y)
         obstacles = [
             (np.round(o[1] * self.map.grid.info.resolution, 3),
