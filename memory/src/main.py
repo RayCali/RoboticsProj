@@ -169,6 +169,7 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetBox.atBox = True
+            self.targetBox.isPlanned = False
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
