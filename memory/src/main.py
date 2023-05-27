@@ -158,8 +158,6 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doPlace/pickup/memory", Request)
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
-            self.targetToy.inBox = True
-            self.targetToy.isPicked = False
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
 
@@ -178,6 +176,9 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.hasMovedBack = True
+            self.targetToy.isPicked = False
+            self.targetToy.inBox = True
+            self.targetBox.atBox = False
         else:
             self.hasMovedBack = False
         return res
