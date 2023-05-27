@@ -169,8 +169,6 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetBox.atBox = True
-            self.targetBox.isPlanned = False
-            self.targetToy.atToy = False
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
@@ -205,10 +203,6 @@ class Memory:
     def getIsAtBox(self, req: RequestRequest):
         if self.targetBox.atBox:
             return RequestResponse(SUCCESS)
-        to_be_published = objectPoseStampedLst()
-        to_be_published.PoseStamped.append(self.targetBox.poseStamped)
-        to_be_published.object_class.append(self.targetBox.name)
-        self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
     
 
@@ -216,7 +210,7 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
-            self.targetToy.isPlanned = True
+            self.targetBox.isPlanned = True
         return res
 
     
@@ -236,6 +230,10 @@ class Memory:
     def getIsPlanned(self, req: RequestRequest):
         if self.targetToy.isPlanned:
             return RequestResponse(SUCCESS)
+        to_be_published = objectPoseStampedLst()
+        to_be_published.PoseStamped.append(self.targetToy.poseStamped)
+        to_be_published.object_class.append(self.targetToy.name)
+        self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
     
     def doPlanPathToy(self, req: RequestRequest):
@@ -243,6 +241,7 @@ class Memory:
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.isPlanned = True
+        
         return res
     
     
@@ -253,17 +252,13 @@ class Memory:
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.atToy = True
-            self.targetToy.isPlanned = False
         if res.success == FAILURE:
             self.targetToy.isPlanned = False
         return res
     def getIsAtToy(self, req: RequestRequest):
         if self.targetToy.atToy:
             return RequestResponse(SUCCESS)
-        to_be_published = objectPoseStampedLst()
-        to_be_published.PoseStamped.append(self.targetToy.poseStamped)
-        to_be_published.object_class.append(self.targetToy.name)
-        self.pathplanpub.publish(to_be_published)
+        
         return RequestResponse(FAILURE)
    
     

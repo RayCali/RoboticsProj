@@ -62,6 +62,7 @@ class path(object):
         self.timetocallthebigguns = False
         self.arrived=False
         self.movingtobox=False
+        self.twist = Twist()
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
@@ -71,9 +72,9 @@ class path(object):
         if not self.running:
             if self.Path is None:
                 return RequestResponse(FAILURE) 
-            self.running = True
             if self.target is None:
                 return RequestResponse(FAILURE)
+            self.running = True
             self.moveto_pub.publish(self.Path)
             return RequestResponse(RUNNING)
         if self.running:
@@ -81,10 +82,15 @@ class path(object):
                 return RequestResponse(RUNNING)
             if self.STATE == FAILURE:
                 self.running = False
+                self.Path = None
+                self.target = None
                 return RequestResponse(FAILURE)
             if self.STATE == SUCCESS:
                 self.running = False
                 self.arrived = True
+                self.Path = None
+                self.target = None
+                
                 return RequestResponse(SUCCESS)
 
 
@@ -159,6 +165,9 @@ class path(object):
             node_nr = Float64()
             node_nr.data = -1
             for point in path.poses:
+                self.twist.linear.x = 0
+                self.twist.angular.z = 0
+                self.pub_twist.publish(self.twist)
                 node_nr.data += 1
                 to_log = "moving to next node" + str(np.round(point.pose.position.x,3)) + " " + str(np.round(point.pose.position.y,3))  
                 self.publish_node.publish(node_nr)
@@ -310,11 +319,16 @@ class path(object):
                     distance = math.sqrt(self.inc_x**2 + self.inc_y**2)
                     to_log = "Distance to next node: " + str(np.round(distance, 3))
                     rospy.loginfo(to_log)
+                
             self.done_once = True
+
+        
         
         #call point follower
     
-       
+        self.twist.linear.x = 0
+        self.twist.angular.z = 0
+        self.pub_twist.publish(self.twist)
         rospy.loginfo("Point follower called")
         if self.movingtobox:
             state = self.point_follower_aruco_srv()
@@ -336,7 +350,6 @@ class path(object):
         self.pub_twist.publish(self.twist)
         self.done_once = False
         self.lastnode = False
-        self.target = None
         self.target_pose = None
         self.toy = None
         self.box = None
@@ -344,7 +357,6 @@ class path(object):
         self.toy_pose = None
         self.movingtobox=False
         self.objectpose = None
-        self.Path = None
         self.timetocallthebigguns = False
         return
     

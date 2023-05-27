@@ -40,8 +40,9 @@ class PathProvider:
         self.goal = None
     
     def doSetGoal(self, msg: objectPoseStampedLst):
-        self.goal = msg.PoseStamped[0]
-        print("got goal: ", self.goal)
+        if self.goal is None:
+            self.goal = msg.PoseStamped[0]
+            print("got goal: ", self.goal)
     
     def doPlanResponse(self, req: Request):
         if not self.running:
@@ -61,9 +62,8 @@ class PathProvider:
                 return RequestResponse(SUCCESS)
     def reset(self):
         self.running = False
-        self.goal_Ex = None
-        self.goal_toy = None
-        self.goal_box = None
+        self.goal = None
+        
 
     
         
@@ -112,8 +112,8 @@ class PathProvider:
             for point in path:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.rewired_pub.publish(path_msg)
-            self.running = False
             self.STATE = SUCCESS
+            self.goal = None
             return            
             
 

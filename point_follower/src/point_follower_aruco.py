@@ -74,6 +74,7 @@ class path(object):
                 self.twist.linear.x = -0.15
                 self.pub_twist.publish(self.twist)
             self.twist.linear.x = 0
+            self.pub_twist.publish(self.twist)
             self.STATE_moveback = SUCCESS
         if self.running:
             if self.STATE_moveback == RUNNING:

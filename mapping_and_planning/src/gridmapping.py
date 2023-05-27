@@ -110,7 +110,7 @@ class Map():
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
-        self.startExplore_STATE = SUCCESS
+        
 
         object_poses = objectPoseStampedLst()
         name = "ExplorationGoal"
@@ -118,7 +118,7 @@ class Map():
         object_poses.PoseStamped.append(ps)
         object_poses.object_class.append(name)
         self.goal_pub.publish(object_poses)
-
+        self.startExplore_STATE = SUCCESS
         return
     def __doStartExploreCallback(self, req: RequestRequest):
         if not self.running_Ex:
