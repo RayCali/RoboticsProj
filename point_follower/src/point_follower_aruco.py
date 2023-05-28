@@ -70,7 +70,7 @@ class path(object):
             self.STATE_moveback = RUNNING
             self.running = True
             starttime = rospy.Time.now().secs
-            while rospy.Time.now().secs - starttime < 2:
+            while rospy.Time.now().secs - starttime < 4:
                 self.twist.linear.x = -0.15
                 self.pub_twist.publish(self.twist)
             self.twist.linear.x = 0
@@ -104,7 +104,7 @@ class path(object):
             pass
         else:    
             for marker in msg.markers:
-                if marker.id == int(self.objectpose_map.object_class[0][-1]) and rospy.Time.now().secs - self.latestupdate > 1:
+                if marker.id == int(self.objectpose_map.object_class[0][-1]):
                     boxpose = PoseStamped()
                     boxpose.header.frame_id = "camera_link"
                     boxpose.pose = marker.pose.pose

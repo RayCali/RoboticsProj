@@ -70,9 +70,13 @@ class path(object):
         if self.arrived:
             return RequestResponse(SUCCESS)
         if not self.running:
+            rospy.sleep(1)
             if self.Path is None:
+                rospy.loginfo("No path")
                 return RequestResponse(FAILURE) 
+            
             if self.target is None:
+                rospy.loginfo("No target")
                 return RequestResponse(FAILURE)
             self.running = True
             self.moveto_pub.publish(self.Path)

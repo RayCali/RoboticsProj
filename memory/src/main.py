@@ -167,7 +167,6 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetBox.atBox = True
-            self.targetBox.isPlanned = False
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
@@ -179,16 +178,21 @@ class Memory:
             self.targetToy.isPicked = False
             self.targetToy.inBox = True
             self.targetBox.atBox = False
+            self.targetToy.atToy = False
+            self.targetBox.isPlanned = False
+            self.targetToy.isPlanned = False
         else:
             self.hasMovedBack = False
         return res
     def getHasMovedBack(self, req: RequestRequest):
         if self.hasMovedBack:
+            
             return RequestResponse(SUCCESS)
         else:
             return RequestResponse(FAILURE)    
     def getIsPlannedBox(self, req: RequestRequest):
         pose = self.targetBox.poseStamped
+        rospy.loginfo(self.targetBox.isPlanned)
         if self.targetBox.isPlanned:
             return RequestResponse(SUCCESS)
         # This is when the path planner gets the pose of the box
@@ -198,12 +202,12 @@ class Memory:
         object_poses.PoseStamped.append(ps)
         object_poses.object_class.append(name)
         self.pathplanpub.publish(object_poses)
-        rospy.sleep(1)
         return RequestResponse(FAILURE)
     
 
     def getIsAtBox(self, req: RequestRequest):
         if self.targetBox.atBox:
+            #self.targetBox.isPlanned = False
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     
@@ -259,6 +263,7 @@ class Memory:
         return res
     def getIsAtToy(self, req: RequestRequest):
         if self.targetToy.atToy:
+            #self.targetToy.isPlanned = False
             return RequestResponse(SUCCESS)
         
         return RequestResponse(FAILURE)
