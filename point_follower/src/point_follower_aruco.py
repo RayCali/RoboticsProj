@@ -244,10 +244,9 @@ class path(object):
 
             self.done_once = True 
         rospy.loginfo('You have reached the goal')
-        
         self.object_finalpose_pub.publish(PoseStamped())
         rospy.loginfo(self.objectpose)
-        self.STATE = SUCCESS
+        self.STATE = self.decideState()
         self.done_once = False
         self.objectpose = None
         self.listen_once = False
@@ -257,6 +256,13 @@ class path(object):
         self.updating =False
         return
     
+    def decideState(self):
+        if rospy.Time.now().secs - self.latestupdate > 30:
+            print("WE HAVE NOT SEEN THE ARUCO MARKERS FOR ", str(rospy.Time.now().secs - self.latestupdate), " SECONDS")
+            return FAILURE
+        return SUCCESS
+        
+        
        
 
 if __name__ == "__main__":

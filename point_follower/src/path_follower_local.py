@@ -34,6 +34,7 @@ class path(object):
         self.point_follower_srv = rospy.ServiceProxy('/srv/doMoveToGoal/point_follower/path_follower_local', Request)
         self.point_follower_aruco_srv = rospy.ServiceProxy("/srv/doMoveToGoal/point_follower_aruco/path_follower_local", Request)
         self.publish_node = rospy.Publisher('/path_follower/node', Float64, queue_size=1)
+        self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.update, queue_size=1)
         self.rate = rospy.Rate(20)
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         self.radius_sub = float(1)
@@ -62,6 +63,9 @@ class path(object):
         self.timetocallthebigguns = False
         self.arrived=False
         self.movingtobox=False
+        self.latestupdate=0
+        self.objectpose_map = None
+        
         #self.detection_sub = rospy.Subscriber("/revised", Path, self.doSavepath, queue_size=1)
     
 
@@ -148,6 +152,17 @@ class path(object):
             except IndexError:
                 pass
     
+    def update(self, msg:MarkerArray):
+        for marker in msg.markers:
+            if marker.id == int(self.objectpose_map.object_class[0][-1]) and rospy.Time.now().secs - self.latestupdate > 1:
+                boxpose = PoseStamped()
+                boxpose.header.frame_id = "camera_link"
+                boxpose.pose = marker.pose.pose
+                transform = self.tf_buffer.lookup_transform('map', 'camera_link', rospy.Time(0), rospy.Duration(1.0))
+                boxPose_map = tf2_geometry_msgs.do_transform_pose(boxpose, transform)
+                self.objectpose_map.PoseStamped[0]=boxPose_map
+                self.latestupdate = rospy.Time.now().secs
+
     
     def tracker(self, msg: Path):
         self.STATE = RUNNING
@@ -317,7 +332,11 @@ class path(object):
        
         rospy.loginfo("Point follower called")
         if self.movingtobox:
+            # We have two edge cases:
+            # 1. We are facing in a completely different direction than the aruco marker
+            # 2. We are facing in the direction of the box but we are not seeing the aruco marker
             state = self.point_follower_aruco_srv()
+            base_link_is_very_close_to_box_but
         else:
             point_to_follow=objectPoseStampedLst()
             point_to_follow.object_class.append(self.target)
