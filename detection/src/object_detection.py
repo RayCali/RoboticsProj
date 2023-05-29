@@ -167,7 +167,7 @@ def imageCB(msg: Image):
             object_position = get_object_position(depthImg, centerbbx_x, centerbbx_y, img_center_x, img_center_y)
 
             distance_to_object = object_position[2]
-            if distance_to_object > 1.5 or distance_to_object < 0.2:
+            if distance_to_object > 1.0 or distance_to_object < 0.2:
                 # We have decided that this is a phantom detection and we should ignore it
                 continue
         box = torch.tensor([x,y,x+width,y+height], dtype=torch.int).unsqueeze(0)

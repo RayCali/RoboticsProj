@@ -71,7 +71,7 @@ class path(object):
             self.STATE_moveback = RUNNING
             self.running = True
             starttime = rospy.Time.now().secs
-            while rospy.Time.now().secs - starttime < 6:
+            while rospy.Time.now().secs - starttime < 4:
                 self.twist.linear.x = -0.2
                 self.pub_twist.publish(self.twist)
             self.twist.linear.x = 0
@@ -144,7 +144,15 @@ class path(object):
             self.inc_y = self.goal_pose.pose.position.y
 
             # rospy.loginfo(abs(rotation))
+            latestupdate = rospy.Time.now().secs
             while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+                if rospy.Time.now().secs - latestupdate > 1:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.sleep(0.5)
+                    latestupdate = rospy.Time.now().secs
+
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = -0.5
                 # rospy.loginfo("Turning right")
@@ -160,7 +168,14 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
+            latestupdate = rospy.Time.now().secs
             while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+                if rospy.Time.now().secs - latestupdate > 1:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.sleep(0.5)
+                    latestupdate = rospy.Time.now().secs
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.5
                 # rospy.loginfo("Turning left")
@@ -192,7 +207,7 @@ class path(object):
                 pass
             self.inc_x = self.goal_pose.pose.position.x
             self.inc_y = self.goal_pose.pose.position.y
-            while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.1:
+            while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.08:
                 # rospy.loginfo("Waiting for service")
                 # rospy.wait_for_service('/no_collision')
                 # rospy.loginfo("Service found")

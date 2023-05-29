@@ -211,10 +211,10 @@ class Map():
         for i in range(len(msg.ranges)):
             objectorfree = 2
             laserlist.append(msg.ranges[i])
-            if laserlist[i] > 2:
-                laserlist[i] = 2
+            if laserlist[i] > 1:
+                laserlist[i] = 1
                 objectorfree=1
-            if laserlist[i] <= 2:
+            if laserlist[i] <= 1:
                 
                 x = transform.transform.translation.x + laserlist[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
                 y = transform.transform.translation.y + laserlist[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])
