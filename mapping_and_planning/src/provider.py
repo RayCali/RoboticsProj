@@ -15,7 +15,7 @@ from nav_msgs.msg import Path
 from planner import Node, RRTStar
 from typing import List
 from config import SUCCESS, RUNNING, FAILURE
-
+from playsound import playsound
 
 
 class PathProvider:
@@ -25,13 +25,13 @@ class PathProvider:
         self.map: Map = map
         self.pathPlannerEx_srv = rospy.Service("/srv/doPlanpath/mapping_and_planning/memory", Request, self.doPlanResponse)
         # 
-        self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=10)
-        self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=10)
+        self.moveto_pub = rospy.Publisher("/pathprovider/rrt", PoseStamped,  queue_size=1)
+        self.moveto_sub = rospy.Subscriber("/pathprovider/rrt", PoseStamped, self.doPlanPath, queue_size=1)
 
         # self.goal_Ex_sub = rospy.Subscriber("/mostValuedCell", PoseStamped, self.getGoalEx, queue_size=10)
         # self.goal_toy_sub = rospy.Subscriber("/toyPoseMap", objectPoseStampedLst, self.getToy, queue_size=10)
         # self.goal_box_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.getBox, queue_size=10)
-        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSetGoal, queue_size=10)
+        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSetGoal, queue_size=1)
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
         self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
         self.getObstacles()
@@ -63,11 +63,14 @@ class PathProvider:
     def reset(self):
         self.running = False
         self.goal = None
+        self.STATE = RUNNING
+
         
 
     
         
     def doPlanPath(self, goal: PoseStamped):
+        playsound("/home/robot/Downloads/planning.mp3")
         path_msg= Path()
         header = Header()
         header.stamp = rospy.Time.now()
@@ -113,7 +116,6 @@ class PathProvider:
                 path_msg.poses.append(self.getPoseStamped(point,header))
             self.rewired_pub.publish(path_msg)
             self.STATE = SUCCESS
-            self.goal = None
             return            
             
 

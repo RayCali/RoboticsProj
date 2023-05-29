@@ -45,8 +45,9 @@ class path(object):
         self.moveto_sub = rospy.Subscriber('/path_follower/tracker', Path, self.tracker, queue_size=1)
         self.save_sub   = rospy.Subscriber('/rewired', Path, self.doSaveObjectpose, queue_size=1)
       
-        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSaveTarget, queue_size=10)
+        self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSaveTarget, queue_size=1)
         self.target_pub = rospy.Publisher('/targetPoseMap', objectPoseStampedLst, queue_size=1)
+        self.targetBox_pub = rospy.Publisher('/targetPoseMap2', objectPoseStampedLst, queue_size=1)
         self.target_pose = None
         self.done_once = False
         self.updated_target = None
@@ -136,7 +137,7 @@ class path(object):
             point_to_follow=objectPoseStampedLst()
             point_to_follow.object_class.append(self.target)
             point_to_follow.PoseStamped.append(self.target_pose)
-            self.target_pub.publish(point_to_follow)
+            self.targetBox_pub.publish(point_to_follow)
         else:
             print("This is a toy")
             self.target = msg.object_class[0][:-2]

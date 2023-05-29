@@ -36,7 +36,7 @@ class path(object):
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         #self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         #self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
-        self.detection_sub = rospy.Subscriber("/targetPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+        self.detection_sub = rospy.Subscriber("/targetPoseMap2", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
         self.done_once = False
         self.rate = rospy.Rate(20)
         self.latestupdate=0
@@ -52,6 +52,7 @@ class path(object):
         self.updating = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.twist = Twist()
         
     
 
@@ -70,8 +71,8 @@ class path(object):
             self.STATE_moveback = RUNNING
             self.running = True
             starttime = rospy.Time.now().secs
-            while rospy.Time.now().secs - starttime < 4:
-                self.twist.linear.x = -0.15
+            while rospy.Time.now().secs - starttime < 6:
+                self.twist.linear.x = -0.2
                 self.pub_twist.publish(self.twist)
             self.twist.linear.x = 0
             self.pub_twist.publish(self.twist)
@@ -121,7 +122,6 @@ class path(object):
         # playsound('/home/robot/dd2419_ws/src/speaker/src/MoveToToy.mp3')
         self.STATE = RUNNING
         if not self.done_once:
-            self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
             #     rospy.loginfo("No object detected")

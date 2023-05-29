@@ -91,15 +91,15 @@ class Memory:
         self.isExplorePlaned_srv= rospy.Service("/srv/isExplorationPathPlanned/memory/brain", Request, self.getIsExplorationPathPlanned)
         self.move2Explore_srv   = rospy.Service("/srv/doMoveAlongPathGlobal/memory/brain", Request, self.doMoveAlongPathGlobal)
         self.explore_srv        = rospy.Service("/srv/doPlanExplorationPath/memory/brain", Request, self.doPlanpathExplore)
-        self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
+        self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=1)
         self.reset_behaviour_pub = rospy.Publisher("/RESET", Bool, queue_size=10)
         self.goal_name = "lmao"
                         
         
         self.targetBox: Box= None
         self.targetToy: Toy = None
-        self.xThreshold = 0.10
-        self.yThreshold = 0.10
+        self.xThreshold = 0.25
+        self.yThreshold = 0.25
         self.anchordetected = False
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
@@ -158,6 +158,8 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doPlace/pickup/memory", Request)
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
+            self.targetToy.inBox = True
+            self.hasMovedBack = False
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
 
@@ -176,11 +178,12 @@ class Memory:
         if res.success == SUCCESS:
             self.hasMovedBack = True
             self.targetToy.isPicked = False
-            self.targetToy.inBox = True
             self.targetBox.atBox = False
             self.targetToy.atToy = False
             self.targetBox.isPlanned = False
             self.targetToy.isPlanned = False
+            self.targetBox = None
+            self.targetToy = None
         else:
             self.hasMovedBack = False
         return res
@@ -247,6 +250,8 @@ class Memory:
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.isPlanned = True
+            print(self.targetToy.isPlanned)
+            
         
         return res
     
@@ -297,59 +302,67 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        for key in self.boxes:
-            box: Box = self.boxes[key]
-            if box.hasArucoMarker:
-                boxPose = objectPoseStampedLst()
-                objectPose = objectPoseStampedLst()
-                    #     self.arucoId2Box = {
-                    #     2 : "Box_Plushies",
-                    #     3 : "Box_Balls",
-                    #     1 : "Box_Cubes",
-                    #     500 : "Anchor"
-                    # }
-                print("Box name: ", box.name)
-                pickable_plushies = [self.plushies[key] for key in list(self.plushies.keys()) if not self.plushies[key].inBox]
-                print("pickable plushies: ", len(pickable_plushies))
-                
-                pickable_balls = [self.balls[key] for key in list(self.balls.keys()) if not self.balls[key].inBox]
-                print("pickable balls: ", len(pickable_balls))
-                
-                
-                pickable_cubes = [self.cubes[key] for key in list(self.cubes.keys()) if not self.cubes[key].inBox]
-                print("pickable cubes: ", len(pickable_cubes))                    
-                
-                if box.name == "Box2":
-                    if len(pickable_plushies) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_plushies[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
 
-                        
-                elif box.name == "Box3":
-                    if len(pickable_balls) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_balls[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
+        # if there is a pair, we need to set the target box and target toy to the box and object that are paired
+        # if self.targetBox is not None and self.targetToy is not None:
+        #     return RequestResponse(FAILURE)
+        
+        if self.targetBox is None or self.targetToy is None:
+            for key in self.boxes:
+                box: Box = self.boxes[key]
+                if box.hasArucoMarker:
+                    boxPose = objectPoseStampedLst()
+                    objectPose = objectPoseStampedLst()
+                        #     self.arucoId2Box = {
+                        #     2 : "Box_Plushies",
+                        #     3 : "Box_Balls",
+                        #     1 : "Box_Cubes",
+                        #     500 : "Anchor"
+                        # }
+                    print("Box name: ", box.name)
+                    pickable_plushies = [self.plushies[key] for key in list(self.plushies.keys()) if not self.plushies[key].inBox]
+                    print("pickable plushies: ", len(pickable_plushies))
+                    
+                    pickable_balls = [self.balls[key] for key in list(self.balls.keys()) if not self.balls[key].inBox]
+                    print("pickable balls: ", len(pickable_balls))
+                    
+                    
+                    pickable_cubes = [self.cubes[key] for key in list(self.cubes.keys()) if not self.cubes[key].inBox]
+                    print("pickable cubes: ", len(pickable_cubes))                    
+                    
+                    if box.name == "Box2":
+                        if len(pickable_plushies) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_plushies[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
 
-                elif box.name == "Box1":
-                    if len(pickable_cubes) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_cubes[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
-        return RequestResponse(SUCCESS)
+                            
+                    elif box.name == "Box3":
+                        if len(pickable_balls) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_balls[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
+
+                    elif box.name == "Box1":
+                        if len(pickable_cubes) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_cubes[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
+            return RequestResponse(SUCCESS)
+        else:
+            return RequestResponse(FAILURE)
     
     def doLocalize(self, req: RequestRequest):
         if not self.anchordetected:
@@ -357,7 +370,7 @@ class Memory:
         return RequestResponse(SUCCESS)
     def getIsLocalized(self, req: RequestRequest):
         if self.anchordetected:
-            print("anchor detected")
+            # print("anchor detected")
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     def doSetAnchorAsDetected(self, msg: MarkerArray):

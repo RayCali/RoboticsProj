@@ -278,6 +278,8 @@ class path(object):
         latesttime = rospy.Time.now()
         condition = np.abs(currentyaw - anglelist[2]) < 5
         switch = False
+        self.linear = 0.0
+        self.pub_twist.publish(self.twist)
         while condition:
             rospy.loginfo("Spinning")
             #rospy.loginfo(currentyaw - anglelist[2])
