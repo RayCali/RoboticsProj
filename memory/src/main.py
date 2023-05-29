@@ -62,6 +62,7 @@ class Memory:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.br = tf2_ros.TransformBroadcaster()
+        self.st = tf2_ros.StaticTransformBroadcaster()
         self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
         self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco, queue_size=1)
@@ -498,7 +499,7 @@ class Memory:
             object = self.objects[key]
             if self.getWithinRange(a=object.poseStamped.pose.position, b=boxPose_map.pose.position):
                 return        
-        self.br.sendTransform(t)
+        self.st.sendTransform(t)
         boxPose_aruco = PoseStamped()
         boxPose_aruco.header.frame_id = "Box" + str(marker.id)
         boxPose_aruco.pose.position.x = 0.4

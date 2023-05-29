@@ -93,8 +93,14 @@ class path(object):
         #     exit()
         #rospy.loginfo("Object detected")
         if self.objectpose_map is None:
-            if "Box" in msg.object_class[0]:
                 self.objectpose_map = msg
+                transform = self.tf_buffer.lookup_transform('map', 'Box' + self.objectpose_map.object_class[0][-1], rospy.Time(0), rospy.Duration(1.0))
+                poseOfBox = PoseStamped()
+                poseOfBox.header.frame_id = "Box" + self.objectpose_map.object_class[0][-1]
+                poseOfBox.pose.position.x, poseOfBox.pose.position.y, poseOfBox.pose.position.z = 0, 0, 0
+                poseOfBox.pose.orientation.x, poseOfBox.pose.orientation.y, poseOfBox.pose.orientation.z, poseOfBox.pose.orientation.w = 0, 0, 0, 1
+                transform = self.tf_buffer.lookup_transform('map', 'Box' + self.objectpose_map.object_class[0][-1], rospy.Time(0), rospy.Duration(1.0))
+                self.objectpose_map.PoseStamped[0] = tf2_geometry_msgs.do_transform_pose(poseOfBox, transform)
 
 
     # def Radius(self, msg:Float64):
