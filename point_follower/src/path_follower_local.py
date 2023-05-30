@@ -79,6 +79,7 @@ class path(object):
             if self.target is None:
                 rospy.loginfo("No target")
                 return RequestResponse(FAILURE)
+            self.STATE = RUNNING
             self.running = True
             self.moveto_pub.publish(self.Path)
             return RequestResponse(RUNNING)
@@ -125,8 +126,7 @@ class path(object):
     
     def doSaveObjectpose(self, msg: Path):
         rospy.loginfo("Object detected")
-        if self.Path is None:
-            self.Path= msg
+        self.Path= msg
 
     def doSaveTarget(self, msg: objectPoseStampedLst):
         if "Box" in msg.object_class[0]:
@@ -161,7 +161,7 @@ class path(object):
     
     
     def tracker(self, msg: Path):
-        self.STATE = RUNNING
+        
         if not self.done_once:
             path = msg
             path.poses = path.poses[1:]
@@ -169,7 +169,7 @@ class path(object):
             rospy.loginfo(msg)
             node_nr = Float64()
             node_nr.data = -1
-            for point in path.poses:
+            for i, point in enumerate(path.poses):
                 self.twist.linear.x = 0
                 self.twist.angular.z = 0
                 self.pub_twist.publish(self.twist)
@@ -187,8 +187,10 @@ class path(object):
                 t.transform.translation.y = point.pose.position.y
                 t.transform.rotation.w = 1
                 self.tfbroadcaster.sendTransform(t)
-                if point == path.poses[-1]:
+                if i == len(path.poses) - 1:
                     self.lastnode = True
+                #if point == path.poses[-1]:
+                #    self.lastnode = True
                 
                 rospy.sleep(1)
                 self.twist = Twist()
@@ -273,7 +275,7 @@ class path(object):
                         return
                     #rospy.sleep(1)
                         
-                    if (rospy.Time.now().secs - latestupdate.secs) > 1:
+                    if (rospy.Time.now().secs - latestupdate.secs) > 2:
                         self.twist.linear.x = 0.0
                         self.twist.angular.z = 0.0
                         self.pub_twist.publish(self.twist)
@@ -338,17 +340,20 @@ class path(object):
         if self.movingtobox:
             state = self.point_follower_aruco_srv()
         else:
-            point_to_follow=objectPoseStampedLst()
-            point_to_follow.object_class.append(self.target)
-            point_to_follow.PoseStamped.append(self.target_pose)
-            self.target_pub.publish(point_to_follow)
-            state = self.point_follower_srv()
+            if self.timetocallthebigguns:
+                point_to_follow=objectPoseStampedLst()
+                point_to_follow.object_class.append(self.target)
+                point_to_follow.PoseStamped.append(self.target_pose)
+                self.target_pub.publish(point_to_follow)
+                state = self.point_follower_srv()
+            else:  
+                state = FAILURE
         if state == FAILURE:
             rospy.loginfo(state)
             self.STATE = FAILURE
             return
-
-        self.STATE = SUCCESS
+        else:
+            self.STATE = SUCCESS
         rospy.loginfo(self.STATE)
         self.twist.linear.x = 0.0
         self.twist.angular.z = 0.0

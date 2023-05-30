@@ -302,7 +302,7 @@ class path(object):
                 self.twist.linear.x = 0.0
                 self.twist.angular.z = 0.0
                 self.pub_twist.publish(self.twist)
-                rospy.sleep(1.5)
+                rospy.sleep(2)
                 latesttime = rospy.Time.now()
         self.STATE = SUCCESS
         self.twist.linear.x = 0.0

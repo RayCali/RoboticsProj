@@ -33,7 +33,7 @@ class PathProvider:
         # self.goal_box_sub = rospy.Subscriber("/boxPoseMap", objectPoseStampedLst, self.getBox, queue_size=10)
         self.goal_sub = rospy.Subscriber("/goalTarget", objectPoseStampedLst, self.doSetGoal, queue_size=1)
         self.path_pub = rospy.Publisher("/path", Path, queue_size=10)
-        self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=10)
+        self.rewired_pub = rospy.Publisher("/rewired", Path, queue_size=1)
         self.getObstacles()
         self.STATE = RUNNING
         self.running = False

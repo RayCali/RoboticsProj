@@ -160,7 +160,7 @@ class path(object):
                     latestupdate = rospy.Time.now().secs
 
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = -0.5
+                self.twist.angular.z = -0.7
                 # rospy.loginfo("Turning right")
                 # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
@@ -183,7 +183,7 @@ class path(object):
                     rospy.sleep(0.5)
                     latestupdate = rospy.Time.now().secs
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = 0.5
+                self.twist.angular.z = 0.7
                 # rospy.loginfo("Turning left")
                 # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)

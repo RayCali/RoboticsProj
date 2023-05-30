@@ -99,8 +99,8 @@ class Memory:
         
         self.targetBox: Box= None
         self.targetToy: Toy = None
-        self.xThreshold = 0.25
-        self.yThreshold = 0.25
+        self.xThreshold = 0.32
+        self.yThreshold = 0.32
         self.anchordetected = False
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
@@ -173,24 +173,35 @@ class Memory:
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
+    
+    def doReset(self):
+        print("reset")
+        print(self.targetToy.key)
+        print(self.toys)
+        print(self.targetToy.dict)
+        print(self.objects)
+        del self.toys[self.targetToy.key]
+        del self.targetToy.dict[self.targetToy.key]
+        del self.objects[self.targetToy.key]
+        self.hasMovedBack = True
+        self.targetToy.isPicked = False
+        self.targetBox.atBox = False
+        self.targetToy.atToy = False
+        self.targetBox.isPlanned = False
+        self.targetToy.isPlanned = False
+        self.targetBox = None
+        self.targetToy = None
+
     def doMoveBack(self, req: RequestRequest):
         proxy = rospy.ServiceProxy("/srv/doMoveBack/point_follower_aruco/memory", Request)
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
-            self.hasMovedBack = True
-            self.targetToy.isPicked = False
-            self.targetBox.atBox = False
-            self.targetToy.atToy = False
-            self.targetBox.isPlanned = False
-            self.targetToy.isPlanned = False
-            self.targetBox = None
-            self.targetToy = None
+            self.doReset()
         else:
             self.hasMovedBack = False
         return res
     def getHasMovedBack(self, req: RequestRequest):
         if self.hasMovedBack:
-            
             return RequestResponse(SUCCESS)
         else:
             return RequestResponse(FAILURE)    
@@ -251,6 +262,7 @@ class Memory:
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.isPlanned = True
+            rospy.sleep(1)
             print(self.targetToy.isPlanned)
             
         
@@ -266,6 +278,9 @@ class Memory:
             self.targetToy.atToy = True
         if res.success == FAILURE:
             self.targetToy.isPlanned = False
+            # this kills the phantom
+            
+            self.doReset()
         return res
     def getIsAtToy(self, req: RequestRequest):
         if self.targetToy.atToy:
@@ -421,6 +436,8 @@ class Memory:
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
+        object.key = name
+        object.dict = correctDict
 
         self.playingSound(id)  
 
@@ -433,9 +450,9 @@ class Memory:
             if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
                 if toy_id == id:
                     count += 1
-        if count < 10:
+        if count < 13:
             self.toys_buffer.append((pose,id))
-        if count > 9:
+        if count > 12:
             self.putObject(pose,id)
             self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
 
