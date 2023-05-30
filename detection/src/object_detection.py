@@ -224,8 +224,7 @@ def imageCB(msg: Image):
             t.header.stamp = image_stamp
             t.header.frame_id = "map"
             t.child_frame_id = "detection_"+label+str(i)
-            
-            
+
             t.transform.translation = map_pose.pose.position
             t.transform.rotation = map_pose.pose.orientation
             
