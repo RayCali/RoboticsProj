@@ -110,7 +110,7 @@ class Map():
         ps.header = ts.header
         ps.pose.position.x = ts.transform.translation.x
         ps.pose.position.y = ts.transform.translation.y
-        self.startExplore_STATE = SUCCESS
+        
 
         object_poses = objectPoseStampedLst()
         name = "ExplorationGoal"
@@ -118,7 +118,7 @@ class Map():
         object_poses.PoseStamped.append(ps)
         object_poses.object_class.append(name)
         self.goal_pub.publish(object_poses)
-
+        self.startExplore_STATE = SUCCESS
         return
     def __doStartExploreCallback(self, req: RequestRequest):
         if not self.running_Ex:
@@ -211,10 +211,10 @@ class Map():
         for i in range(len(msg.ranges)):
             objectorfree = 2
             laserlist.append(msg.ranges[i])
-            if laserlist[i] > 2:
-                laserlist[i] = 2
+            if laserlist[i] > 1:
+                laserlist[i] = 1
                 objectorfree=1
-            if laserlist[i] <= 2:
+            if laserlist[i] <= 1:
                 
                 x = transform.transform.translation.x + laserlist[i] * np.cos(msg.angle_min + i * msg.angle_increment + anglelist[2])
                 y = transform.transform.translation.y + laserlist[i] * np.sin(msg.angle_min + i * msg.angle_increment + anglelist[2])

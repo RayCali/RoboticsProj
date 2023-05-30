@@ -43,7 +43,6 @@ class path(object):
         self.goal_name = "lmao"
         self.STATE = FAILURE
         self.running = False
-        self.objectpose = None
         self.objectpose_map = None
         self.arrrived = False
     
@@ -73,6 +72,8 @@ class path(object):
 
         if self.objectpose_map is None:
             self.objectpose_map = msg
+            if self.objectpose_map.object_class[0] == "Oakie" or self.objectpose_map.object_class[0] == "Slush" or self.objectpose_map.object_class[0] == "Muddles" or self.objectpose_map.object_class[0] == "Kiki" or self.objectpose_map.object_class[0] == "Hugo" or self.objectpose_map.object_class[0] == "Binky":
+                self.objectpose_map.object_class[0] = "Plushie"
 
 
     # def Radius(self, msg:Float64):
@@ -307,8 +308,7 @@ class path(object):
             self.twist.linear.x = 0.0
             self.twist.angular.z = 0.0 #I added these two lines just incase
             self.pub_twist.publish(self.twist)
-            trans = tfBuffer.lookup_transform("map", "base_link", rospy.Time(0), timeout=rospy.Duration(2.0))
-            final_pose_map = tf2_geometry_msgs.do_transform_pose(self.objectpose,trans)
+            
             self.inc_x = self.objectpose.pose.position.x
             self.inc_y = self.objectpose.pose.position.y
 
@@ -346,23 +346,7 @@ class path(object):
             #     self.inc_y = self.goal_pose.pose.position.y
             self.done_once = True 
         rospy.loginfo('You have reached the goal')
-        self.twist.linear.x = 0.0
-        self.twist.angular.z = 0.0
-        self.pub_twist.publish(self.twist)
-        self.distance_to_object = 500
-        trans = tfBuffer.lookup_transform("base_link", "map", rospy.Time(0), timeout=rospy.Duration(2.0))
-        final_pose = tf2_geometry_msgs.do_transform_pose(final_pose_map,trans)
-        factor = abs(final_pose.pose.position.x / final_pose.pose.position.y)
-        extra_dist_x = 0.025
-        extra_dist_y = extra_dist_x/factor
-        if final_pose.pose.position.y<0:
-            final_pose.pose.position.y = final_pose.pose.position.y - extra_dist_y
-            final_pose.pose.position.x = final_pose.pose.position.x + extra_dist_x
-        else:
-            final_pose.pose.position.y = final_pose.pose.position.y + extra_dist_y
-            final_pose.pose.position.x = final_pose.pose.position.x + extra_dist_x
-        final_pose.header.stamp = rospy.Time.now()
-        self.object_finalpose_pub.publish(final_pose)
+        self.object_finalpose_pub.publish(PoseStamped())
         rospy.loginfo(self.objectpose)
         self.STATE = SUCCESS
         self.done_once = False

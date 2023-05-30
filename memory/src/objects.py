@@ -12,6 +12,8 @@ class Movable:
         self.name: str = name
         self.id: int = id
         self.unreachable = False
+        self.key = None
+        self.dict = None
     def __str__(self) -> str:
         return str(self.poseStamped.pose.position.x) + " " + str(self.poseStamped.pose.position.y) + " " + str(self.poseStamped.pose.position.z) + " " + str(self.id) + " " + str(self.name) + " " + str(self.unreachable)
 

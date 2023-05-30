@@ -2,6 +2,7 @@
 |    ?
 |    |    (isLocalized)
 |    |    [doLocalize()]
+|    [doSleepOnce()]
 |    ?
 |    |    (isNotPair)
 |    |    ->
@@ -14,7 +15,7 @@
 |    |    |    |    |    ?
 |    |    |    |    |    |    (isPlanned)
 |    |    |    |    |    |    [doPlanPath()]
-|    |    |    |    |    [doMoveToGoal()]
+|    |    |    |    |    [doMoveAlongPathToy()]
 |    |    |    ?
 |    |    |    |    (isPicked)
 |    |    |    |    [doPickup()]
@@ -23,12 +24,20 @@
 |    |    |    |    ->
 |    |    |    |    |    ?
 |    |    |    |    |    |    (isPlannedBox)
-|    |    |    |    |    |    [doPlanPath()]
-|    |    |    |    |    [doMoveToGoal()]
+|    |    |    |    |    |    [doPlanPathBox()]
+|    |    |    |    |    [doMoveAlongPathBox()]
 |    |    |    ?
 |    |    |    |    (isPlaced)
 |    |    |    |    [doPlace()]
+|    |    |    ?
+|    |    |    |    (hasMovedBack)
+|    |    |    |    [doMoveBack()]
 |    |    |    (isNotPair)
+|    (isNotExploring)
 |    ?
-|    |    (isExplored)
-|    |    [doExplore()]
+|    |    (isSelected)
+|    |    [doSelect()]
+|    ?
+|    |    (isExplorationPathPlanned)
+|    |    [doPlanExplorationPath()]
+|    [doMoveAlongPathGlobal()]

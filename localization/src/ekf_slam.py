@@ -22,7 +22,7 @@ listener = None
 R = np.identity(3)*0.01
 Q = np.identity(2)*0.0001
 H = np.array([[-1,0,0,1,0],[0,-1,0,0,1]])
-landmarks = 4
+landmarks = 1
 mu_slam = np.zeros(3+2*landmarks)
 P_up = np.zeros([3,3+2*landmarks])
 p_downleft = np.zeros([2*landmarks,3])
@@ -34,6 +34,12 @@ Fxposcols = np.identity(3)
 Fx = np.concatenate((Fxposcols,Fxmapcols),axis=1)
 G = np.zeros([3+2*landmarks,3+2*landmarks])
 G[3:3+2*landmarks,3:3+2*landmarks]=np.identity(2*landmarks)
+mark1buffer = 0
+mark2buffer = 0
+mark3buffer = 0
+timer1 = 0
+timer2 = 0
+timer3 = 0
 latestupdate = None
 Landmarklist = []
 marker_pub = rospy.Publisher("/covariances", MarkerArray, queue_size=10)
@@ -160,8 +166,11 @@ def predict_callback(msg:Twist):
     # rospy.loginfo(w)
     if w<0.003 and w>-0.003  and v<1e-4 and v>-1e-4:
         R = np.zeros((3,3))
+    elif w>0.003 or w<-0.003 and v<1e-4 and v>-1e-4:
+        R = np.identity(3)*0
+        R[2,2] = 0.0001
     else:
-        R = np.identity(3)*0.0005
+        R = np.identity(3)*0.0003
         R[2,2] = 0.0001
     P = np.matmul(np.matmul(G,P),np.transpose(G)) + np.matmul(np.matmul(np.transpose(Fx),R),Fx)
     updatervizpos()
@@ -171,9 +180,9 @@ def predict_callback(msg:Twist):
     
     
 def update_callback(msg: MarkerArray):
-    global yaw,Fx,mu_slam,P,G, tfBuffer, listener, firsttime0, firsttime1, firsttime2,R,br,latestupdate,Landmarklist,landmarks
+    global yaw,Fx,mu_slam,P,G, tfBuffer, listener, firsttime0, firsttime1, firsttime2,R,br,latestupdate,Landmarklist,landmarks, mark1buffer, mark2buffer, mark3buffer, timer1,timer2,timer3
     for mark in msg.markers:
-        if mark.id!=500:
+        if mark.id!=500 and mark.pose.pose.position.x>0.4 and mark.pose.pose.position.x < 1.1 and (mark.id == 1 or mark.id==2 or mark.id==3):
             time = rospy.Time(0)
             hasbeenseen=False
             transform = tfBuffer.lookup_transform('map', 'camera_link', time, rospy.Duration(1.0))

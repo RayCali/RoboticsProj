@@ -36,7 +36,7 @@ class path(object):
         # self.covariance_sub = rospy.Subscriber("/radius", Float64, self.Radius, queue_size=1)
         #self.moveto_pub = rospy.Publisher('/toyPose', PoseStamped, queue_size=1)
         #self.moveto_sub = rospy.Subscriber('/toyPose', PoseStamped, self.tracker, queue_size=1)
-        self.detection_sub = rospy.Subscriber("/targetPoseMap", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
+        self.detection_sub = rospy.Subscriber("/targetPoseMap2", objectPoseStampedLst, self.doSaveObjectpose, queue_size=1)
         self.done_once = False
         self.rate = rospy.Rate(20)
         self.latestupdate=0
@@ -52,6 +52,7 @@ class path(object):
         self.updating = False
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.twist = Twist()
         
     
 
@@ -70,10 +71,11 @@ class path(object):
             self.STATE_moveback = RUNNING
             self.running = True
             starttime = rospy.Time.now().secs
-            while rospy.Time.now().secs - starttime < 2:
-                self.twist.linear.x = -0.15
+            while rospy.Time.now().secs - starttime < 4:
+                self.twist.linear.x = -0.2
                 self.pub_twist.publish(self.twist)
             self.twist.linear.x = 0
+            self.pub_twist.publish(self.twist)
             self.STATE_moveback = SUCCESS
         if self.running:
             if self.STATE_moveback == RUNNING:
@@ -91,8 +93,14 @@ class path(object):
         #     exit()
         #rospy.loginfo("Object detected")
         if self.objectpose_map is None:
-            if "Box" in msg.object_class[0]:
                 self.objectpose_map = msg
+                transform = self.tf_buffer.lookup_transform('map', 'Box' + self.objectpose_map.object_class[0][-1], rospy.Time(0), rospy.Duration(1.0))
+                poseOfBox = PoseStamped()
+                poseOfBox.header.frame_id = "Box" + self.objectpose_map.object_class[0][-1]
+                poseOfBox.pose.position.x, poseOfBox.pose.position.y, poseOfBox.pose.position.z = 0, 0, 0
+                poseOfBox.pose.orientation.x, poseOfBox.pose.orientation.y, poseOfBox.pose.orientation.z, poseOfBox.pose.orientation.w = 0, 0, 0, 1
+                transform = self.tf_buffer.lookup_transform('map', 'Box' + self.objectpose_map.object_class[0][-1], rospy.Time(0), rospy.Duration(1.0))
+                self.objectpose_map.PoseStamped[0] = tf2_geometry_msgs.do_transform_pose(poseOfBox, transform)
 
 
     # def Radius(self, msg:Float64):
@@ -103,7 +111,7 @@ class path(object):
             pass
         else:    
             for marker in msg.markers:
-                if marker.id == int(self.objectpose_map.object_class[0][-1]) and rospy.Time.now().secs - self.latestupdate > 1:
+                if marker.id == int(self.objectpose_map.object_class[0][-1]):
                     boxpose = PoseStamped()
                     boxpose.header.frame_id = "camera_link"
                     boxpose.pose = marker.pose.pose
@@ -120,7 +128,6 @@ class path(object):
         # playsound('/home/robot/dd2419_ws/src/speaker/src/MoveToToy.mp3')
         self.STATE = RUNNING
         if not self.done_once:
-            self.twist = Twist()
             rospy.sleep(2)
             # if len(msg.PoseStamped) == 0:
             #     rospy.loginfo("No object detected")
@@ -143,9 +150,17 @@ class path(object):
             self.inc_y = self.goal_pose.pose.position.y
 
             # rospy.loginfo(abs(rotation))
+            latestupdate = rospy.Time.now().secs
             while math.atan2(self.inc_y, self.inc_x)< -0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+                if rospy.Time.now().secs - latestupdate > 1:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.sleep(0.5)
+                    latestupdate = rospy.Time.now().secs
+
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = -0.5
+                self.twist.angular.z = -0.7
                 # rospy.loginfo("Turning right")
                 # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
@@ -159,9 +174,16 @@ class path(object):
                 self.inc_x = self.goal_pose.pose.position.x
                 self.inc_y = self.goal_pose.pose.position.y
 
+            latestupdate = rospy.Time.now().secs
             while math.atan2(self.inc_y, self.inc_x) > 0.05: # or math.atan2(inc_y, inc_x) < -0.2:
+                if rospy.Time.now().secs - latestupdate > 1:
+                    self.twist.linear.x = 0.0
+                    self.twist.angular.z = 0.0
+                    self.pub_twist.publish(self.twist)
+                    rospy.sleep(0.5)
+                    latestupdate = rospy.Time.now().secs
                 self.twist.linear.x = 0.0
-                self.twist.angular.z = 0.5
+                self.twist.angular.z = 0.7
                 # rospy.loginfo("Turning left")
                 # rospy.loginfo(math.atan2(self.inc_y, self.inc_x))
                 self.pub_twist.publish(self.twist)
@@ -191,7 +213,7 @@ class path(object):
                 pass
             self.inc_x = self.goal_pose.pose.position.x
             self.inc_y = self.goal_pose.pose.position.y
-            while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.1:
+            while math.sqrt(self.inc_x**2 + self.inc_y**2) > 0.08:
                 # rospy.loginfo("Waiting for service")
                 # rospy.wait_for_service('/no_collision')
                 # rospy.loginfo("Service found")

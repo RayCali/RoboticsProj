@@ -62,6 +62,7 @@ class Memory:
         self.tf_buffer = tf2_ros.Buffer(rospy.Duration(100.0)) #tf buffer length
         self.listener = tf2_ros.TransformListener(self.tf_buffer)
         self.br = tf2_ros.TransformBroadcaster()
+        self.st = tf2_ros.StaticTransformBroadcaster()
         self.anchor_sub     = rospy.Subscriber("/aruco_500/aruco/markers", MarkerArray, self.doSetAnchorAsDetected) 
         self.detection_sub  = rospy.Subscriber("/detection/pose", objectPoseStampedLst, self.doStoreAllDetectedObjects)
         self.aruco_sub      = rospy.Subscriber("/aruco_all/aruco/markers", MarkerArray, self.doStoreAllBoxesWAruco, queue_size=1)
@@ -91,19 +92,21 @@ class Memory:
         self.isExplorePlaned_srv= rospy.Service("/srv/isExplorationPathPlanned/memory/brain", Request, self.getIsExplorationPathPlanned)
         self.move2Explore_srv   = rospy.Service("/srv/doMoveAlongPathGlobal/memory/brain", Request, self.doMoveAlongPathGlobal)
         self.explore_srv        = rospy.Service("/srv/doPlanExplorationPath/memory/brain", Request, self.doPlanpathExplore)
-        self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=10)
+        self.pathplanpub = rospy.Publisher("/goalTarget", objectPoseStampedLst, queue_size=1)
         self.reset_behaviour_pub = rospy.Publisher("/RESET", Bool, queue_size=10)
         self.goal_name = "lmao"
                         
         
         self.targetBox: Box= None
         self.targetToy: Toy = None
-        self.xThreshold = 0.10
-        self.yThreshold = 0.10
+        self.xThreshold = 0.32
+        self.yThreshold = 0.32
         self.anchordetected = False
         self.isSelected = False
         self.pathToExplorationGoalPlanned = False
         self.hasMovedBack = False
+        self.numberOfUpdates = 0
+        self.numberOfCubes = 0
 
     
     def getIsExplorationPathPlanned(self, req: RequestRequest):
@@ -157,7 +160,7 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.inBox = True
-            self.targetToy.isPicked = False
+            self.hasMovedBack = False
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
 
@@ -167,16 +170,33 @@ class Memory:
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetBox.atBox = True
-            self.targetBox.isPlanned = False
-            self.targetToy.atToy = False
         if res.success == FAILURE:
             self.targetBox.isPlanned = False
         return res
+    
+    def doReset(self):
+        print("reset")
+        print(self.targetToy.key)
+        print(self.toys)
+        print(self.targetToy.dict)
+        print(self.objects)
+        del self.toys[self.targetToy.key]
+        del self.targetToy.dict[self.targetToy.key]
+        del self.objects[self.targetToy.key]
+        self.hasMovedBack = True
+        self.targetToy.isPicked = False
+        self.targetBox.atBox = False
+        self.targetToy.atToy = False
+        self.targetBox.isPlanned = False
+        self.targetToy.isPlanned = False
+        self.targetBox = None
+        self.targetToy = None
+
     def doMoveBack(self, req: RequestRequest):
         proxy = rospy.ServiceProxy("/srv/doMoveBack/point_follower_aruco/memory", Request)
         res = proxy(RequestRequest())
         if res.success == SUCCESS:
-            self.hasMovedBack = True
+            self.doReset()
         else:
             self.hasMovedBack = False
         return res
@@ -187,6 +207,7 @@ class Memory:
             return RequestResponse(FAILURE)    
     def getIsPlannedBox(self, req: RequestRequest):
         pose = self.targetBox.poseStamped
+        rospy.loginfo(self.targetBox.isPlanned)
         if self.targetBox.isPlanned:
             return RequestResponse(SUCCESS)
         # This is when the path planner gets the pose of the box
@@ -196,17 +217,13 @@ class Memory:
         object_poses.PoseStamped.append(ps)
         object_poses.object_class.append(name)
         self.pathplanpub.publish(object_poses)
-        rospy.sleep(1)
         return RequestResponse(FAILURE)
     
 
     def getIsAtBox(self, req: RequestRequest):
         if self.targetBox.atBox:
+            #self.targetBox.isPlanned = False
             return RequestResponse(SUCCESS)
-        to_be_published = objectPoseStampedLst()
-        to_be_published.PoseStamped.append(self.targetBox.poseStamped)
-        to_be_published.object_class.append(self.targetBox.name)
-        self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
     
 
@@ -214,7 +231,7 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doPlanpath/mapping_and_planning/memory", Request)
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
-            self.targetToy.isPlanned = True
+            self.targetBox.isPlanned = True
         return res
 
     
@@ -225,13 +242,19 @@ class Memory:
             self.targetToy.isPicked = True
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
+    
     def getIsPicked(self, req: RequestRequest):
         if self.targetToy.isPicked:
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
+    
     def getIsPlanned(self, req: RequestRequest):
         if self.targetToy.isPlanned:
             return RequestResponse(SUCCESS)
+        to_be_published = objectPoseStampedLst()
+        to_be_published.PoseStamped.append(self.targetToy.poseStamped)
+        to_be_published.object_class.append(self.targetToy.name)
+        self.pathplanpub.publish(to_be_published)
         return RequestResponse(FAILURE)
     
     def doPlanPathToy(self, req: RequestRequest):
@@ -239,6 +262,10 @@ class Memory:
         res: RequestResponse = proxy(RequestRequest())
         if res.success == SUCCESS:
             self.targetToy.isPlanned = True
+            rospy.sleep(1)
+            print(self.targetToy.isPlanned)
+            
+        
         return res
     
     
@@ -247,20 +274,19 @@ class Memory:
         proxy = rospy.ServiceProxy("/srv/doMoveAlongPathToyLocal/path_follower/memory", Request)
         
         res: RequestResponse = proxy(RequestRequest())
-        print("Response", res)
         if res.success == SUCCESS:
             self.targetToy.atToy = True
-            self.targetToy.isPlanned = False
         if res.success == FAILURE:
             self.targetToy.isPlanned = False
+            # this kills the phantom
+            
+            self.doReset()
         return res
     def getIsAtToy(self, req: RequestRequest):
         if self.targetToy.atToy:
+            #self.targetToy.isPlanned = False
             return RequestResponse(SUCCESS)
-        to_be_published = objectPoseStampedLst()
-        to_be_published.PoseStamped.append(self.targetToy.poseStamped)
-        to_be_published.object_class.append(self.targetToy.name)
-        self.pathplanpub.publish(to_be_published)
+        
         return RequestResponse(FAILURE)
    
     
@@ -292,65 +318,67 @@ class Memory:
         # we have a pair if
         # 1) the box object has an aruco marker so we can identify which box it is
         # 2) the dictionary of the object class that the box belongs to is not empty
-        print("getNotPair. Len(boxes):", len(self.boxes))
-        for key in self.boxes:
-            box: Box = self.boxes[key]
-            print("Box: ", box.name)
-            if box.hasArucoMarker:
-                boxPose = objectPoseStampedLst()
-                objectPose = objectPoseStampedLst()
-                print(box.name)
 
-                    #     self.arucoId2Box = {
-                    #     2 : "Box_Plushies",
-                    #     3 : "Box_Balls",
-                    #     1 : "Box_Cubes",
-                    #     500 : "Anchor"
-                    # }
-                pickable_plushies = [self.plushies[key] for key in list(self.plushies.keys()) if not self.plushies[key].inBox]
-                print("pickable plushies: ", len(pickable_plushies))
-                
-                pickable_balls = [self.balls[key] for key in list(self.balls.keys()) if not self.balls[key].inBox]
-                print("pickable balls: ", len(pickable_balls))
-                
-                
-                pickable_cubes = [self.cubes[key] for key in list(self.cubes.keys()) if not self.cubes[key].inBox]
-                print("pickable cubes: ", len(pickable_cubes))                    
-                
-                if box.name == "Box2":
-                    if len(pickable_plushies) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_plushies[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
+        # if there is a pair, we need to set the target box and target toy to the box and object that are paired
+        # if self.targetBox is not None and self.targetToy is not None:
+        #     return RequestResponse(FAILURE)
+        
+        if self.targetBox is None or self.targetToy is None:
+            for key in self.boxes:
+                box: Box = self.boxes[key]
+                if box.hasArucoMarker:
+                    boxPose = objectPoseStampedLst()
+                    objectPose = objectPoseStampedLst()
+                        #     self.arucoId2Box = {
+                        #     2 : "Box_Plushies",
+                        #     3 : "Box_Balls",
+                        #     1 : "Box_Cubes",
+                        #     500 : "Anchor"
+                        # }
+                    print("Box name: ", box.name)
+                    pickable_plushies = [self.plushies[key] for key in list(self.plushies.keys()) if not self.plushies[key].inBox]
+                    print("pickable plushies: ", len(pickable_plushies))
+                    
+                    pickable_balls = [self.balls[key] for key in list(self.balls.keys()) if not self.balls[key].inBox]
+                    print("pickable balls: ", len(pickable_balls))
+                    
+                    
+                    pickable_cubes = [self.cubes[key] for key in list(self.cubes.keys()) if not self.cubes[key].inBox]
+                    print("pickable cubes: ", len(pickable_cubes))                    
+                    
+                    if box.name == "Box2":
+                        if len(pickable_plushies) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_plushies[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
 
-                        
-                elif box.name == "Box3":
-                    if len(pickable_balls) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_balls[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
+                            
+                    elif box.name == "Box3":
+                        if len(pickable_balls) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_balls[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
 
-                elif box.name == "Box1":
-                    if len(pickable_cubes) > 0:
-                        self.targetBox = box
-                        self.targetToy = pickable_cubes[0]
-                        boxPose.PoseStamped.append(box.poseStamped)
-                        boxPose.object_class.append(box.name)
-                        objectPose.PoseStamped.append(self.targetToy.poseStamped)
-                        objectPose.object_class.append(self.targetToy.name)
-                        return RequestResponse(FAILURE)
-
-                rospy.loginfo("No PAIR status: {}".format(SUCCESS))
-
-        return RequestResponse(SUCCESS)
+                    elif box.name == "Box1":
+                        if len(pickable_cubes) > 0:
+                            self.targetBox = box
+                            self.targetToy = pickable_cubes[0]
+                            boxPose.PoseStamped.append(box.poseStamped)
+                            boxPose.object_class.append(box.name)
+                            objectPose.PoseStamped.append(self.targetToy.poseStamped)
+                            objectPose.object_class.append(self.targetToy.name)
+                            return RequestResponse(FAILURE)
+            return RequestResponse(SUCCESS)
+        else:
+            return RequestResponse(FAILURE)
     
     def doLocalize(self, req: RequestRequest):
         if not self.anchordetected:
@@ -358,7 +386,7 @@ class Memory:
         return RequestResponse(SUCCESS)
     def getIsLocalized(self, req: RequestRequest):
         if self.anchordetected:
-            print("anchor detected")
+            # print("anchor detected")
             return RequestResponse(SUCCESS)
         return RequestResponse(FAILURE)
     def doSetAnchorAsDetected(self, msg: MarkerArray):
@@ -408,11 +436,13 @@ class Memory:
         self.objects[name] = object
         self.toys[name] = object
         correctDict[name] = object
+        object.key = name
+        object.dict = correctDict
 
         self.playingSound(id)  
 
     def playingSound(self, id: int):
-        playsound('/home/robot/Downloads' + str(self.id2Object[id]) + ".mp3")
+        playsound('/home/robot/Downloads/' + str(self.id2Object[id]) + ".mp3")
 
     def putObjectinBuffer(self, pose: PoseStamped, id: int):
         count = 0
@@ -420,10 +450,9 @@ class Memory:
             if self.getWithinRange(toy_pose.pose.position, pose.pose.position):
                 if toy_id == id:
                     count += 1
-        print("count: ", count)
-        if count < 10:
+        if count < 13:
             self.toys_buffer.append((pose,id))
-        if count > 9:
+        if count > 12:
             self.putObject(pose,id)
             self.toys_buffer = [(pose_keep, id_keep) for pose_keep, id_keep in self.toys_buffer if id_keep != id and not self.getWithinRange(pose_keep.pose.position, pose.pose.position) and (rospy.Time.now().secs - pose_keep.header.stamp.secs) < 5]
 
@@ -431,7 +460,7 @@ class Memory:
         
 
     def putBox(self, object: Box, replace: bool = False, object_to_replace: str = None):
-        print("putting box: ", object.name)
+        #print("putting box: ", object.name)
         if object.hasArucoMarker:
             if replace:
                 del self.objects[object_to_replace]
@@ -446,7 +475,6 @@ class Memory:
         for pose, id in zip(msg.PoseStamped, msg.object_class):
             id = self.object2Id[id]
             if id < 8:
-
                 self.putInDictsIfNotAlreadyIn(pose,id)
             # elif id == 8:
             #     boxObject = Box(pose, self.id2Object[id] + str(Box.count), id)
@@ -488,7 +516,7 @@ class Memory:
             object = self.objects[key]
             if self.getWithinRange(a=object.poseStamped.pose.position, b=boxPose_map.pose.position):
                 return        
-        self.br.sendTransform(t)
+        self.st.sendTransform(t)
         boxPose_aruco = PoseStamped()
         boxPose_aruco.header.frame_id = "Box" + str(marker.id)
         boxPose_aruco.pose.position.x = 0.4

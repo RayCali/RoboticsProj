@@ -7,7 +7,12 @@
       "doPlace()": "Place the object in the box.",
       "doExplore()": "Explore the workspace using the global planner",
       "doPlanPath()": "Explore the workspace using the global planner",
-      "doMoveAlongPath()": "Robot gets the RRT path"
+      "doMoveAlongPath()": "Robot gets the RRT path",
+      "doSleepOnce()": "We have a lot of computation at the start",
+      "doMoveAlongPathToy()": "",
+      "doMoveAlongPathBox()": "",
+      "doPlanPathBox()": "",
+      "doMoveBack()": "",
       
 
     },
@@ -25,6 +30,8 @@
       "isAnchorSeen": "Check if the anchor has been seen.",
       "isNotPair": "Checks if we do not have toy with a matching box.",
       "isAtBox": "Checks if Grumpy is in front of the toy.",
-      "isInFrontBox": "Checks if Grumpy is in front of the box."
+      "isInFrontBox": "Checks if Grumpy is in front of the box.",
+      "isNotExploring": "Checks if the global explorer is in control of grumpy",
+      "hasMovedBack": "",
     }
   }
